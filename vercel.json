@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/cron/subscribe-youtube",
+      "schedule": "0 0 * * *"
+    }
+  ],
   "functions": {
     "api/**/*.js": {
       "maxDuration": 10

@@ -19,6 +19,7 @@
 | `YOUTUBE_SUBSCRIBE_TOKEN` | `/api/youtube/subscribe` 호출 보호용 임의 문자열 |
 | `YOUTUBE_WEBHOOK_VERIFY_TOKEN` | YouTube WebSub 검증용 임의 문자열 |
 | `YOUTUBE_WEBHOOK_SECRET` | YouTube WebSub HMAC 서명 검증용 임의 문자열 |
+| `CRON_SECRET` | Vercel Cron 호출 보호용 임의 문자열 |
 | `YOUTUBE_HANDLE` | 기본값은 `@2ryoo-world`라 생략 가능 |
 | `YOUTUBE_CHANNEL_ID` | 선택. 채널 ID를 직접 넣으면 핸들 조회를 건너뜁니다 |
 
@@ -33,6 +34,31 @@ https://YOUR_VERCEL_URL/api/youtube/subscribe?token=YOUTUBE_SUBSCRIBE_TOKEN값
 정상이면 `ok: true`, `status: 202`, `handle: "@2ryoo-world"`가 포함된 JSON이 나옵니다.
 
 YouTube WebSub 구독은 만료되므로 3~4일마다 다시 호출하는 것을 권장합니다.
+
+## 자동 구독 갱신
+
+`vercel.json`에 Vercel Cron이 설정되어 있습니다.
+
+```json
+{
+  "path": "/api/cron/subscribe-youtube",
+  "schedule": "0 0 * * *"
+}
+```
+
+Vercel이 매일 00:00 UTC에 구독 갱신 API를 호출합니다. Vercel 환경변수에 `CRON_SECRET`을 추가한 뒤 Production으로 다시 배포하세요.
+
+Vercel Cron은 Production 배포에서만 실행됩니다.
+
+## Discord 웹훅 테스트
+
+배포 후 아래 주소를 호출하면 Discord 채널에 테스트 메시지를 보냅니다.
+
+```txt
+https://YOUR_VERCEL_URL/api/test-discord?token=YOUTUBE_SUBSCRIBE_TOKEN값
+```
+
+정상이면 Discord 채널에 `유튜브 방송 알림 테스트입니다` 메시지가 도착하고, 브라우저에는 `ok: true`가 표시됩니다.
 
 ## 로컬 문법 검사
 
