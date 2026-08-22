@@ -1,0 +1,9 @@
+{
+  "name": "iryu-youtube-alert",
+  "version": "1.0.0",
+  "private": true,
+  "description": "YouTube live WebSub receiver that sends Discord webhook alerts.",
+  "scripts": {
+    "check": "node --check api/youtube/webhook.js && node --check api/youtube/subscribe.js"
+  }
+}
