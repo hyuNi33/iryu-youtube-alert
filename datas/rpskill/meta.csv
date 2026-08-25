@@ -1,5 +1,5 @@
 ﻿﻿tableKey,skillName,maxLevel0,maxLevel1,maxLevel2,maxLevel3,maxLevel4,maxLevel5,maxLevel6,maxLevel7,maxLevel8,maxLevel9,maxLevel10
-table1,SP 증가량,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000,2000
+table1,SP 증가량,100,100,100,100,100,100,100,100,100,100,100
 table2,환포,40,40,40,40,40,40,40,40,40,40,40
 table3,경험치,200,200,200,200,200,200,200,200,200,200,200
 table4,장비 제한 레벨 감소,24,24,24,24,24,24,24,24,24,24,24
