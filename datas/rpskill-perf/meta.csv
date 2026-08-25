@@ -1,0 +1,34 @@
+﻿name,file
+"SP 증가량",sp-increase.csv
+"환포증가",hanpo-increase.csv
+"경험치 RP (1~200)",exp-rp.csv
+"장비 제한 레벨 감소",equip-level-reduce.csv
+"타겟",target.csv
+"강횟",enhance-count.csv
+"강화 확률 증가",enhance-chance.csv
+"전생의 기억",previous-life-memory.csv
+"원거리마스터리",ranged-mastery.csv
+"너클마스터리",knuckle-mastery.csv
+"비홀더버프",beholder-buff.csv
+"샤프",sharp.csv
+"버서크",berserk.csv
+"부스트",boost.csv
+"쉐도우 파트너",shadow-partner.csv
+"매용",melee.csv
+"어드밴스드 콤보",advanced-combo.csv
+"파이널어택",final-attack.csv
+"크리티컬 리인포스",critical-reinforce.csv
+"오브 마스터리",orb-mastery.csv
+"아드레날린",adrenaline.csv
+"포이즌",poison.csv
+"바이탈 체인",vital-chain.csv
+"애드 레인지",add-range.csv
+"호밍 미사일",homing-missile.csv
+"샤프니스",sharpness.csv
+"데몬스 퓨리",demons-fury.csv
+"그리드",greed.csv
+"페이크",fake.csv
+"영웅의 메아리",heroes-echo.csv
+"어드밴스드 파이널 어택",advanced-final-attack.csv
+"연격의 극의",combo-master.csv
+"관록",gravitas.csv

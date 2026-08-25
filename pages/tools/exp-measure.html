@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>경험치 측정 - 이류월드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+  <style>
+    .measure-panel { display: none; overflow: hidden; }
+    .measure-panel.active { display: block; }
+    .measure-frame { display: block; width: 100%; height: 1200px; min-height: 620px; border: 0; background: transparent; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <aside class="sidebar"></aside>
+      <main class="content">
+        <div class="top-banner">
+          <h1>경험치 측정</h1>
+          <p>실시간 화면 인식 방식과 시작/종료 스냅샷 비교 방식을 탭으로 비교해서 사용할 수 있습니다.</p>
+        </div>
+
+        <section class="calc-card measure-page">
+          <div class="tab-bar" role="tablist" aria-label="경험치 측정 방식">
+            <button type="button" class="tab-btn active" id="tabLiveBtn" data-panel="livePanel" role="tab" aria-selected="true" aria-controls="livePanel">실시간 측정</button>
+            <button type="button" class="tab-btn" id="tabSnapshotBtn" data-panel="snapshotPanel" role="tab" aria-selected="false" aria-controls="snapshotPanel">스냅샷 측정</button>
+          </div>
+
+          <div class="measure-panel active" id="livePanel" role="tabpanel" aria-labelledby="tabLiveBtn">
+            <iframe class="measure-frame" id="liveFrame" src="../calc/exp.html?embed=screenExp" title="실시간 경험치 측정" allow="display-capture" scrolling="no"></iframe>
+          </div>
+          <div class="measure-panel" id="snapshotPanel" role="tabpanel" aria-labelledby="tabSnapshotBtn">
+            <iframe class="measure-frame" id="snapshotFrame" src="../calc/screen-exp-snapshot.html?embed=1" title="스냅샷 경험치 측정" allow="display-capture" scrolling="no"></iframe>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll(".measure-page .tab-btn").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".measure-page .tab-btn").forEach(item => {
+          const active = item === button;
+          item.classList.toggle("active", active);
+          item.setAttribute("aria-selected", String(active));
+        });
+        document.querySelectorAll(".measure-panel").forEach(panel => {
+          panel.classList.toggle("active", panel.id === button.dataset.panel);
+        });
+        requestFrameHeight(document.querySelector(`#${button.dataset.panel} iframe`));
+      });
+    });
+
+    function requestFrameHeight(frame) {
+      if (!frame?.contentWindow) return;
+      frame.contentWindow.postMessage({ type: "iryuMeasureRequestHeight" }, location.origin);
+    }
+
+    function syncFrameTheme(frame) {
+      if (!frame?.contentWindow) return;
+      frame.contentWindow.postMessage({
+        type: "iryuMeasureTheme",
+        theme: document.documentElement.getAttribute("data-theme") || "light"
+      }, location.origin);
+    }
+
+    function syncAllFrameThemes() {
+      document.querySelectorAll(".measure-frame").forEach(frame => syncFrameTheme(frame));
+    }
+
+    window.addEventListener("message", event => {
+      if (event.origin !== location.origin) return;
+      if (event.data?.type !== "iryuMeasureFrameHeight") return;
+      const frame = Array.from(document.querySelectorAll(".measure-frame"))
+        .find(item => item.contentWindow === event.source);
+      if (!frame) return;
+      frame.style.height = `${Math.max(760, Math.ceil(Number(event.data.height) || 0))}px`;
+    });
+
+    window.addEventListener("load", () => {
+      document.querySelectorAll(".measure-frame").forEach(frame => {
+        syncFrameTheme(frame);
+        requestFrameHeight(frame);
+      });
+    });
+
+    document.querySelectorAll(".measure-frame").forEach(frame => {
+      frame.addEventListener("load", () => syncFrameTheme(frame));
+    });
+
+    if (window.MutationObserver) {
+      new MutationObserver(syncAllFrameThemes).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-theme"]
+      });
+    }
+  </script>
+</body>
+</html>

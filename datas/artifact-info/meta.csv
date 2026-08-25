@@ -1,0 +1,12 @@
+﻿name,file,desc
+"세가지 보석",three-gems.csv,"올스텟"
+"전설의 뿔피리",legend-horn.csv,"최대 레벨 증가"
+"황금 인장 반지",golden-seal-ring.csv,"환생 포인트 획득량 % 증가"
+"화염 부적",flame-talisman.csv,"최종 STR % 증가"
+"아누비스의 가면",anubis-mask.csv,"최종 DEX % 증가"
+"잊혀진 기억 로켓",memory-rocket.csv,"최종 INT % 증가"
+"요정의 목걸이",fairy-necklace.csv,"최종 LUK % 증가"
+"결의의 증표",token-of-resolve.csv,"최종 공격력 % 증가"
+"고룡의 비늘",dragon-scale.csv,"최종 크리티컬 데미지 % 증가"
+"어둠에 물든 구슬",dark-orb.csv,"이세계의 재화 2배 획득 확률 % 증가"
+"시간의 모래시계",hourglass.csv,"레벨업 필요 EXP / 환생 RP 획득량 증가"

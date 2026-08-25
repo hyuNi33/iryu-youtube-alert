@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+  <title id="title">경험치 숫자 OCR 영역 지정 예시</title>
+  <desc id="desc">경험치 OCR은 숫자, 쉼표, 슬래시가 있는 한 줄만 선택하고 퍼센트, 초록색 바, 아이콘, 레벨 글자는 제외해야 합니다.</desc>
+  <defs>
+    <linearGradient id="pageBg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#1e293b"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="expBar" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#75df4f"/>
+      <stop offset="1" stop-color="#d9ff82"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity="0.32"/>
+    </filter>
+    <marker id="redArrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0 0 L12 6 L0 12 Z" fill="#ef4444"/>
+    </marker>
+    <marker id="blueArrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0 0 L12 6 L0 12 Z" fill="#60a5fa"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="560" rx="18" fill="url(#pageBg)"/>
+
+  <g filter="url(#softShadow)">
+    <rect x="56" y="34" width="1088" height="86" rx="12" fill="#f8fafc"/>
+    <text x="92" y="74" font-family="Arial, sans-serif" font-size="28" font-weight="900" fill="#111827">빨간 박스에는 숫자 줄만 넣어 주세요</text>
+    <text x="92" y="105" font-family="Arial, sans-serif" font-size="20" fill="#475569">OCR은 글자처럼 보이는 모든 것을 읽으므로 퍼센트, 바, 아이콘, 레벨, 캐릭터명은 빼는 것이 중요합니다.</text>
+  </g>
+
+  <g transform="translate(72 158)" filter="url(#softShadow)">
+    <rect x="0" y="0" width="1056" height="172" rx="14" fill="#263445"/>
+    <rect x="0" y="0" width="1056" height="72" rx="14" fill="#334155"/>
+    <rect x="0" y="112" width="1056" height="60" rx="0" fill="#111827" opacity="0.68"/>
+
+    <g opacity="0.72">
+      <rect x="122" y="22" width="50" height="50" rx="11" fill="#475569"/>
+      <rect x="188" y="22" width="50" height="50" rx="11" fill="#64748b"/>
+      <rect x="254" y="22" width="50" height="50" rx="11" fill="#64748b"/>
+      <text x="119" y="18" font-family="Arial, sans-serif" font-size="17" fill="#e5e7eb" font-weight="800">아이콘</text>
+      <text x="386" y="50" font-family="Arial, sans-serif" font-size="23" fill="#f8fafc" font-weight="900">LV.599</text>
+      <text x="530" y="50" font-family="Arial, sans-serif" font-size="23" fill="#f8fafc" font-weight="900">캐릭터명</text>
+    </g>
+
+    <text x="312" y="102" font-family="Arial, sans-serif" font-size="24" fill="#eaffd2" stroke="#334155" stroke-width="5" paint-order="stroke" font-weight="900">64.07%(2,498,239,909,656,483,328 / 3,899,257,557,272,628,224)</text>
+    <rect x="32" y="125" width="992" height="16" rx="8" fill="#e5e7eb"/>
+    <rect x="32" y="125" width="642" height="16" rx="8" fill="url(#expBar)"/>
+
+    <rect x="412" y="76" width="580" height="34" rx="3" fill="none" stroke="#ef4444" stroke-width="5"/>
+    <text x="422" y="66" font-family="Arial, sans-serif" font-size="20" fill="#fecaca" font-weight="900">선택할 곳: 숫자, 쉼표, 슬래시만 있는 한 줄</text>
+  </g>
+
+  <path d="M790 126 L805 232" fill="none" stroke="#ef4444" stroke-width="5" marker-end="url(#redArrow)"/>
+
+  <g transform="translate(72 372)">
+    <rect x="0" y="0" width="1056" height="128" rx="12" fill="#0b1220" stroke="#334155"/>
+    <text x="28" y="38" font-family="Arial, sans-serif" font-size="23" fill="#93c5fd" font-weight="900">좋은 선택</text>
+    <rect x="180" y="20" width="820" height="42" rx="6" fill="#020617" stroke="#ef4444" stroke-width="3"/>
+    <text x="202" y="49" font-family="Arial, sans-serif" font-size="24" fill="#f8fafc" font-weight="800">2,498,239,909,656,483,328 / 3,899,257,557,272,628,224</text>
+
+    <text x="28" y="92" font-family="Arial, sans-serif" font-size="23" fill="#fca5a5" font-weight="900">제외</text>
+    <text x="180" y="92" font-family="Arial, sans-serif" font-size="20" fill="#cbd5e1">64.07%</text>
+    <text x="302" y="92" font-family="Arial, sans-serif" font-size="20" fill="#cbd5e1">초록색 경험치 바</text>
+    <text x="522" y="92" font-family="Arial, sans-serif" font-size="20" fill="#cbd5e1">아이콘/레벨/캐릭터명</text>
+    <text x="786" y="92" font-family="Arial, sans-serif" font-size="20" fill="#cbd5e1">마우스 포인터</text>
+  </g>
+
+  <path d="M238 434 L238 315" fill="none" stroke="#60a5fa" stroke-width="4" marker-end="url(#blueArrow)"/>
+  <path d="M420 434 L352 300" fill="none" stroke="#60a5fa" stroke-width="4" marker-end="url(#blueArrow)"/>
+  <path d="M645 434 L570 216" fill="none" stroke="#60a5fa" stroke-width="4" marker-end="url(#blueArrow)"/>
+</svg>

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>환포 계산기 - 이류월드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+</head>
+<body>
+<div class="wrapper">
+  <div class="container">
+
+    <aside class="sidebar"></aside>
+
+    <main class="content">
+      <div class="top-banner">
+        <h1>환포 계산기</h1>
+        <p>원하는 환포 수치와 배율을 입력하면 필요한 레벨과 실제 획득량을 계산합니다.</p>
+      </div>
+
+      <section class="calc-card">
+        <div class="form-list">
+          <div class="form-row">
+            <label for="targetHanpo">원하는 환포 (A)</label>
+            <input type="number" id="targetHanpo" placeholder="원하는 환포를 입력하세요 예)30000000" min="0">
+          </div>
+
+          <div class="form-row">
+            <label for="rpShop">RP상점 환포 (%)</label>
+            <input type="number" id="rpShop" value="400" min="0">
+          </div>
+
+          <div class="form-row">
+            <label for="encyclopedia">도감 수치 (%)</label>
+            <input type="number" id="encyclopedia" value="120" min="0">
+          </div>
+
+          <div class="form-row">
+            <label for="artifactRing">유물 반지 (%)</label>
+            <input type="number" id="artifactRing" placeholder="유물반지 퍼센트를 입력하세요 예)20" min="0">
+          </div>
+
+          <div class="form-row">
+            <label for="vip">VIP (%)</label>
+            <input type="number" id="vip" value="10" min="0">
+          </div>
+
+          <div class="form-row">
+            <label for="transcendLevel">초월 레벨</label>
+            <input type="number" id="transcendLevel" placeholder="초월 레벨을 입력하세요 예)0" min="0" max="10">
+          </div>
+
+          <div class="form-row">
+            <label for="hourglassLevel">모래시계 레벨</label>
+            <input type="number" id="hourglassLevel" value="0" min="0" max="50">
+          </div>
+
+          <div class="form-row">
+            <label for="currentLevel">내 현재 레벨</label>
+            <input type="number" id="currentLevel" placeholder="현재 레벨을 입력하세요 예)200" min="1">
+          </div>
+          <div class="form-row checkbox-row">
+            <label for="rebirthBlessingEnabled">윤회의 축복 여부</label>
+            <div class="checkbox-control">
+              <input type="checkbox" id="rebirthBlessingEnabled" checked>
+              <span>적용</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-area">
+          <button type="button" class="btn btn-green btn-large" onclick="doCalc()">계산하기</button>
+        </div>
+
+        <div id="result" class="result-box">여기에 결과가 표시됩니다.</div>
+      </section>
+    </main>
+
+  </div>
+</div>
+
+<script type="module">
+  import { initHanpoData, calculateHanpo } from "../../js/calc/rpMachine.js";
+  import { saveInputs, loadInputs } from "../../js/storage.js";
+
+  await initHanpoData("../..");
+
+  const INPUT_IDS = ["targetHanpo", "rpShop", "encyclopedia", "artifactRing", "vip", "transcendLevel", "hourglassLevel", "currentLevel"];
+  const CHECKBOX_IDS = ["rebirthBlessingEnabled"];
+
+  // 저장된 값 복원
+  const saved = loadInputs("rpMachine");
+  if (saved) {
+    for (const id of INPUT_IDS) {
+      if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
+    }
+    for (const id of CHECKBOX_IDS) {
+      if (saved[id] !== undefined) document.getElementById(id).checked = saved[id] === true || saved[id] === "true";
+    }
+  }
+
+  function saveAll() {
+    const data = {};
+    for (const id of INPUT_IDS) data[id] = document.getElementById(id).value;
+    for (const id of CHECKBOX_IDS) data[id] = document.getElementById(id).checked;
+    saveInputs("rpMachine", data);
+  }
+
+  // 입력 변경 시 저장
+  for (const id of [...INPUT_IDS, ...CHECKBOX_IDS]) {
+    document.getElementById(id).addEventListener("change", saveAll);
+  }
+
+  function fmt(n) {
+    if (n === null || n === undefined) return "-";
+    return Math.floor(n).toLocaleString("ko-KR");
+  }
+
+  function compactFmt(n) {
+    if (n === null || n === undefined) return "-";
+    const number = Math.floor(Number(n) || 0);
+    if (!Number.isFinite(number) || number <= 0) return "0";
+
+    let text = String(number);
+    const units = ["", "만", "억", "조", "경", "해", "자", "양", "구", "간", "정", "재", "극", "항하사", "아승기", "나유타", "불가사의", "무량대수"];
+    const groups = [];
+
+    while (text.length > 0) {
+      groups.unshift(text.slice(-4));
+      text = text.slice(0, -4);
+    }
+
+    const parts = [];
+    groups.forEach((group, index) => {
+      const value = Number(group);
+      if (!value) return;
+      const unit = units[groups.length - 1 - index] || "";
+      parts.push(`${value}${unit}`);
+    });
+
+    return parts.slice(0, 2).join(" ") || "0";
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value).replace(/"/g, "&quot;");
+  }
+
+  function hanpoTip(value, title) {
+    const fullValue = fmt(value);
+    const shortValue = compactFmt(value);
+    return `<button type="button" class="table-tip-trigger rp-machine-tip" data-tip-title="${escapeAttr(title)}" data-tip-value="${escapeAttr(fullValue)}">${escapeHtml(shortValue)}</button>`;
+  }
+
+  function showHanpoTip(anchor, title, value) {
+    const existingPopover = document.querySelector(".table-tip-popover");
+    if (existingPopover && existingPopover.dataset.anchorId === anchor.dataset.tipAnchorId) {
+      existingPopover.remove();
+      return;
+    }
+
+    document.querySelectorAll(".table-tip-popover").forEach(el => el.remove());
+
+    if (!anchor.dataset.tipAnchorId) {
+      anchor.dataset.tipAnchorId = `rp-machine-tip-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+
+    const popover = document.createElement("div");
+    popover.className = "table-tip-popover";
+    popover.dataset.anchorId = anchor.dataset.tipAnchorId;
+    popover.innerHTML = `
+      <div class="table-tip-title">${escapeHtml(title || "상세 값")}</div>
+      <div class="table-tip-value">${escapeHtml(value || "0")}</div>
+    `;
+    document.body.appendChild(popover);
+
+    const rect = anchor.getBoundingClientRect();
+    const gap = 8;
+    const left = Math.min(
+      window.scrollX + rect.left,
+      window.scrollX + document.documentElement.clientWidth - popover.offsetWidth - 12
+    );
+    const top = window.scrollY + rect.bottom + gap;
+
+    popover.style.left = `${Math.max(window.scrollX + 12, left)}px`;
+    popover.style.top = `${top}px`;
+
+    const close = event => {
+      if (popover.contains(event.target) || anchor.contains(event.target)) return;
+      popover.remove();
+      document.removeEventListener("click", close);
+    };
+
+    setTimeout(() => document.addEventListener("click", close), 0);
+  }
+
+  window.doCalc = function () {
+    const resultEl = document.getElementById("result");
+
+    const params = {
+      targetHanpo: Number(document.getElementById("targetHanpo").value) || 0,
+      rpShopPercent: Number(document.getElementById("rpShop").value) || 0,
+      encyclopediaPercent: Number(document.getElementById("encyclopedia").value) || 0,
+      artifactRingPercent: Number(document.getElementById("artifactRing").value) || 0,
+      vipPercent: Number(document.getElementById("vip").value) || 0,
+      transcendLevel: Number(document.getElementById("transcendLevel").value) || 0,
+      rebirthBlessingEnabled: document.getElementById("rebirthBlessingEnabled").checked,
+      hourglassLevel: Number(document.getElementById("hourglassLevel").value) || 0,
+      currentLevel: Number(document.getElementById("currentLevel").value) || 500,
+    };
+
+    const r = calculateHanpo(params);
+
+    resultEl.innerHTML = `
+      <div class="quick-info-grid hanpo-summary-grid">
+        <div class="mini-box hanpo-summary-card">
+          <div class="mini-title">원하는 환포 획득 레벨</div>
+          <div class="mini-value hanpo-summary-value highlight">${r.acquiredLevel !== null ? r.acquiredLevel : "해당 없음"}</div>
+        </div>
+        <div class="mini-box hanpo-summary-card">
+          <div class="mini-title">${r.acquiredLevel !== null ? `${r.acquiredLevel} 레벨 달성시 획득 환포` : "획득 환포"}</div>
+          <div class="mini-value hanpo-summary-value highlight">${hanpoTip(r.actualHanpo, "획득 환포 상세")}</div>
+        </div>
+        <div class="mini-box hanpo-summary-card">
+          <div class="mini-title">현재 레벨(${r.currentLevel}) 환포</div>
+          <div class="mini-value hanpo-summary-value highlight">${hanpoTip(r.currentHanpoWithMult, "현재 레벨 환포 상세")}</div>
+        </div>
+      </div>
+
+      <details class="detail-toggle">
+        <summary class="btn btn-gray detail-toggle-btn">
+          <span class="detail-toggle-closed">자세히 보기</span>
+          <span class="detail-toggle-open">접기</span>
+        </summary>
+        <div class="detail-toggle-body">
+      <div class="result-section">
+        <div class="result-title">배율 정보</div>
+        <div class="result-row">
+          <span class="result-label">환포 배율 (D)</span>
+          <strong class="result-value">${r.hanpoMultiplier.toFixed(4)}</strong>
+        </div>
+        <div class="result-row">
+          <span class="result-label">초월 배율 (D1)</span>
+          <strong class="result-value">${r.transcendMult.toFixed(2)}</strong>
+        </div>
+        <div class="result-row">
+          <span class="result-label">초월 환포 배율 (D×D1)</span>
+          <strong class="result-value">${r.combinedMult.toFixed(4)}</strong>
+        </div>
+        <div class="result-row">
+          <span class="result-label">모래시계 배율 (X)</span>
+          <strong class="result-value">${r.hourglassMult.toFixed(2)}</strong>
+        </div>
+        <div class="result-row">
+          <span class="result-label">윤회 축복 배율</span>
+          <strong class="result-value">${r.rebirthMult.toFixed(2)}</strong>
+        </div>
+        <div class="result-row">
+          <span class="result-label">최종 배율 (R)</span>
+          <strong class="result-value highlight">${r.finalMultiplier.toFixed(4)}</strong>
+        </div>
+      </div>
+
+      <div class="result-section">
+        <div class="result-title">환포 계산 결과</div>
+        <div class="result-row">
+          <span class="result-label">해당 레벨 기본 환포</span>
+          <strong class="result-value">${fmt(r.acquiredBaseHanpo)}</strong>
+        </div>
+        <div class="result-row">
+          <span class="result-label">최종 배율 적용 환포</span>
+          <strong class="result-value">${fmt(r.acquiredFinalHanpo)}</strong>
+        </div>
+        <div class="result-row">
+          <span class="result-label">획득 레벨</span>
+          <strong class="result-value highlight">${r.acquiredLevel !== null ? r.acquiredLevel : "해당 없음"}</strong>
+        </div>
+        <div class="result-row">
+          <span class="result-label">실제 획득 환포 (윤회 축복 ${r.rebirthBlessingEnabled ? "포함" : "미포함"})</span>
+          <strong class="result-value">${fmt(r.actualHanpo)}</strong>
+        </div>
+      </div>
+
+      <div class="result-section">
+        <div class="result-title">현재 레벨 (${r.currentLevel}) 정보</div>
+        <div class="result-row">
+          <span class="result-label">기본 환포</span>
+          <strong class="result-value">${fmt(r.currentBaseHanpo)}</strong>
+        </div>
+        <div class="result-row">
+          <span class="result-label">최종 배율 적용 환포</span>
+          <strong class="result-value">${fmt(r.currentFinalHanpo)}</strong>
+        </div>
+        <div class="result-row">
+          <span class="result-label">배율 적용 환포 (윤회 축복 ${r.rebirthBlessingEnabled ? "포함" : "미포함"})</span>
+          <strong class="result-value highlight">${fmt(r.currentHanpoWithMult)}</strong>
+        </div>
+      </div>
+        </div>
+      </details>
+    `;
+  };
+
+  document.getElementById("result").addEventListener("click", event => {
+    const button = event.target.closest(".rp-machine-tip");
+    if (!button) return;
+    event.stopPropagation();
+    showHanpoTip(button, button.dataset.tipTitle, button.dataset.tipValue);
+  });
+</script>
+</body>
+</html>

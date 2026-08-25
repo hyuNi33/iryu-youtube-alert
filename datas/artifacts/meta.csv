@@ -1,0 +1,12 @@
+﻿id,name,effect,maxLevel,type,sameAs
+threeGems,"세가지 보석","올스텟",300,normal,
+legendHorn,"전설의 뿔피리","최대 레벨 증가",50,normal,
+goldenSealRing,"황금 인장 반지","환생 포인트 획득량 % 증가",300,normal,
+flameTalisman,"화염 부적","최종 STR % 증가",300,normal,
+anubisMask,"아누비스의 가면","최종 DEX % 증가",300,normal,flameTalisman
+memoryRocket,"잊혀진 기억 로켓","최종 INT % 증가",300,normal,flameTalisman
+fairyNecklace,"요정의 목걸이","최종 LUK % 증가",300,normal,flameTalisman
+tokenOfResolve,"결의의 증표","최종 공격력 % 증가",300,normal,
+ancientDragonScale,"고룡의 비늘","최종 크리티컬 데미지 % 증가",300,normal,
+darkOrb,"어둠에 물든 구슬","이세계의 재화 2배 획득 확률 % 증가",100,normal,
+hourglass,"시간의 모래시계","레벨업 필요 EXP / 환생 RP 획득량 증가",50,multiplier,

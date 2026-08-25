@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>경험치 화면 측정기 - 하이브리드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+  <style>
+    .screen-tool { display: grid; gap: 16px; }
+    .screen-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .screen-preview { position: relative; overflow: hidden; border: 1px solid var(--border-color); border-radius: 8px; background: #111; min-height: 118px; user-select: none; }
+    .screen-preview #cropCanvas { display: block; width: 100%; height: auto; background: #111; }
+    .screen-preview video { display: none; }
+    .screen-placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: #ddd; pointer-events: none; text-align: center; padding: 24px; }
+    .roi-box { position: absolute; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.08); display: none; cursor: move; z-index: 2; }
+    .roi-box.show { display: block; }
+    .level-roi-box { position: absolute; border: 2px dashed #ef4444; background: rgba(239, 68, 68, 0.1); display: none; pointer-events: none; z-index: 4; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5); }
+    .level-roi-box.show { display: block; }
+    .level-roi-box.editable { pointer-events: auto; cursor: move; }
+    .level-roi-box::before { content: "LV"; position: absolute; left: -2px; top: -22px; min-width: 28px; padding: 2px 6px; border-radius: 4px 4px 0 0; background: #ef4444; color: #fff; font-size: 12px; font-weight: 800; line-height: 1.3; text-align: center; }
+    .roi-handle,
+    .level-roi-handle { position: absolute; display: none; background: rgba(239, 68, 68, 0.9); border: 1px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35); z-index: 3; }
+    .level-roi-handle { z-index: 5; }
+    .roi-handle.show,
+    .level-roi-handle.show { display: block; }
+    .roi-handle-top,
+    .roi-handle-bottom,
+    .level-roi-handle-top,
+    .level-roi-handle-bottom { height: 6px; cursor: ns-resize; }
+    .roi-handle-left,
+    .roi-handle-right,
+    .level-roi-handle-left,
+    .level-roi-handle-right { width: 6px; cursor: ew-resize; }
+    .screen-preview.level-editing .roi-box,
+    .screen-preview.level-editing .roi-handle { pointer-events: none; }
+    .screen-preview .roi-magnifier { position: absolute; display: none; width: 168px; height: 168px; border: 2px solid #ef4444; border-radius: 8px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35); background: #111; pointer-events: none; z-index: 5; }
+    .screen-preview .roi-magnifier.show { display: block; }
+    .status-line { padding: 10px 12px; border-radius: 8px; background: var(--bg-secondary); color: var(--text-color); font-weight: 600; }
+    .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .metric { border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background: var(--card-bg); }
+    .metric span { display: block; color: var(--text-muted); font-size: 13px; margin-bottom: 6px; }
+    .metric strong { font-size: 18px; }
+    .small-note { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <aside class="sidebar"></aside>
+      <main class="content">
+        <div class="top-banner">
+          <h1>경험치 화면 측정기 하이브리드</h1>
+          <p>경험치 바를 자동으로 찾고, 필요할 때만 직접 조정합니다. 화면 이미지는 서버로 전송되지 않습니다.</p>
+        </div>
+
+        <div class="screen-exp-guide" id="screenGuide">
+          <div class="screen-exp-guide-header">
+            <div class="screen-exp-guide-title">사용법</div>
+            <button type="button" class="screen-exp-guide-toggle" id="screenGuideToggleBtn" aria-expanded="true" aria-controls="screenGuideBody">접기</button>
+          </div>
+          <div class="screen-exp-guide-body" id="screenGuideBody">
+            <ol>
+              <li>`화면 선택`으로 게임 화면을 선택합니다.</li>
+              <li>화면 아래쪽 미리보기가 나오면 경험치 바 영역과 LV 확인 영역을 자동으로 찾습니다.</li>
+              <li>실선 빨간 영역이 경험치 바의 <strong class="screen-exp-emphasis">초록색 진행 영역과 회색 빈 영역</strong>만 감싸는지 확인합니다.</li>
+              <li>점선 빨간 `LV` 영역이 화면의 레벨 표시 글자만 감싸는지 확인합니다. 이 영역은 레벨업 여부를 확인할 때 사용합니다.</li>
+              <li>경험치 바 자동 탐색이 빗나갔다면 `영역 자동 찾기`를 다시 누르거나, 실선 빨간 영역을 직접 드래그해서 조정합니다.</li>
+              <li>`LV 영역 직접 지정`을 누르면 점선 LV 영역을 직접 드래그해 새로 잡을 수 있습니다. 이미 잡은 뒤에는 안쪽을 드래그해서 이동하고, 상하좌우 손잡이로 크기를 조절합니다.</li>
+              <li>LV 영역을 자동 계산으로 되돌리려면 `LV 영역 자동`을 누릅니다.</li>
+              <li>다시 선택하려면 `영역 지우기` 버튼이나 `Delete` 키로 경험치 바 영역과 수동 LV 영역을 함께 지웁니다.</li>
+              <li><strong class="screen-exp-warning">측정 중에는 경험치 바 영역 위에 마우스 포인터를 두지 마세요.</strong> 포인터가 캡처 영역에 겹치면 픽셀 인식이 흔들릴 수 있습니다.</li>
+              <li>현재 레벨, 모래시계 레벨, 측정 시간을 확인한 뒤 `측정 시작`을 누릅니다. <strong class="screen-exp-warning">명확한 지표 수집을 위해 3분 이상 측정을 권장합니다.</strong></li>
+              <li>측정 중에는 여러 프레임의 중앙값을 사용하고, 흔들리는 샘플은 자동으로 제외합니다.</li>
+              <li><strong class="screen-exp-warning">레벨업 시 자동으로 다음 레벨로 넘어가지만, LV 영역이 빗나가거나 이펙트가 심하면 오인식 가능성이 있습니다.</strong> 빨간 점선 영역을 먼저 확인해 주세요.</li>
+              <li>측정 결과를 맹신하지 말고 <u>2~3번 반복 측정</u>해서 비교해 주세요.</li>
+            </ol>
+            <div class="screen-exp-guide-example">
+              <div class="screen-exp-guide-example-title">경험치 바와 LV 영역 조정 예시</div>
+              <img src="../../assets/guide/screen-exp-hybrid-roi-guide.svg" alt="경험치 바와 LV 영역 지정 예시">
+              <p class="screen-exp-guide-caption">
+                실선 빨간 박스는 경험치바의 <strong>초록색/회색 색 띠</strong>만 감싸고, 점선 LV 박스는 <strong>레벨 표시 글자</strong>만 감싸면 됩니다.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <section class="calc-card screen-tool">
+          <div class="form-list">
+            <div class="form-row">
+              <label for="currentLevel">현재 레벨</label>
+              <input type="number" id="currentLevel" min="1" placeholder="현재 레벨">
+            </div>
+            <div class="form-row">
+              <label for="hourglassLevel">모래시계 레벨</label>
+              <input type="number" id="hourglassLevel" min="0" max="50" value="0">
+            </div>
+            <div class="form-row">
+              <label for="measureSeconds">측정 시간</label>
+              <select id="measureSeconds" class="styled-select">
+                <option value="60" selected>1분</option>
+                <option value="180">3분</option>
+                <option value="300">5분</option>
+                <option value="600">10분</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="sampleSeconds">샘플링 간격(초)</label>
+              <input type="number" id="sampleSeconds" min="0.5" max="10" step="0.1" value="2">
+            </div>
+          </div>
+
+          <div class="screen-actions">
+            <button type="button" class="btn btn-green" id="captureBtn">화면 선택</button>
+            <button type="button" class="btn btn-gray" id="autoDetectBtn">영역 자동 찾기</button>
+            <button type="button" class="btn btn-gray" id="measureBtn">측정 시작</button>
+            <button type="button" class="btn btn-gray" id="stopBtn">측정 중지</button>
+            <button type="button" class="btn btn-gray" id="levelEditBtn">LV 영역 직접 지정</button>
+            <button type="button" class="btn btn-gray" id="levelAutoBtn">LV 영역 자동</button>
+            <button type="button" class="btn btn-gray" id="clearBtn">영역 지우기</button>
+          </div>
+
+          <div class="screen-preview" id="preview">
+            <canvas id="cropCanvas"></canvas>
+            <video id="video" muted playsinline></video>
+            <div class="roi-box" id="roiBox"></div>
+            <div class="level-roi-box" id="levelRoiBox"></div>
+            <div class="level-roi-handle level-roi-handle-top" id="levelRoiTopHandle" data-level-resize="top" aria-label="LV 위쪽 조정"></div>
+            <div class="level-roi-handle level-roi-handle-left" id="levelRoiLeftHandle" data-level-resize="left" aria-label="LV 왼쪽 조정"></div>
+            <div class="level-roi-handle level-roi-handle-right" id="levelRoiRightHandle" data-level-resize="right" aria-label="LV 오른쪽 조정"></div>
+            <div class="level-roi-handle level-roi-handle-bottom" id="levelRoiBottomHandle" data-level-resize="bottom" aria-label="LV 아래쪽 조정"></div>
+            <div class="roi-handle roi-handle-top" id="roiTopHandle" data-resize="top" aria-label="위쪽 조정"></div>
+            <div class="roi-handle roi-handle-left" id="roiLeftHandle" data-resize="left" aria-label="왼쪽 조정"></div>
+            <div class="roi-handle roi-handle-right" id="roiRightHandle" data-resize="right" aria-label="오른쪽 조정"></div>
+            <div class="roi-handle roi-handle-bottom" id="roiBottomHandle" data-resize="bottom" aria-label="아래쪽 조정"></div>
+            <canvas class="roi-magnifier" id="magnifierCanvas"></canvas>
+            <div class="screen-placeholder" id="placeholder">화면 선택 후 아래쪽 미리보기에서 경험치 바 영역을 드래그하세요.</div>
+          </div>
+
+          <div class="status-line" id="status">대기 중</div>
+
+          <div class="metric-grid">
+            <div class="metric"><span>인식 레벨</span><strong id="levelMetric">-</strong></div>
+            <div class="metric"><span>현재 인식률</span><strong id="ratioMetric">-</strong></div>
+            <div class="metric"><span>현재 레벨 경험치</span><strong id="currentExpMetric">-</strong></div>
+            <div class="metric"><span>누적 획득 경험치</span><strong id="gainedMetric">-</strong></div>
+            <div class="metric"><span>전체 평균</span><strong id="averageMetric">-</strong></div>
+            <div class="metric"><span>샘플 수</span><strong id="sampleMetric">0</strong></div>
+            <div class="metric"><span>LV 영역 확인</span><strong id="levelCheckMetric">-</strong></div>
+          </div>
+
+          <div id="result" class="result-box">측정 결과가 여기에 표시됩니다.</div>
+          <p class="small-note">
+            이 페이지는 기존 경험치 계산기의 색상 비교 방식과 다르게, 선택 영역 안의 초록색 픽셀 밀도를 열 단위로 분석합니다.
+            화면 캡처 프레임은 서버로 전송되지 않으며 브라우저 메모리 안에서만 처리됩니다.
+          </p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <canvas id="workCanvas" hidden></canvas>
+  <script type="module">
+    import { initExpData, getExpNeedForLevel } from "../../js/calc/exp.js";
+    import { saveInputs, loadInputs } from "../../js/storage.js";
+
+    await initExpData("../..");
+
+    const video = document.getElementById("video");
+    const preview = document.getElementById("preview");
+    const cropCanvas = document.getElementById("cropCanvas");
+    const placeholder = document.getElementById("placeholder");
+    const roiBox = document.getElementById("roiBox");
+    const levelRoiBox = document.getElementById("levelRoiBox");
+    const levelRoiTopHandle = document.getElementById("levelRoiTopHandle");
+    const levelRoiLeftHandle = document.getElementById("levelRoiLeftHandle");
+    const levelRoiRightHandle = document.getElementById("levelRoiRightHandle");
+    const levelRoiBottomHandle = document.getElementById("levelRoiBottomHandle");
+    const roiTopHandle = document.getElementById("roiTopHandle");
+    const roiLeftHandle = document.getElementById("roiLeftHandle");
+    const roiRightHandle = document.getElementById("roiRightHandle");
+    const roiBottomHandle = document.getElementById("roiBottomHandle");
+    const roiHandles = [roiTopHandle, roiLeftHandle, roiRightHandle, roiBottomHandle];
+    const levelRoiHandles = [levelRoiTopHandle, levelRoiLeftHandle, levelRoiRightHandle, levelRoiBottomHandle];
+    const magnifierCanvas = document.getElementById("magnifierCanvas");
+    const workCanvas = document.getElementById("workCanvas");
+    const statusEl = document.getElementById("status");
+    const resultEl = document.getElementById("result");
+    const levelMetric = document.getElementById("levelMetric");
+    const ratioMetric = document.getElementById("ratioMetric");
+    const currentExpMetric = document.getElementById("currentExpMetric");
+    const gainedMetric = document.getElementById("gainedMetric");
+    const averageMetric = document.getElementById("averageMetric");
+    const sampleMetric = document.getElementById("sampleMetric");
+    const levelCheckMetric = document.getElementById("levelCheckMetric");
+
+    const CROP_TOP_RATIO = 0.68;
+    const STORAGE_KEY = "screenExpHybrid";
+    const ROI_STORAGE_VERSION = 3;
+    const INPUT_IDS = ["currentLevel", "hourglassLevel", "measureSeconds", "sampleSeconds"];
+
+    let stream = null;
+    let dragStart = null;
+    let dragMode = null;
+    let dragRoiStart = null;
+    let resizePointerOffset = 0;
+    let roi = null;
+    let levelRoi = null;
+    let levelEditMode = false;
+    let cropSource = null;
+    let previewAnimation = null;
+    let timer = null;
+    let stopTimer = null;
+    let measuring = false;
+    let startTime = 0;
+    let startRatio = null;
+    let prevRatio = null;
+    let totalGained = 0;
+    let sampleCount = 0;
+    let expNeed = 0;
+    let currentLevel = 0;
+    let hourglassMultiplier = 1;
+    let displayedAverage = 0;
+    let sampleInProgress = false;
+    let levelSignature = null;
+    let levelCheckState = "-";
+    let levelUpStabilizeUntil = 0;
+    let levelUpGainGraceUntil = 0;
+
+    const RATIO_BATCH_COUNT = 5;
+    const RATIO_BATCH_DELAY_MS = 70;
+    const RATIO_MAX_BATCH_SPREAD = 0.028;
+    const RATIO_DIRECTIONAL_TOLERANCE = 0.012;
+    const RATIO_DIRECTIONAL_MIN_MOVE = 0.018;
+    const START_STABLE_SPREAD = 0.025;
+    const START_MOVING_MIN_MOVE = 0.035;
+    const LIVE_AVERAGE_ALPHA = 0.22;
+    const LEVEL_UP_STABILIZE_MS = 1500;
+    const NORMAL_MAX_GAIN_DELTA = 0.08;
+    const DIRECTIONAL_MAX_GAIN_DELTA = 0.18;
+    const LEVEL_UP_GAIN_GRACE_MS = 6000;
+    const LEVEL_UP_MAX_GAIN_DELTA = 0.3;
+    const LEVEL_SIGNATURE_WIDTH = 120;
+    const LEVEL_SIGNATURE_HEIGHT = 40;
+    const LEVEL_SIGNATURE_CHANGE_THRESHOLD = 0.14;
+    const LEVEL_UP_STRICT_PREV_RATIO = 0.65;
+    const LEVEL_UP_STRICT_DROP = 0.35;
+    const LEVEL_UP_LOOSE_PREV_RATIO = 0.45;
+    const LEVEL_UP_LOOSE_DROP = 0.25;
+    const LEVEL_UP_RESET_MAX_RATIO = 0.3;
+
+    loadSavedInputs();
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    function formatExp(value) {
+      if (!Number.isFinite(value)) return "-";
+      return Math.round(value).toLocaleString("ko-KR");
+    }
+
+    function formatRatio(value) {
+      if (!Number.isFinite(value)) return "-";
+      return `${(value * 100).toFixed(2)}%`;
+    }
+
+    function getSampleIntervalMs() {
+      const seconds = Number(document.getElementById("sampleSeconds").value);
+      return Math.max(500, Math.min(10000, Math.round((Number.isFinite(seconds) ? seconds : 2) * 1000)));
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function normalizeRoi(nextRoi) {
+      const minWidth = 20;
+      const minHeight = 6;
+      const maxWidth = cropCanvas.width || minWidth;
+      const maxHeight = cropCanvas.height || minHeight;
+      const x = clamp(nextRoi.x, 0, Math.max(0, maxWidth - minWidth));
+      const y = clamp(nextRoi.y, 0, Math.max(0, maxHeight - minHeight));
+      const width = clamp(nextRoi.width, minWidth, Math.max(minWidth, maxWidth - x));
+      const height = clamp(nextRoi.height, minHeight, Math.max(minHeight, maxHeight - y));
+      return { x, y, width, height };
+    }
+
+    function normalizeLevelRoi(nextRoi) {
+      const minWidth = 24;
+      const minHeight = 12;
+      const maxWidth = cropCanvas.width || minWidth;
+      const maxHeight = cropCanvas.height || minHeight;
+      const x = clamp(nextRoi.x, 0, Math.max(0, maxWidth - minWidth));
+      const y = clamp(nextRoi.y, 0, Math.max(0, maxHeight - minHeight));
+      const width = clamp(nextRoi.width, minWidth, Math.max(minWidth, maxWidth - x));
+      const height = clamp(nextRoi.height, minHeight, Math.max(minHeight, maxHeight - y));
+      return { x, y, width, height };
+    }
+
+    function getSavedData() {
+      const data = {};
+      for (const id of INPUT_IDS) {
+        data[id] = document.getElementById(id).value;
+      }
+      if (roi && cropCanvas.width && cropCanvas.height) {
+        data.roi = {
+          version: ROI_STORAGE_VERSION,
+          x: roi.x / cropCanvas.width,
+          y: roi.y / cropCanvas.height,
+          width: roi.width / cropCanvas.width,
+          height: roi.height / cropCanvas.height
+        };
+      }
+      if (levelRoi && cropCanvas.width && cropCanvas.height) {
+        data.levelRoi = {
+          version: ROI_STORAGE_VERSION,
+          x: levelRoi.x / cropCanvas.width,
+          y: levelRoi.y / cropCanvas.height,
+          width: levelRoi.width / cropCanvas.width,
+          height: levelRoi.height / cropCanvas.height
+        };
+      }
+      return data;
+    }
+
+    function saveAll() {
+      saveInputs(STORAGE_KEY, getSavedData());
+    }
+
+    function loadSavedInputs() {
+      const saved = loadInputs(STORAGE_KEY);
+      if (!saved) return;
+      for (const id of INPUT_IDS) {
+        if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
+      }
+    }
+
+    function getStoredRoi() {
+      const saved = loadInputs(STORAGE_KEY);
+      if (!saved?.roi || !cropCanvas.width || !cropCanvas.height) return null;
+      const savedRoi = saved.roi;
+      if (savedRoi.version !== ROI_STORAGE_VERSION) return null;
+      if (![savedRoi.x, savedRoi.y, savedRoi.width, savedRoi.height].every(Number.isFinite)) return null;
+      return normalizeRoi({
+        x: savedRoi.x * cropCanvas.width,
+        y: savedRoi.y * cropCanvas.height,
+        width: savedRoi.width * cropCanvas.width,
+        height: savedRoi.height * cropCanvas.height
+      });
+    }
+
+    function getStoredLevelRoi() {
+      const saved = loadInputs(STORAGE_KEY);
+      if (!saved?.levelRoi || !cropCanvas.width || !cropCanvas.height) return null;
+      const savedRoi = saved.levelRoi;
+      if (savedRoi.version !== ROI_STORAGE_VERSION) return null;
+      if (![savedRoi.x, savedRoi.y, savedRoi.width, savedRoi.height].every(Number.isFinite)) return null;
+      return normalizeLevelRoi({
+        x: savedRoi.x * cropCanvas.width,
+        y: savedRoi.y * cropCanvas.height,
+        width: savedRoi.width * cropCanvas.width,
+        height: savedRoi.height * cropCanvas.height
+      });
+    }
+
+    function resizeRoiFromPoint(side, point) {
+      const start = dragRoiStart;
+      if (!start) return null;
+
+      if (side === "left") {
+        const right = start.x + start.width;
+        const x = clamp(point.x, 0, right - 20);
+        return normalizeRoi({ x, y: start.y, width: right - x, height: start.height });
+      }
+      if (side === "right") {
+        return normalizeRoi({ x: start.x, y: start.y, width: point.x - start.x, height: start.height });
+      }
+      if (side === "top") {
+        const bottom = start.y + start.height;
+        const y = clamp(point.y, 0, bottom - 6);
+        return normalizeRoi({ x: start.x, y, width: start.width, height: bottom - y });
+      }
+      if (side === "bottom") {
+        return normalizeRoi({ x: start.x, y: start.y, width: start.width, height: point.y - start.y });
+      }
+
+      return start;
+    }
+
+    function resizeLevelRoiFromPoint(side, point) {
+      const start = dragRoiStart;
+      if (!start) return null;
+
+      if (side === "left") {
+        const right = start.x + start.width;
+        const x = clamp(point.x, 0, right - 24);
+        return normalizeLevelRoi({ x, y: start.y, width: right - x, height: start.height });
+      }
+      if (side === "right") {
+        return normalizeLevelRoi({ x: start.x, y: start.y, width: point.x - start.x, height: start.height });
+      }
+      if (side === "top") {
+        const bottom = start.y + start.height;
+        const y = clamp(point.y, 0, bottom - 12);
+        return normalizeLevelRoi({ x: start.x, y, width: start.width, height: bottom - y });
+      }
+      if (side === "bottom") {
+        return normalizeLevelRoi({ x: start.x, y: start.y, width: start.width, height: point.y - start.y });
+      }
+
+      return start;
+    }
+
+    function getRoiFromBox() {
+      if (!roi || !video.videoWidth || !video.videoHeight) return null;
+      if (!cropSource || !cropCanvas.width || !cropCanvas.height) return null;
+      const scaleX = cropSource.width / cropCanvas.width;
+      const scaleY = cropSource.height / cropCanvas.height;
+      return {
+        x: Math.round(cropSource.x + (roi.x * scaleX)),
+        y: Math.round(cropSource.y + (roi.y * scaleY)),
+        width: Math.round(roi.width * scaleX),
+        height: Math.round(roi.height * scaleY)
+      };
+    }
+
+    function previewRoiToSourceRoi(previewRoi) {
+      if (!previewRoi || !cropSource || !cropCanvas.width || !cropCanvas.height) return null;
+      const scaleX = cropSource.width / cropCanvas.width;
+      const scaleY = cropSource.height / cropCanvas.height;
+      return {
+        x: Math.round(cropSource.x + (previewRoi.x * scaleX)),
+        y: Math.round(cropSource.y + (previewRoi.y * scaleY)),
+        width: Math.round(previewRoi.width * scaleX),
+        height: Math.round(previewRoi.height * scaleY)
+      };
+    }
+
+    function getLevelSourceRoi() {
+      const manualLevelRoi = previewRoiToSourceRoi(levelRoi);
+      if (manualLevelRoi) return manualLevelRoi;
+      const sourceRoi = getRoiFromBox();
+      if (!sourceRoi) return null;
+      const height = clamp(Math.round(sourceRoi.height * 6.2), 36, 96);
+      const width = clamp(Math.round(sourceRoi.width * 0.32), 150, 320);
+      const x = clamp(sourceRoi.x - Math.round(sourceRoi.height * 2.4), 0, Math.max(0, video.videoWidth - width));
+      const y = clamp(sourceRoi.y - height - Math.round(sourceRoi.height * 0.95), 0, Math.max(0, video.videoHeight - height));
+      return { x, y, width: Math.min(width, video.videoWidth - x), height: Math.min(height, video.videoHeight - y) };
+    }
+
+    function sourceRoiToPreviewRoi(sourceRoi) {
+      if (!sourceRoi || !cropSource || !cropCanvas.width || !cropCanvas.height) return null;
+      const scaleX = cropCanvas.width / cropSource.width;
+      const scaleY = cropCanvas.height / cropSource.height;
+      const x = (sourceRoi.x - cropSource.x) * scaleX;
+      const y = (sourceRoi.y - cropSource.y) * scaleY;
+      const width = sourceRoi.width * scaleX;
+      const height = sourceRoi.height * scaleY;
+      const left = clamp(x, 0, cropCanvas.width);
+      const top = clamp(y, 0, cropCanvas.height);
+      const right = clamp(x + width, 0, cropCanvas.width);
+      const bottom = clamp(y + height, 0, cropCanvas.height);
+      if (right - left < 4 || bottom - top < 4) return null;
+      return { x: left, y: top, width: right - left, height: bottom - top };
+    }
+
+    function captureLevelSignature() {
+      const sourceRoi = getLevelSourceRoi();
+      if (!sourceRoi || sourceRoi.width < 30 || sourceRoi.height < 16) return null;
+      workCanvas.width = LEVEL_SIGNATURE_WIDTH;
+      workCanvas.height = LEVEL_SIGNATURE_HEIGHT;
+      const ctx = workCanvas.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(video, sourceRoi.x, sourceRoi.y, sourceRoi.width, sourceRoi.height, 0, 0, LEVEL_SIGNATURE_WIDTH, LEVEL_SIGNATURE_HEIGHT);
+      const image = ctx.getImageData(0, 0, LEVEL_SIGNATURE_WIDTH, LEVEL_SIGNATURE_HEIGHT).data;
+      const values = [];
+      for (let i = 0; i < image.length; i += 4) {
+        const r = image[i];
+        const g = image[i + 1];
+        const b = image[i + 2];
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const contrast = max - min;
+        const brightText = max >= 145 && contrast <= 115;
+        const yellowText = r >= 130 && g >= 110 && b <= 105;
+        const textLike = brightText || yellowText;
+        values.push(textLike ? (r * 0.299 + g * 0.587 + b * 0.114) / 255 : 0);
+      }
+      return values;
+    }
+
+    function compareLevelSignatures(previous, current) {
+      if (!previous || !current || previous.length !== current.length) return null;
+      let diff = 0;
+      let activeDiff = 0;
+      let activeCount = 0;
+      let changedActiveCount = 0;
+      for (let i = 0; i < previous.length; i++) {
+        const delta = Math.abs(previous[i] - current[i]);
+        diff += delta;
+        if (previous[i] > 0 || current[i] > 0) {
+          activeDiff += delta;
+          activeCount++;
+          if (delta >= 0.18) changedActiveCount++;
+        }
+      }
+      if (!activeCount) return diff / previous.length;
+      return Math.max(activeDiff / activeCount, changedActiveCount / activeCount);
+    }
+
+    function resetLevelSignature() {
+      levelSignature = captureLevelSignature();
+      levelCheckState = levelSignature ? "LV 기준 저장" : "LV 기준 없음";
+    }
+
+    function checkLevelAreaChanged() {
+      const nextSignature = captureLevelSignature();
+      const diff = compareLevelSignatures(levelSignature, nextSignature);
+      if (diff === null) {
+        levelCheckState = "LV 확인 불가";
+        return { available: false, changed: true, signature: nextSignature, diff: null };
+      }
+      const changed = diff >= LEVEL_SIGNATURE_CHANGE_THRESHOLD;
+      levelCheckState = changed ? `LV 변화 감지 ${diff.toFixed(3)}` : `LV 변화 없음 ${diff.toFixed(3)}`;
+      return { available: true, changed, signature: nextSignature, diff };
+    }
+
+    function isLevelUpCandidate(previousRatio, nextRatio, levelCheck) {
+      const drop = previousRatio - nextRatio;
+      if (previousRatio >= LEVEL_UP_STRICT_PREV_RATIO && drop > LEVEL_UP_STRICT_DROP) {
+        return true;
+      }
+      return levelCheck.available
+        && levelCheck.changed
+        && previousRatio >= LEVEL_UP_LOOSE_PREV_RATIO
+        && nextRatio <= LEVEL_UP_RESET_MAX_RATIO
+        && drop > LEVEL_UP_LOOSE_DROP;
+    }
+
+    function drawLevelRoi() {
+      const levelSourceRoi = getLevelSourceRoi();
+      const levelPreviewRoi = sourceRoiToPreviewRoi(levelSourceRoi);
+      if (!levelPreviewRoi) {
+        levelRoiBox.classList.remove("show");
+        levelRoiBox.classList.toggle("editable", levelEditMode);
+        for (const handle of levelRoiHandles) handle.classList.remove("show");
+        return;
+      }
+
+      const canvasRect = cropCanvas.getBoundingClientRect();
+      const previewRect = preview.getBoundingClientRect();
+      const scaleX = canvasRect.width / cropCanvas.width;
+      const scaleY = canvasRect.height / cropCanvas.height;
+      const canvasLeft = canvasRect.left - previewRect.left;
+      const canvasTop = canvasRect.top - previewRect.top;
+      const left = canvasLeft + (levelPreviewRoi.x * scaleX);
+      const top = canvasTop + (levelPreviewRoi.y * scaleY);
+      const width = levelPreviewRoi.width * scaleX;
+      const height = levelPreviewRoi.height * scaleY;
+
+      levelRoiBox.classList.add("show");
+      levelRoiBox.classList.toggle("editable", levelEditMode);
+      levelRoiBox.style.left = `${left}px`;
+      levelRoiBox.style.top = `${top}px`;
+      levelRoiBox.style.width = `${width}px`;
+      levelRoiBox.style.height = `${height}px`;
+
+      const showHandles = levelEditMode && Boolean(levelRoi);
+      for (const handle of levelRoiHandles) handle.classList.toggle("show", showHandles);
+      if (!showHandles) return;
+
+      levelRoiTopHandle.style.left = `${left}px`;
+      levelRoiTopHandle.style.top = `${top - 3}px`;
+      levelRoiTopHandle.style.width = `${width}px`;
+
+      levelRoiLeftHandle.style.left = `${left - 3}px`;
+      levelRoiLeftHandle.style.top = `${top}px`;
+      levelRoiLeftHandle.style.height = `${height}px`;
+
+      levelRoiRightHandle.style.left = `${left + width - 3}px`;
+      levelRoiRightHandle.style.top = `${top}px`;
+      levelRoiRightHandle.style.height = `${height}px`;
+
+      levelRoiBottomHandle.style.left = `${left}px`;
+      levelRoiBottomHandle.style.top = `${top + height - 3}px`;
+      levelRoiBottomHandle.style.width = `${width}px`;
+    }
+
+    function drawRoi() {
+      if (!roi) {
+        roiBox.classList.remove("show");
+        for (const handle of roiHandles) handle.classList.remove("show");
+        if (levelRoi) {
+          drawLevelRoi();
+        } else {
+          levelRoiBox.classList.remove("show");
+          levelRoiBox.classList.toggle("editable", levelEditMode);
+          for (const handle of levelRoiHandles) handle.classList.remove("show");
+        }
+        return;
+      }
+      const canvasRect = cropCanvas.getBoundingClientRect();
+      const previewRect = preview.getBoundingClientRect();
+      const scaleX = canvasRect.width / cropCanvas.width;
+      const scaleY = canvasRect.height / cropCanvas.height;
+      const canvasLeft = canvasRect.left - previewRect.left;
+      const canvasTop = canvasRect.top - previewRect.top;
+      const left = canvasLeft + (roi.x * scaleX);
+      const top = canvasTop + (roi.y * scaleY);
+      const width = roi.width * scaleX;
+      const height = roi.height * scaleY;
+
+      roiBox.classList.add("show");
+      roiBox.style.left = `${left}px`;
+      roiBox.style.top = `${top}px`;
+      roiBox.style.width = `${width}px`;
+      roiBox.style.height = `${height}px`;
+
+      roiTopHandle.classList.add("show");
+      roiTopHandle.style.left = `${left}px`;
+      roiTopHandle.style.top = `${top - 3}px`;
+      roiTopHandle.style.width = `${width}px`;
+
+      roiLeftHandle.classList.add("show");
+      roiLeftHandle.style.left = `${left - 3}px`;
+      roiLeftHandle.style.top = `${top}px`;
+      roiLeftHandle.style.height = `${height}px`;
+
+      roiRightHandle.classList.add("show");
+      roiRightHandle.style.left = `${left + width - 3}px`;
+      roiRightHandle.style.top = `${top}px`;
+      roiRightHandle.style.height = `${height}px`;
+
+      roiBottomHandle.classList.add("show");
+      roiBottomHandle.style.left = `${left}px`;
+      roiBottomHandle.style.top = `${top + height - 3}px`;
+      roiBottomHandle.style.width = `${width}px`;
+
+      drawLevelRoi();
+    }
+
+    function pointerToVideoPoint(event) {
+      const rect = cropCanvas.getBoundingClientRect();
+      const scaleX = cropCanvas.width / rect.width;
+      const scaleY = cropCanvas.height / rect.height;
+      return {
+        x: clamp((event.clientX - rect.left) * scaleX, 0, cropCanvas.width),
+        y: clamp((event.clientY - rect.top) * scaleY, 0, cropCanvas.height)
+      };
+    }
+
+    function getResizeControlPoint(point) {
+      if (!dragMode?.startsWith("resize:") && !dragMode?.startsWith("level-resize:")) return point;
+      const side = dragMode.startsWith("level-resize:") ? dragMode.slice(13) : dragMode.slice(7);
+      if (side === "left" || side === "right") {
+        return { x: point.x - resizePointerOffset, y: point.y };
+      }
+      return { x: point.x, y: point.y - resizePointerOffset };
+    }
+
+    function previewPointToVideoPoint(point) {
+      if (!cropSource || !cropCanvas.width || !cropCanvas.height) return point;
+      return {
+        x: cropSource.x + (point.x * (cropSource.width / cropCanvas.width)),
+        y: cropSource.y + (point.y * (cropSource.height / cropCanvas.height))
+      };
+    }
+
+    function hideMagnifier() {
+      magnifierCanvas.classList.remove("show");
+    }
+
+    function getMagnifierPoint(point) {
+      if (!dragMode?.startsWith("resize:") || !roi) return point;
+
+      const side = dragMode.slice(7);
+      const innerPad = Math.max(2, Math.round(roi.height * 0.18));
+      if (side === "top") {
+        return {
+          x: clamp(point.x, roi.x, roi.x + roi.width),
+          y: clamp(roi.y + innerPad, roi.y, roi.y + roi.height)
+        };
+      }
+      if (side === "bottom") {
+        return {
+          x: clamp(point.x, roi.x, roi.x + roi.width),
+          y: clamp(roi.y + roi.height - innerPad, roi.y, roi.y + roi.height)
+        };
+      }
+      if (side === "left") {
+        return { x: roi.x, y: clamp(point.y, roi.y, roi.y + roi.height) };
+      }
+      if (side === "right") {
+        return { x: roi.x + roi.width, y: clamp(point.y, roi.y, roi.y + roi.height) };
+      }
+
+      return point;
+    }
+
+    function showMagnifier(point) {
+      if (!cropCanvas.width || !cropCanvas.height || !video.videoWidth || !video.videoHeight) return;
+
+      const focusPoint = getMagnifierPoint(point);
+      const videoPoint = previewPointToVideoPoint(focusPoint);
+      const cssSize = window.matchMedia("(max-width: 640px)").matches ? 140 : 168;
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const canvasSize = Math.round(cssSize * dpr);
+      if (magnifierCanvas.width !== canvasSize || magnifierCanvas.height !== canvasSize) {
+        magnifierCanvas.width = canvasSize;
+        magnifierCanvas.height = canvasSize;
+      }
+      magnifierCanvas.style.width = `${cssSize}px`;
+      magnifierCanvas.style.height = `${cssSize}px`;
+
+      const zoom = 5;
+      const sourceSize = cssSize / zoom;
+      const desiredSourceX = videoPoint.x - (sourceSize / 2);
+      const desiredSourceY = videoPoint.y - (sourceSize / 2);
+      const sourceX = Math.max(0, desiredSourceX);
+      const sourceY = Math.max(0, desiredSourceY);
+      const sourceRight = Math.min(video.videoWidth, desiredSourceX + sourceSize);
+      const sourceBottom = Math.min(video.videoHeight, desiredSourceY + sourceSize);
+      const visibleSourceWidth = sourceRight - sourceX;
+      const visibleSourceHeight = sourceBottom - sourceY;
+      const destX = Math.max(0, -desiredSourceX / sourceSize * canvasSize);
+      const destY = Math.max(0, -desiredSourceY / sourceSize * canvasSize);
+      const destWidth = visibleSourceWidth / sourceSize * canvasSize;
+      const destHeight = visibleSourceHeight / sourceSize * canvasSize;
+      const ctx = magnifierCanvas.getContext("2d");
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.clearRect(0, 0, canvasSize, canvasSize);
+      ctx.fillStyle = "#111";
+      ctx.fillRect(0, 0, canvasSize, canvasSize);
+      ctx.drawImage(
+        video,
+        sourceX,
+        sourceY,
+        visibleSourceWidth,
+        visibleSourceHeight,
+        destX,
+        destY,
+        destWidth,
+        destHeight
+      );
+
+      const centerX = canvasSize / 2;
+      const centerY = canvasSize / 2;
+      ctx.strokeStyle = "#ef4444";
+      ctx.lineWidth = Math.max(1, dpr);
+      ctx.beginPath();
+      ctx.moveTo(centerX, 0);
+      ctx.lineTo(centerX, canvasSize);
+      ctx.moveTo(0, centerY);
+      ctx.lineTo(canvasSize, centerY);
+      ctx.stroke();
+
+      const previewRect = preview.getBoundingClientRect();
+      const canvasRect = cropCanvas.getBoundingClientRect();
+      const displayScaleX = canvasRect.width / cropCanvas.width;
+      const displayScaleY = canvasRect.height / cropCanvas.height;
+      const canvasLeft = canvasRect.left - previewRect.left;
+      const canvasTop = canvasRect.top - previewRect.top;
+      const displayX = canvasLeft + (focusPoint.x * displayScaleX);
+      const displayY = canvasTop + (focusPoint.y * displayScaleY);
+      const targetX = displayX + 18;
+      const preferredTop = displayY - cssSize - 18;
+      const fallbackTop = displayY + 18;
+      const targetY = preferredTop >= 8 ? preferredTop : fallbackTop;
+      const left = clamp(targetX, 8, Math.max(8, previewRect.width - cssSize - 8));
+      const top = clamp(targetY, 8, Math.max(8, previewRect.height - cssSize - 8));
+      magnifierCanvas.style.left = `${left}px`;
+      magnifierCanvas.style.top = `${top}px`;
+      magnifierCanvas.classList.add("show");
+    }
+
+    function drawCroppedPreview() {
+      if (!video.videoWidth || !video.videoHeight) {
+        previewAnimation = requestAnimationFrame(drawCroppedPreview);
+        return;
+      }
+
+      const sourceHeight = CROP_TOP_RATIO > 0
+        ? Math.max(80, Math.round(video.videoHeight * (1 - CROP_TOP_RATIO)))
+        : video.videoHeight;
+      cropSource = {
+        x: 0,
+        y: CROP_TOP_RATIO > 0 ? video.videoHeight - sourceHeight : 0,
+        width: video.videoWidth,
+        height: sourceHeight
+      };
+
+      const targetWidth = Math.max(320, Math.round(preview.clientWidth || video.videoWidth));
+      const targetHeight = Math.max(90, Math.round(targetWidth * (sourceHeight / video.videoWidth)));
+      if (cropCanvas.width !== targetWidth || cropCanvas.height !== targetHeight) {
+        const previousWidth = cropCanvas.width;
+        const previousHeight = cropCanvas.height;
+        cropCanvas.width = targetWidth;
+        cropCanvas.height = targetHeight;
+        if (roi && previousWidth && previousHeight) {
+          roi = normalizeRoi({
+            x: roi.x * (targetWidth / previousWidth),
+            y: roi.y * (targetHeight / previousHeight),
+            width: roi.width * (targetWidth / previousWidth),
+            height: roi.height * (targetHeight / previousHeight)
+          });
+          drawRoi();
+        }
+        if (levelRoi && previousWidth && previousHeight) {
+          levelRoi = normalizeLevelRoi({
+            x: levelRoi.x * (targetWidth / previousWidth),
+            y: levelRoi.y * (targetHeight / previousHeight),
+            width: levelRoi.width * (targetWidth / previousWidth),
+            height: levelRoi.height * (targetHeight / previousHeight)
+          });
+          drawRoi();
+        }
+      }
+
+      const ctx = cropCanvas.getContext("2d");
+      ctx.drawImage(
+        video,
+        cropSource.x,
+        cropSource.y,
+        cropSource.width,
+        cropSource.height,
+        0,
+        0,
+        cropCanvas.width,
+        cropCanvas.height
+      );
+      previewAnimation = requestAnimationFrame(drawCroppedPreview);
+    }
+
+    function rgbToHsv(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const d = max - min;
+      let h = 0;
+      if (d !== 0) {
+        if (max === r) h = ((g - b) / d) % 6;
+        else if (max === g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
+        h *= 60;
+        if (h < 0) h += 360;
+      }
+      return { h, s: max === 0 ? 0 : d / max, v: max };
+    }
+
+    function isExpGreen(r, g, b) {
+      const hsv = rgbToHsv(r, g, b);
+      return hsv.h >= 70 && hsv.h <= 165 &&
+        hsv.s >= 0.18 &&
+        hsv.v >= 0.18 &&
+        g > r * 1.05 &&
+        g > b * 1.05;
+    }
+
+    function smooth(values, radius = 2) {
+      return values.map((_, index) => {
+        let sum = 0;
+        let count = 0;
+        for (let i = Math.max(0, index - radius); i <= Math.min(values.length - 1, index + radius); i++) {
+          sum += values[i];
+          count++;
+        }
+        return sum / count;
+      });
+    }
+
+    function median(values) {
+      if (!values.length) return null;
+      const sorted = [...values].sort((a, b) => a - b);
+      return sorted[Math.floor(sorted.length / 2)];
+    }
+
+    function average(values) {
+      if (!values.length) return null;
+      return values.reduce((sum, value) => sum + value, 0) / values.length;
+    }
+
+    function getDirectionalRatioMove(samples) {
+      if (samples.length < 3) return null;
+      let upwardBreaks = 0;
+      let downwardBreaks = 0;
+      for (let i = 1; i < samples.length; i++) {
+        const diff = samples[i] - samples[i - 1];
+        if (diff < -RATIO_DIRECTIONAL_TOLERANCE) upwardBreaks++;
+        if (diff > RATIO_DIRECTIONAL_TOLERANCE) downwardBreaks++;
+      }
+      const move = samples[samples.length - 1] - samples[0];
+      const maxBreaks = Math.max(1, Math.floor(samples.length / 4));
+      if (move >= RATIO_DIRECTIONAL_MIN_MOVE && upwardBreaks <= maxBreaks) {
+        return { direction: "up", ratio: samples[samples.length - 1], move };
+      }
+      if (-move >= RATIO_DIRECTIONAL_MIN_MOVE && downwardBreaks <= maxBreaks) {
+        return { direction: "down", ratio: samples[samples.length - 1], move };
+      }
+      return null;
+    }
+
+    function getSmoothedAverage(rawAverage) {
+      if (!Number.isFinite(rawAverage) || rawAverage <= 0) {
+        displayedAverage = 0;
+        return 0;
+      }
+      if (!displayedAverage) {
+        displayedAverage = rawAverage;
+        return displayedAverage;
+      }
+      displayedAverage = displayedAverage + ((rawAverage - displayedAverage) * LIVE_AVERAGE_ALPHA);
+      return displayedAverage;
+    }
+
+    function isExpBarTrack(r, g, b) {
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      return max >= 110 && max - min <= 55;
+    }
+
+    function getRuns(indexes) {
+      const runs = [];
+      let start = null;
+      let prev = null;
+      for (const index of indexes) {
+        if (start === null) {
+          start = index;
+          prev = index;
+          continue;
+        }
+        if (index === prev + 1) {
+          prev = index;
+          continue;
+        }
+        runs.push({ start, end: prev, length: prev - start + 1 });
+        start = index;
+        prev = index;
+      }
+      if (start !== null) runs.push({ start, end: prev, length: prev - start + 1 });
+      return runs;
+    }
+
+    function autoDetectRoi() {
+      if (!cropCanvas.width || !cropCanvas.height) {
+        return { error: "화면 선택 후 자동 찾기를 눌러 주세요." };
+      }
+
+      const ctx = cropCanvas.getContext("2d", { willReadFrequently: true });
+      const { width, height } = cropCanvas;
+      const image = ctx.getImageData(0, 0, width, height).data;
+      const rowScores = [];
+      const rowTrackScores = [];
+
+      for (let y = 0; y < height; y++) {
+        let green = 0;
+        let track = 0;
+        for (let x = 0; x < width; x++) {
+          const idx = (y * width + x) * 4;
+          const r = image[idx];
+          const g = image[idx + 1];
+          const b = image[idx + 2];
+          if (isExpGreen(r, g, b)) green++;
+          if (isExpGreen(r, g, b) || isExpBarTrack(r, g, b)) track++;
+        }
+        rowScores.push(green);
+        rowTrackScores.push(track);
+      }
+
+      const rowThreshold = Math.max(6, width * 0.025);
+      const rowRuns = getRuns(rowScores
+        .map((score, index) => ({ score, index }))
+        .filter(row => row.score >= rowThreshold)
+        .map(row => row.index));
+      if (!rowRuns.length) return { error: "초록색 경험치 바를 자동으로 찾지 못했습니다." };
+
+      const bestRowRun = rowRuns
+        .map(run => ({
+          ...run,
+          score: rowScores.slice(run.start, run.end + 1).reduce((sum, value) => sum + value, 0)
+        }))
+        .sort((a, b) => b.score - a.score)[0];
+
+      const peakRowScore = Math.max(...rowScores.slice(bestRowRun.start, bestRowRun.end + 1));
+      const refinedRowThreshold = Math.max(rowThreshold, peakRowScore * 0.38);
+      let refinedYStart = bestRowRun.start;
+      let refinedYEnd = bestRowRun.end;
+
+      while (refinedYStart > 0 &&
+        rowScores[refinedYStart - 1] >= refinedRowThreshold &&
+        rowTrackScores[refinedYStart - 1] >= rowThreshold) {
+        refinedYStart--;
+      }
+      while (refinedYEnd < height - 1 &&
+        rowScores[refinedYEnd + 1] >= refinedRowThreshold &&
+        rowTrackScores[refinedYEnd + 1] >= rowThreshold) {
+        refinedYEnd++;
+      }
+
+      const centerY = Math.round((bestRowRun.start + bestRowRun.end) / 2);
+      const maxDetectedHeight = Math.max(8, Math.round(height * 0.18));
+      if (refinedYEnd - refinedYStart + 1 > maxDetectedHeight) {
+        refinedYStart = clamp(centerY - Math.floor(maxDetectedHeight / 2), 0, height - 1);
+        refinedYEnd = clamp(refinedYStart + maxDetectedHeight - 1, refinedYStart + 1, height - 1);
+      }
+
+      const padY = Math.max(1, Math.round((refinedYEnd - refinedYStart + 1) * 0.18));
+      const yStart = clamp(refinedYStart - padY, 0, height - 1);
+      const yEnd = clamp(refinedYEnd + padY + 1, yStart + 1, height);
+      const columnGreenScores = [];
+      const columnTrackScores = [];
+
+      for (let x = 0; x < width; x++) {
+        let green = 0;
+        let track = 0;
+        let total = 0;
+        for (let y = yStart; y < yEnd; y++) {
+          const idx = (y * width + x) * 4;
+          const r = image[idx];
+          const g = image[idx + 1];
+          const b = image[idx + 2];
+          if (isExpGreen(r, g, b)) green++;
+          if (isExpGreen(r, g, b) || isExpBarTrack(r, g, b)) track++;
+          total++;
+        }
+        columnGreenScores.push(total ? green / total : 0);
+        columnTrackScores.push(total ? track / total : 0);
+      }
+
+      const smoothedGreen = smooth(columnGreenScores, 3);
+      const smoothedTrack = smooth(columnTrackScores, 3);
+      const greenIndexes = smoothedGreen
+        .map((score, index) => ({ score, index }))
+        .filter(column => column.score >= 0.12)
+        .map(column => column.index);
+      const greenRuns = getRuns(greenIndexes).filter(run => run.length >= Math.max(12, width * 0.04));
+      if (!greenRuns.length) return { error: "경험치 진행 영역 후보를 찾지 못했습니다." };
+
+      const bestGreenRun = greenRuns.sort((a, b) => b.length - a.length)[0];
+      let left = bestGreenRun.start;
+      let right = bestGreenRun.end;
+      const peakTrackScore = Math.max(...smoothedTrack);
+      const trackThreshold = Math.max(0.22, peakTrackScore * 0.34);
+      const maxMiss = Math.max(3, Math.round(width * 0.009));
+
+      let miss = 0;
+      for (let x = bestGreenRun.start - 1; x >= 0; x--) {
+        if (smoothedTrack[x] >= trackThreshold) {
+          left = x;
+          miss = 0;
+        } else {
+          miss++;
+          if (miss > maxMiss) break;
+        }
+      }
+
+      miss = 0;
+      for (let x = bestGreenRun.end + 1; x < width; x++) {
+        if (smoothedTrack[x] >= trackThreshold) {
+          right = x;
+          miss = 0;
+        } else {
+          miss++;
+          if (miss > maxMiss) break;
+        }
+      }
+
+      const padX = Math.max(2, Math.round((right - left + 1) * 0.006));
+      const innerPadY = Math.max(0, Math.round((yEnd - yStart) * 0.08));
+      const detected = normalizeRoi({
+        x: left + padX,
+        y: yStart + innerPadY,
+        width: Math.max(20, right - left + 1 - (padX * 2)),
+        height: Math.max(6, yEnd - yStart - (innerPadY * 2))
+      });
+
+      if (detected.width < width * 0.35) {
+        return { error: "자동 탐색 영역이 너무 짧습니다. 수동으로 영역을 조정해 주세요.", roi: detected };
+      }
+
+      return { roi: detected };
+    }
+
+    function detectRatio() {
+      const sourceRoi = getRoiFromBox();
+      if (!sourceRoi || sourceRoi.width < 20 || sourceRoi.height < 6) {
+        return { error: "경험치 바 영역을 먼저 지정하세요." };
+      }
+
+      const maxWidth = 700;
+      const scale = Math.min(1, maxWidth / sourceRoi.width);
+      const width = Math.max(20, Math.round(sourceRoi.width * scale));
+      const height = Math.max(6, Math.round(sourceRoi.height * scale));
+      workCanvas.width = width;
+      workCanvas.height = height;
+
+      const ctx = workCanvas.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(video, sourceRoi.x, sourceRoi.y, sourceRoi.width, sourceRoi.height, 0, 0, width, height);
+
+      const image = ctx.getImageData(0, 0, width, height).data;
+      const yStart = Math.floor(height * 0.28);
+      const yEnd = Math.max(yStart + 1, Math.ceil(height * 0.72));
+      const greenScores = [];
+      const trackScores = [];
+
+      for (let x = 0; x < width; x++) {
+        let green = 0;
+        let track = 0;
+        let total = 0;
+        for (let y = yStart; y < yEnd; y++) {
+          const idx = (y * width + x) * 4;
+          const r = image[idx];
+          const g = image[idx + 1];
+          const b = image[idx + 2];
+          if (isExpGreen(r, g, b)) green++;
+          if (isExpGreen(r, g, b) || isExpBarTrack(r, g, b)) track++;
+          total++;
+        }
+        greenScores.push(total ? green / total : 0);
+        trackScores.push(total ? track / total : 0);
+      }
+
+      const smoothedGreen = smooth(greenScores, 3);
+      const smoothedTrack = smooth(trackScores, 3);
+      const maxScore = Math.max(...smoothedGreen);
+      if (maxScore < 0.08) {
+        return { error: "초록색 경험치 진행 영역을 찾지 못했습니다." };
+      }
+
+      const trackPeak = Math.max(...smoothedTrack);
+      const trackThreshold = Math.max(0.12, trackPeak * 0.32);
+      const trackRuns = getRuns(smoothedTrack
+        .map((score, index) => ({ score, index }))
+        .filter(column => column.score >= trackThreshold)
+        .map(column => column.index));
+      const minTrackWidth = Math.max(18, Math.floor(width * 0.35));
+      const bestTrackRun = trackRuns
+        .filter(run => run.length >= minTrackWidth)
+        .sort((a, b) => b.length - a.length)[0];
+      const leftBound = bestTrackRun ? bestTrackRun.start : 0;
+      const rightBound = bestTrackRun ? bestTrackRun.end : width - 1;
+      const barWidth = Math.max(1, rightBound - leftBound + 1);
+
+      const threshold = Math.max(0.055, maxScore * 0.38);
+      const maxGap = Math.max(3, Math.floor(barWidth * 0.022));
+      let filledUntil = -1;
+      let gap = 0;
+      let seenFill = false;
+
+      for (let x = leftBound; x <= rightBound; x++) {
+        if (smoothedGreen[x] >= threshold) {
+          filledUntil = x;
+          gap = 0;
+          seenFill = true;
+        } else if (seenFill) {
+          gap++;
+          if (gap > maxGap) break;
+        }
+      }
+
+      if (filledUntil < 0) {
+        return { error: "경험치 진행률을 계산하지 못했습니다." };
+      }
+
+      return {
+        ratio: Math.max(0, Math.min(1, (filledUntil - leftBound + 1) / barWidth)),
+        confidence: maxScore,
+        barWidth
+      };
+    }
+
+    async function captureStableStart() {
+      const samples = [];
+      for (let i = 0; i < 14; i++) {
+        const detected = detectRatio();
+        if (!detected.error) samples.push(detected.ratio);
+        setStatus(`시작 기준 안정화 중... ${i + 1}/14`);
+        await new Promise(resolve => setTimeout(resolve, 450));
+      }
+      if (samples.length < 8) return { error: "시작 기준을 안정적으로 잡지 못했습니다." };
+      const baseline = median(samples);
+      const stable = samples.filter(value => Math.abs(value - baseline) <= START_STABLE_SPREAD);
+      if (stable.length >= 8) return { ratio: average(stable) };
+
+      const directional = getDirectionalRatioMove(samples);
+      const totalMove = samples[samples.length - 1] - samples[0];
+      if (directional?.direction === "up" && totalMove >= START_MOVING_MIN_MOVE) {
+        const recentSamples = samples.slice(-3);
+        return { ratio: average(recentSamples) };
+      }
+
+      return { error: "시작 진행률이 흔들립니다. 영역을 더 안쪽으로 잡아 주세요." };
+    }
+
+    async function captureStableRatioBatch() {
+      const samples = [];
+      let lastError = "";
+
+      for (let i = 0; i < RATIO_BATCH_COUNT; i++) {
+        const detected = detectRatio();
+        if (detected.error) {
+          lastError = detected.error;
+        } else {
+          samples.push(detected.ratio);
+        }
+        if (i < RATIO_BATCH_COUNT - 1) {
+          await new Promise(resolve => setTimeout(resolve, RATIO_BATCH_DELAY_MS));
+        }
+      }
+
+      if (samples.length < 3) {
+        return { error: lastError || "경험치 진행률을 안정적으로 계산하지 못했습니다." };
+      }
+
+      const ratio = median(samples);
+      const spread = Math.max(...samples) - Math.min(...samples);
+      if (spread > RATIO_MAX_BATCH_SPREAD) {
+        const directional = getDirectionalRatioMove(samples);
+        if (directional) {
+          return {
+            ratio: directional.ratio,
+            spread,
+            moving: true,
+            direction: directional.direction
+          };
+        }
+        return { unstable: true, ratio, spread };
+      }
+
+      return { ratio, spread };
+    }
+
+    function renderLive(ratio) {
+      const elapsed = Math.max(1, (Date.now() - startTime) / 1000);
+      const rawAverage = totalGained / elapsed * 60;
+      const average = measuring ? getSmoothedAverage(rawAverage) : rawAverage;
+      const currentExp = expNeed * ratio;
+      levelMetric.textContent = currentLevel ? `LV ${currentLevel}` : "-";
+      ratioMetric.textContent = `${(ratio * 100).toFixed(2)}%`;
+      currentExpMetric.textContent = formatExp(currentExp);
+      gainedMetric.textContent = formatExp(totalGained);
+      averageMetric.textContent = `${formatExp(average)} / 분`;
+      sampleMetric.textContent = String(sampleCount);
+      levelCheckMetric.textContent = levelCheckState;
+      resultEl.innerHTML = `
+        <div class="result-section">
+          <div class="result-title">실시간 측정</div>
+          <div class="result-row"><span class="result-label">현재 레벨</span><strong class="result-value">LV ${currentLevel}</strong></div>
+          <div class="result-row"><span class="result-label">시작 진행률</span><strong class="result-value">${(startRatio * 100).toFixed(2)}%</strong></div>
+          <div class="result-row"><span class="result-label">현재 진행률</span><strong class="result-value">${(ratio * 100).toFixed(2)}%</strong></div>
+          <div class="result-row"><span class="result-label">LV 영역 확인</span><strong class="result-value">${levelCheckState}</strong></div>
+          <div class="result-row"><span class="result-label">현재 레벨 경험치</span><strong class="result-value">${formatExp(currentExp)}</strong></div>
+          <div class="result-row"><span class="result-label">경과 시간</span><strong class="result-value">${Math.floor(elapsed)}초</strong></div>
+          <div class="result-row"><span class="result-label">1분당 경험치</span><strong class="result-value highlight">${formatExp(average)}</strong></div>
+        </div>
+      `;
+    }
+
+    async function addSample() {
+      if (!measuring || sampleInProgress) return;
+      if (Date.now() < levelUpStabilizeUntil) {
+        setStatus("레벨업 직후 화면 안정화 대기 중...");
+        renderLive(prevRatio ?? startRatio ?? 0);
+        return;
+      }
+      sampleInProgress = true;
+
+      try {
+        const detected = await captureStableRatioBatch();
+        if (!measuring) return;
+        if (detected.error) {
+          setStatus(detected.error);
+          return;
+        }
+        const ratio = detected.ratio;
+        if (detected.unstable) {
+          setStatus(`진행률이 흔들려 이번 샘플을 제외했습니다. 편차 ${(detected.spread * 100).toFixed(2)}%`);
+          renderLive(prevRatio ?? ratio);
+          return;
+        }
+
+        sampleCount++;
+        let displayRatio = prevRatio;
+        let statusMessage = null;
+        if (ratio > prevRatio) {
+          const delta = ratio - prevRatio;
+          const isLevelUpGainGrace = Date.now() < levelUpGainGraceUntil;
+          const isDirectionalGain = detected.moving && detected.direction === "up";
+          const maxGainDelta = isLevelUpGainGrace
+            ? LEVEL_UP_MAX_GAIN_DELTA
+            : (isDirectionalGain ? DIRECTIONAL_MAX_GAIN_DELTA : NORMAL_MAX_GAIN_DELTA);
+          if (delta <= maxGainDelta) {
+            totalGained += expNeed * delta;
+            prevRatio = ratio;
+            displayRatio = ratio;
+            if (isLevelUpGainGrace && delta > NORMAL_MAX_GAIN_DELTA) {
+              statusMessage = `레벨업 직후 추가 증가 반영: +${(delta * 100).toFixed(2)}%`;
+            } else if (isDirectionalGain && delta > NORMAL_MAX_GAIN_DELTA) {
+              statusMessage = `빠른 경험치 증가 반영: +${(delta * 100).toFixed(2)}%`;
+            }
+          } else {
+            statusMessage = `갑작스러운 큰 증가를 무시했습니다. 증가량 ${(delta * 100).toFixed(2)}%`;
+          }
+        } else if (prevRatio - ratio > LEVEL_UP_LOOSE_DROP) {
+          const levelCheck = checkLevelAreaChanged();
+          if (!isLevelUpCandidate(prevRatio, ratio, levelCheck)) {
+            setStatus("진행률 하락이 있었지만 레벨업 조건과 맞지 않아 제외했습니다.");
+            renderLive(prevRatio);
+            return;
+          }
+          if (levelCheck.available && !levelCheck.changed) {
+            setStatus("진행률 하락이 있었지만 LV 영역 변화가 없어 레벨업으로 처리하지 않았습니다.");
+            renderLive(prevRatio);
+            return;
+          }
+          const previousRemainExp = expNeed * Math.max(0, 1 - prevRatio);
+          const nextLevel = currentLevel + 1;
+          const nextInfo = getExpNeedForLevel(nextLevel);
+          if (nextInfo.error) {
+            setStatus(nextInfo.error);
+            return;
+          }
+          currentLevel = nextLevel;
+          expNeed = nextInfo.expNeed * hourglassMultiplier;
+          totalGained += previousRemainExp + (expNeed * ratio);
+          prevRatio = ratio;
+          displayRatio = ratio;
+          document.getElementById("currentLevel").value = String(currentLevel);
+          levelSignature = levelCheck.signature || captureLevelSignature();
+          levelCheckState = levelCheck.available ? `LV 변화 확인: LV ${currentLevel}` : "LV 확인 없이 레벨업";
+          levelUpStabilizeUntil = Date.now() + LEVEL_UP_STABILIZE_MS;
+          levelUpGainGraceUntil = levelUpStabilizeUntil + LEVEL_UP_GAIN_GRACE_MS;
+          saveAll();
+          statusMessage = `레벨업 감지: LV ${currentLevel}`;
+        } else if (prevRatio - ratio > 0.08) {
+          statusMessage = "하락 샘플을 무시했습니다. 이펙트나 마우스 포인터가 겹쳤을 수 있습니다.";
+        }
+
+        setStatus(statusMessage ?? `측정 중... 현재 ${(displayRatio * 100).toFixed(2)}%`);
+        renderLive(displayRatio);
+      } finally {
+        sampleInProgress = false;
+      }
+    }
+
+    async function startCapture() {
+      if (stream) stream.getTracks().forEach(track => track.stop());
+      stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 4 }, audio: false });
+      video.srcObject = stream;
+      await video.play();
+      placeholder.hidden = true;
+      if (previewAnimation) cancelAnimationFrame(previewAnimation);
+      drawCroppedPreview();
+      await new Promise(resolve => setTimeout(resolve, 300));
+      levelRoi = getStoredLevelRoi();
+      const storedRoi = getStoredRoi();
+      if (storedRoi) {
+        roi = storedRoi;
+        drawRoi();
+        setStatus("저장된 경험치 바 영역을 불러왔습니다. 필요하면 손잡이로 조정하세요.");
+        return;
+      }
+      const detected = autoDetectRoi();
+      if (detected.roi) {
+        roi = detected.roi;
+        drawRoi();
+        saveAll();
+        setStatus(detected.error || "경험치 바 영역을 자동으로 찾았습니다. 필요하면 손잡이로 조정하세요.");
+      } else {
+        setStatus(`${detected.error} 경험치 바 영역을 직접 드래그하세요.`);
+      }
+    }
+
+    async function startMeasure() {
+      const level = Number(document.getElementById("currentLevel").value);
+      const hourglass = Number(document.getElementById("hourglassLevel").value);
+      const levelInfo = getExpNeedForLevel(level);
+      if (levelInfo.error) {
+        setStatus(levelInfo.error);
+        return;
+      }
+      if (!Number.isInteger(hourglass) || hourglass < 0 || hourglass > 50) {
+        setStatus("모래시계 레벨은 0~50 사이로 입력하세요.");
+        return;
+      }
+      if (!roi) {
+        setStatus("경험치 바 영역을 먼저 지정하세요.");
+        return;
+      }
+
+      saveAll();
+      stopMeasure(false);
+      const stable = await captureStableStart();
+      if (stable.error) {
+        setStatus(stable.error);
+        return;
+      }
+
+      currentLevel = level;
+      hourglassMultiplier = 1 + hourglass * 0.1;
+      expNeed = levelInfo.expNeed * hourglassMultiplier;
+      startRatio = stable.ratio;
+      prevRatio = stable.ratio;
+      totalGained = 0;
+      sampleCount = 0;
+      displayedAverage = 0;
+      sampleInProgress = false;
+      levelUpStabilizeUntil = 0;
+      levelUpGainGraceUntil = 0;
+      resetLevelSignature();
+      startTime = Date.now();
+      measuring = true;
+      renderLive(startRatio);
+      setStatus(`측정 중... 시작 ${(startRatio * 100).toFixed(2)}%`);
+
+      timer = setInterval(() => addSample(), getSampleIntervalMs());
+      stopTimer = setTimeout(() => stopMeasure(true), Number(document.getElementById("measureSeconds").value) * 1000);
+    }
+
+    function stopMeasure(showResult = true) {
+      if (timer) clearInterval(timer);
+      if (stopTimer) clearTimeout(stopTimer);
+      timer = null;
+      stopTimer = null;
+      sampleInProgress = false;
+      levelUpStabilizeUntil = 0;
+      levelUpGainGraceUntil = 0;
+      if (!measuring) return;
+      measuring = false;
+      if (showResult) {
+        const elapsed = Math.max(1, (Date.now() - startTime) / 1000);
+        const average = totalGained / elapsed * 60;
+        setStatus("측정 완료");
+        resultEl.innerHTML += `
+          <div class="result-section">
+            <div class="result-title">최종 결과</div>
+            <div class="summary-box">1분당 경험치: <strong>${formatExp(average)}</strong></div>
+          </div>
+        `;
+      }
+    }
+
+    function setLevelEditMode(enabled) {
+      levelEditMode = enabled;
+      preview.classList.toggle("level-editing", levelEditMode);
+      document.getElementById("levelEditBtn").classList.toggle("btn-green", levelEditMode);
+      document.getElementById("levelEditBtn").classList.toggle("btn-gray", !levelEditMode);
+      drawRoi();
+      setStatus(levelEditMode ? "LV 영역 지정 모드입니다. 미리보기에서 LV 영역을 드래그하세요." : "LV 영역 지정 모드를 종료했습니다.");
+    }
+
+    preview.addEventListener("pointerdown", event => {
+      if (!video.videoWidth) return;
+      const point = pointerToVideoPoint(event);
+      dragStart = point;
+      dragRoiStart = levelEditMode
+        ? (levelRoi ? { ...levelRoi } : null)
+        : (roi ? { ...roi } : null);
+      dragMode = levelEditMode && event.target === levelRoiBox && levelRoi ? "move" : "draw";
+      if (levelEditMode && dragMode === "draw") {
+        levelRoi = { x: point.x, y: point.y, width: 0, height: 0 };
+      } else if (!levelEditMode) {
+        roi = { x: point.x, y: point.y, width: 0, height: 0 };
+      }
+      preview.setPointerCapture(event.pointerId);
+      showMagnifier(point);
+      drawRoi();
+    });
+
+    preview.addEventListener("pointermove", event => {
+      if (!dragStart) return;
+      const rawPoint = pointerToVideoPoint(event);
+      const point = getResizeControlPoint(rawPoint);
+      if (levelEditMode) {
+        if (dragMode?.startsWith("level-resize:")) {
+          levelRoi = resizeLevelRoiFromPoint(dragMode.slice(13), point);
+        } else if (dragMode === "move" && dragRoiStart) {
+          const dx = point.x - dragStart.x;
+          const dy = point.y - dragStart.y;
+          levelRoi = normalizeLevelRoi({
+            x: dragRoiStart.x + dx,
+            y: dragRoiStart.y + dy,
+            width: dragRoiStart.width,
+            height: dragRoiStart.height
+          });
+        } else {
+          levelRoi = normalizeLevelRoi({
+            x: Math.min(dragStart.x, point.x),
+            y: Math.min(dragStart.y, point.y),
+            width: Math.abs(point.x - dragStart.x),
+            height: Math.abs(point.y - dragStart.y)
+          });
+        }
+      } else if (dragMode === "move" && dragRoiStart) {
+        const dx = point.x - dragStart.x;
+        const dy = point.y - dragStart.y;
+        roi = normalizeRoi({
+          x: dragRoiStart.x + dx,
+          y: dragRoiStart.y + dy,
+          width: dragRoiStart.width,
+          height: dragRoiStart.height
+        });
+      } else if (dragMode?.startsWith("resize:")) {
+        roi = resizeRoiFromPoint(dragMode.slice(7), point);
+      } else {
+        roi = normalizeRoi({
+          x: Math.min(dragStart.x, point.x),
+          y: Math.min(dragStart.y, point.y),
+          width: Math.abs(point.x - dragStart.x),
+          height: Math.abs(point.y - dragStart.y)
+        });
+      }
+      showMagnifier(getMagnifierPoint(point));
+      drawRoi();
+    });
+
+    preview.addEventListener("pointerup", event => {
+      dragStart = null;
+      dragMode = null;
+      dragRoiStart = null;
+      resizePointerOffset = 0;
+      if (levelEditMode && levelRoi && (levelRoi.width < 24 || levelRoi.height < 12)) levelRoi = null;
+      if (!levelEditMode && roi && (roi.width < 20 || roi.height < 6)) roi = null;
+      if (preview.hasPointerCapture(event.pointerId)) preview.releasePointerCapture(event.pointerId);
+      hideMagnifier();
+      drawRoi();
+      if (levelEditMode) {
+        if (levelRoi) {
+          levelSignature = null;
+          setStatus("LV 영역 지정 완료. 측정을 시작하면 이 영역으로 레벨업을 확인합니다.");
+        }
+        saveAll();
+        return;
+      }
+      if (roi) setStatus("영역 지정 완료. 측정을 시작하세요.");
+      saveAll();
+    });
+
+    roiBox.addEventListener("pointerdown", event => {
+      if (!roi || !video.videoWidth) return;
+      event.stopPropagation();
+      dragStart = pointerToVideoPoint(event);
+      dragRoiStart = { ...roi };
+      dragMode = event.target.dataset.resize ? `resize:${event.target.dataset.resize}` : "move";
+      preview.setPointerCapture(event.pointerId);
+      showMagnifier(dragStart);
+    });
+
+    for (const handle of roiHandles) {
+      handle.addEventListener("pointerdown", event => {
+        if (!roi || !video.videoWidth) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const side = event.currentTarget.dataset.resize;
+        const point = pointerToVideoPoint(event);
+        dragStart = point;
+        dragRoiStart = { ...roi };
+        dragMode = `resize:${side}`;
+        if (side === "left") resizePointerOffset = point.x - roi.x;
+        if (side === "right") resizePointerOffset = point.x - (roi.x + roi.width);
+        if (side === "top") resizePointerOffset = point.y - roi.y;
+        if (side === "bottom") resizePointerOffset = point.y - (roi.y + roi.height);
+        preview.setPointerCapture(event.pointerId);
+        showMagnifier(getMagnifierPoint(getResizeControlPoint(point)));
+      });
+    }
+
+    for (const handle of levelRoiHandles) {
+      handle.addEventListener("pointerdown", event => {
+        if (!levelRoi || !levelEditMode || !video.videoWidth) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const side = event.currentTarget.dataset.levelResize;
+        const point = pointerToVideoPoint(event);
+        dragStart = point;
+        dragRoiStart = { ...levelRoi };
+        dragMode = `level-resize:${side}`;
+        if (side === "left") resizePointerOffset = point.x - levelRoi.x;
+        if (side === "right") resizePointerOffset = point.x - (levelRoi.x + levelRoi.width);
+        if (side === "top") resizePointerOffset = point.y - levelRoi.y;
+        if (side === "bottom") resizePointerOffset = point.y - (levelRoi.y + levelRoi.height);
+        preview.setPointerCapture(event.pointerId);
+        showMagnifier(point);
+      });
+    }
+
+    document.getElementById("captureBtn").addEventListener("click", () => startCapture().catch(error => setStatus(error.message)));
+    document.getElementById("autoDetectBtn").addEventListener("click", () => {
+      const detected = autoDetectRoi();
+      if (detected.roi) {
+        roi = detected.roi;
+        hideMagnifier();
+        drawRoi();
+        saveAll();
+        setStatus(detected.error || "경험치 바 영역을 자동으로 찾았습니다. 필요하면 손잡이로 조정하세요.");
+        return;
+      }
+      setStatus(detected.error);
+    });
+    document.getElementById("measureBtn").addEventListener("click", () => startMeasure());
+    document.getElementById("stopBtn").addEventListener("click", () => stopMeasure(true));
+    document.getElementById("levelEditBtn").addEventListener("click", () => {
+      setLevelEditMode(!levelEditMode);
+    });
+    document.getElementById("levelAutoBtn").addEventListener("click", () => {
+      levelRoi = null;
+      levelSignature = null;
+      setLevelEditMode(false);
+      drawRoi();
+      saveAll();
+      setStatus("LV 영역을 자동 계산으로 되돌렸습니다.");
+    });
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      roi = null;
+      levelRoi = null;
+      hideMagnifier();
+      drawRoi();
+      saveAll();
+      setStatus("영역을 지웠습니다.");
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key !== "Delete") return;
+      roi = null;
+      levelRoi = null;
+      hideMagnifier();
+      drawRoi();
+      saveAll();
+      setStatus("영역을 지웠습니다.");
+    });
+
+    window.addEventListener("resize", () => {
+      drawRoi();
+    });
+
+    for (const id of INPUT_IDS) {
+      document.getElementById(id).addEventListener("input", saveAll);
+      document.getElementById(id).addEventListener("change", saveAll);
+    }
+  </script>
+</body>
+</html>

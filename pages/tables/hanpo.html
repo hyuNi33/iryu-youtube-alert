@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>환포표 - 이류월드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+</head>
+<body>
+<div class="wrapper">
+  <div class="container">
+
+    <aside class="sidebar"></aside>
+
+    <main class="content">
+      <div class="top-banner">
+        <h1>환포표</h1>
+        <p>환포표 데이터 테이블</p>
+      </div>
+
+      <div class="card">
+        <div id="tableContainer">데이터 로딩 중...</div>
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<script type="module">
+  import { renderTable } from "../../js/table-viewer.js";
+  renderTable("../../datas/hanpo-table.csv", "tableContainer", {
+    search: false,
+    levelFilter: true
+  });
+</script>
+</body>
+</html>

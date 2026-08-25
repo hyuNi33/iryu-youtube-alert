@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>유물 계산기 - 이류월드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+</head>
+<body>
+<div class="wrapper">
+  <div class="container">
+
+    <aside class="sidebar"></aside>
+
+    <main class="content">
+      <div class="top-banner">
+        <h1>유물 계산기</h1>
+        <p>총 수호자의 돌과 선택한 유물을 기준으로 배분 결과를 계산합니다.</p>
+      </div>
+
+      <section class="calc-card">
+        <div class="tab-bar">
+          <button class="tab-btn active" data-tab="distribute">균등 분배</button>
+          <button class="tab-btn" data-tab="recommend">레벨업 추천</button>
+        </div>
+
+        <!-- 탭 1: 균등 분배 -->
+        <div class="tab-content active" id="tab-distribute">
+          <div class="form-list">
+            <div class="form-row">
+              <label for="totalStone">총 수호자의 돌</label>
+              <input type="number" id="totalStone" placeholder="사용할 수호자의돌을 입력하세요 예)30000" min="0">
+            </div>
+          </div>
+
+          <h2 class="section-title">유물 선택</h2>
+          <div class="artifact-list" id="artifactList"></div>
+
+          <div class="action-area">
+            <button type="button" class="btn btn-green" onclick="calculateArtifacts()">계산하기</button>
+          </div>
+
+          <div class="result-box" id="summaryBox">
+            총 선택 유물 수: 0<br>
+            총 사용 돌: 0<br>
+            총 남은 돌: 0
+          </div>
+
+          <div class="result-box" style="margin-top:20px; overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>번호</th>
+                  <th>유물</th>
+                  <th>배분량</th>
+                  <th>도달 레벨</th>
+                  <th>사용 돌</th>
+                  <th>남은 돌</th>
+                  <th>만렙</th>
+                </tr>
+              </thead>
+              <tbody id="result"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 탭 2: 추천 -->
+        <div class="tab-content" id="tab-recommend">
+          <div class="form-list">
+            <div class="form-row">
+              <label for="remainStone">잔여 수호자의 돌</label>
+              <input type="number" id="remainStone" placeholder="현재 소유 수호자의돌을 입력하세요 예)30000" min="0">
+            </div>
+          </div>
+
+          <p style="color: var(--warning-color); font-size: 14px; font-weight: 600; margin-bottom: 12px;">현재 투자된 유물 레벨을 입력하면, 잔여 돌로 다음에 어떤 유물을 올릴지 추천합니다. (0레벨 유물은 제외)</p>
+          <h2 class="section-title">현재 유물 레벨</h2>
+          <div class="artifact-level-list" id="artifactLevelList"></div>
+
+          <div class="action-area">
+            <button type="button" class="btn btn-green" onclick="recommendArtifacts()">추천받기</button>
+          </div>
+
+          <div class="result-box" id="recommendSummaryBox">
+            추천받기 버튼을 눌러 결과를 확인하세요.
+          </div>
+
+          <div class="result-box" style="margin-top:20px; max-height:500px; overflow-y:auto;">
+            <ol id="recommendResult" class="recommend-list"></ol>
+          </div>
+        </div>
+      </section>
+    </main>
+
+  </div>
+</div>
+
+<script type="module">
+  import {
+    initArtifactData, getArtifactKeys, getArtifacts,
+    distributeArtifactStones, getArtifactMaxLevel, recommendArtifactUpgrades
+  } from "../../js/calc/artifact.js";
+  import { saveInputs, loadInputs } from "../../js/storage.js";
+
+  await initArtifactData("../..");
+
+  const ARTIFACT_KEYS = getArtifactKeys();
+  const ARTIFACTS = getArtifacts();
+
+  function formatNumber(value) {
+    return Number(value || 0).toLocaleString("ko-KR");
+  }
+
+  // ==============================
+  // 탭 전환
+  // ==============================
+
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    });
+  });
+
+  // ==============================
+  // 탭 1: 균등 분배
+  // ==============================
+
+  function saveArtifactState() {
+    const selectedIds = Array.from(document.querySelectorAll("#artifactList input:checked")).map(el => el.value);
+    saveInputs("artifact", {
+      totalStone: document.getElementById("totalStone").value,
+      selectedIds
+    });
+  }
+
+  function initArtifactList() {
+    const container = document.getElementById("artifactList");
+    container.innerHTML = "";
+
+    const saved = loadInputs("artifact");
+    if (saved?.totalStone !== undefined) {
+      document.getElementById("totalStone").value = saved.totalStone;
+    }
+    const savedIds = saved?.selectedIds || [];
+
+    ARTIFACT_KEYS.forEach(key => {
+      const art = ARTIFACTS[key];
+      const checked = savedIds.includes(key) ? "checked" : "";
+      const label = document.createElement("label");
+      label.className = "artifact-item";
+      label.innerHTML = `
+        <span class="artifact-name">${art.name} (${art.effect})</span>
+        <input type="checkbox" value="${key}" ${checked}>
+      `;
+      container.appendChild(label);
+    });
+
+    container.addEventListener("change", saveArtifactState);
+    document.getElementById("totalStone").addEventListener("change", saveArtifactState);
+  }
+
+  window.calculateArtifacts = function () {
+    const totalStone = Number(document.getElementById("totalStone").value);
+    const selectedIds = Array.from(document.querySelectorAll("#artifactList input:checked")).map(el => el.value);
+
+    if (!Number.isFinite(totalStone) || totalStone < 0) {
+      alert("총 수호자의 돌을 올바르게 입력하세요.");
+      return;
+    }
+    if (selectedIds.length === 0) {
+      alert("유물을 하나 이상 선택하세요.");
+      return;
+    }
+
+    try {
+      const result = distributeArtifactStones(totalStone, selectedIds);
+
+      const tbody = document.getElementById("result");
+      tbody.innerHTML = result.rows.map(row => `
+        <tr>
+          <td>${row.no}</td>
+          <td>${row.name}</td>
+          <td>${formatNumber(row.allocatedStone)}</td>
+          <td>${formatNumber(row.reachedLevel)}</td>
+          <td>${formatNumber(row.usedStone)}</td>
+          <td>${formatNumber(row.remainStone)}</td>
+          <td>${row.maxCheck}</td>
+        </tr>
+      `).join("");
+
+      document.getElementById("summaryBox").innerHTML = `
+        총 선택 유물 수: ${formatNumber(result.artifactCount)}<br>
+        총 사용 돌: ${formatNumber(result.usedStone)}<br>
+        총 남은 돌: ${formatNumber(result.remainingStone)}
+      `;
+    } catch (error) {
+      alert(error.message || "계산 중 오류가 발생했습니다.");
+    }
+  };
+
+  // ==============================
+  // 탭 2: 추천
+  // ==============================
+
+  function saveRecommendState() {
+    const levels = {};
+    document.querySelectorAll("#artifactLevelList input[type='number']").forEach(input => {
+      levels[input.dataset.artifactId] = input.value;
+    });
+    saveInputs("artifactRecommend", {
+      remainStone: document.getElementById("remainStone").value,
+      levels
+    });
+  }
+
+  function initArtifactLevelList() {
+    const container = document.getElementById("artifactLevelList");
+    container.innerHTML = "";
+
+    const saved = loadInputs("artifactRecommend");
+    if (saved?.remainStone !== undefined) {
+      document.getElementById("remainStone").value = saved.remainStone;
+    }
+    const savedLevels = saved?.levels || {};
+
+    ARTIFACT_KEYS.forEach(key => {
+      const art = ARTIFACTS[key];
+      const maxLv = getArtifactMaxLevel(key);
+      const val = savedLevels[key] || 0;
+      const div = document.createElement("div");
+      div.className = "artifact-level-item";
+      div.innerHTML = `
+        <span class="artifact-name">${art.name} (${art.effect})</span>
+        <input type="number" data-artifact-id="${key}" value="${val}" min="0" max="${maxLv}">
+      `;
+      container.appendChild(div);
+    });
+
+    container.addEventListener("change", saveRecommendState);
+    document.getElementById("remainStone").addEventListener("change", saveRecommendState);
+  }
+
+  window.recommendArtifacts = function () {
+    const remainStone = Number(document.getElementById("remainStone").value);
+
+    if (!Number.isFinite(remainStone) || remainStone < 0) {
+      alert("잔여 수호자의 돌을 올바르게 입력하세요.");
+      return;
+    }
+
+    const currentLevels = {};
+    document.querySelectorAll("#artifactLevelList input[type='number']").forEach(input => {
+      const id = input.dataset.artifactId;
+      const maxLv = getArtifactMaxLevel(id);
+      currentLevels[id] = Math.min(Math.max(Number(input.value) || 0, 0), maxLv);
+      input.value = currentLevels[id];
+    });
+
+    saveRecommendState();
+
+    const result = recommendArtifactUpgrades(remainStone, currentLevels);
+
+    document.getElementById("recommendSummaryBox").innerHTML = `
+      총 추천 단계: ${formatNumber(result.steps.length)}<br>
+      사용 돌: ${formatNumber(remainStone - result.remainingStone)}<br>
+      남은 돌: ${formatNumber(result.remainingStone)}
+    `;
+
+    const ol = document.getElementById("recommendResult");
+    if (result.steps.length === 0) {
+      ol.innerHTML = "<li>추천할 업그레이드가 없습니다.</li>";
+      return;
+    }
+
+    // 같은 유물을 최종 1행으로 합침
+    const byName = new Map();
+    for (const step of result.steps) {
+      if (byName.has(step.name)) {
+        const existing = byName.get(step.name);
+        existing.to = step.to;
+        existing.cost += step.cost;
+      } else {
+        byName.set(step.name, { ...step });
+      }
+    }
+    const merged = [...byName.values()];
+
+    ol.innerHTML = merged.map(step => `
+      <li>
+        <strong>${step.name}</strong> ${step.from} → ${step.to} 레벨
+        <span class="cost-info">| 사용: ${formatNumber(step.cost)}</span>
+      </li>
+    `).join("");
+  };
+
+  // 초기화
+  initArtifactList();
+  initArtifactLevelList();
+</script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>도감 획득 알림 - 이류월드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+</head>
+<body>
+<div class="wrapper">
+  <div class="container">
+
+    <aside class="sidebar"></aside>
+
+    <main class="content">
+      <div class="top-banner">
+        <h1>도감 획득 알림</h1>
+        <p>도감 카드의 미획득 표시 영역을 감시하고, 표시가 사라질 만큼 화면이 바뀌면 Discord DM으로 알려줍니다.</p>
+      </div>
+
+      <section class="calc-card level-alert-card">
+        <p class="beta-notice">
+          도감 화면을 띄운 상태로 화면 선택을 시작한 뒤, 확인하고 싶은 카드 하나의 미획득 글자와 어두운 오버레이가 들어가도록 영역을 드래그해 주세요.
+        </p>
+
+        <div class="level-alert-guide-card">
+          <div class="level-alert-guide-copy">
+            <div class="level-alert-guide-eyebrow">사용법</div>
+            <h2>도감 화면을 열고 미획득 표시 영역을 선택하세요.</h2>
+            <p>도감 카드 전체보다 <strong>미획득 글자와 어두운 오버레이가 보이는 영역</strong>을 타이트하게 드래그하면 감지가 안정적입니다. 감시 시작 후 해당 표시가 사라지면 획득으로 판단해 알림을 보냅니다.</p>
+          </div>
+          <img src="../../assets/guide/collection-alert-guide.png" alt="도감 획득 알림 영역 선택 예시">
+        </div>
+
+        <div class="level-alert-grid">
+          <div class="result-section level-alert-panel">
+            <div class="result-title">Discord 인증</div>
+            <div id="collectionAuthBox" class="result-box level-alert-auth">로그인 상태를 확인하는 중입니다.</div>
+          </div>
+
+          <div class="result-section level-alert-panel">
+            <div class="result-title">감시 설정</div>
+            <div class="form-list">
+              <div class="form-row">
+                <label for="collectionName">도감 이름</label>
+                <input type="text" id="collectionName" placeholder="예) 슈퍼 태룬">
+              </div>
+              <div class="form-row">
+                <label for="collectionThreshold">변화 기준</label>
+                <input type="number" id="collectionThreshold" value="18" min="5" max="80">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen-exp-actions level-alert-actions">
+          <button type="button" class="btn btn-green" id="collectionStartCaptureBtn">화면 선택 시작</button>
+          <button type="button" class="btn btn-gray" id="collectionStartWatchBtn">감시 시작</button>
+          <button type="button" class="btn btn-gray" id="collectionStopWatchBtn">감시 중지</button>
+          <button type="button" class="btn btn-gray" id="collectionClearRoiBtn">영역 삭제</button>
+        </div>
+
+        <div class="screen-exp-preview level-alert-preview" id="collectionPreviewWrap">
+          <canvas id="collectionPreviewCanvas" class="screen-exp-preview-canvas"></canvas>
+          <video id="collectionVideo" muted playsinline></video>
+          <div class="screen-exp-placeholder" id="collectionPlaceholder"><span>화면 선택 후 도감 카드의 미획득 표시가 보이는 영역을 드래그하세요.</span></div>
+        </div>
+
+        <div class="level-alert-ocr-row">
+          <div class="result-section level-alert-crop-panel">
+            <div class="result-title">감시 영역 미리보기</div>
+            <canvas id="collectionCropCanvas" class="level-alert-crop-canvas"></canvas>
+          </div>
+          <div class="result-section level-alert-read-panel">
+            <div class="result-title">감시 상태</div>
+            <div id="collectionStatus" class="screen-exp-status">대기 중</div>
+            <div id="collectionResult" class="result-box">감시를 시작하면 변화량이 여기에 표시됩니다.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+  </div>
+</div>
+
+<div class="level-alert-overlay" id="collectionAlertOverlay" aria-hidden="true">
+  <div class="level-alert-burst"></div>
+  <div class="level-alert-modal" role="alertdialog" aria-labelledby="collectionAlertTitle" aria-describedby="collectionAlertDesc">
+    <div class="level-alert-badge">COLLECTED</div>
+    <h2 id="collectionAlertTitle">도감 획득 감지!</h2>
+    <p id="collectionAlertDesc">선택 영역에서 미획득 표시가 사라진 것으로 보입니다.</p>
+    <div class="level-alert-modal-levels">
+      <div>
+        <span>도감 이름</span>
+        <strong id="collectionAlertOverlayName">-</strong>
+      </div>
+      <div>
+        <span>변화량</span>
+        <strong id="collectionAlertOverlayDiff">-</strong>
+      </div>
+    </div>
+    <button type="button" class="level-alert-stop-btn" id="collectionStopAlertBtn">확인</button>
+  </div>
+</div>
+
+<script type="module" src="../../js/collection-alert.js?v=20260815-2"></script>
+</body>
+</html>

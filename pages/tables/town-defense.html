@@ -1,0 +1,222 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>데일리 던전 - 이류월드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+</head>
+<body>
+<div class="wrapper">
+  <div class="container">
+
+    <aside class="sidebar"></aside>
+
+    <main class="content">
+      <div class="top-banner">
+        <h1>데일리 던전</h1>
+        <p>몬스터 디펜스 / 주문서 던전 / 펫 던전 정보</p>
+      </div>
+
+      <div class="calc-card">
+        <div class="tab-bar">
+          <button class="tab-btn active" data-tab="defense">몬스터 디펜스</button>
+          <button class="tab-btn" data-tab="defenseHard">몬스터 디펜스 하드</button>
+          <button class="tab-btn" data-tab="equipmentRaid">무기레이드 던전</button>
+          <button class="tab-btn" data-tab="scroll">주문서 던전</button>
+          <button class="tab-btn" data-tab="pet">펫 던전</button>
+        </div>
+
+        <div id="defense" class="tab-content active">
+          <div class="article-content">
+            <div class="article-section">
+              <div id="tableContainer">데이터 로딩 중...</div>
+            </div>
+          </div>
+        </div>
+        <div id="defenseHard" class="tab-content">
+          <div class="article-content">
+            <div class="article-section">
+              <div id="defenseHardTableContainer">데이터 로딩 중...</div>
+            </div>
+          </div>
+        </div>
+        <div id="equipmentRaid" class="tab-content">
+          <div class="article-content">
+            <div class="article-section">
+              <div id="equipmentRaidTableContainer">데이터 로딩 중...</div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- 주문서 던전 -->
+        <div id="scroll" class="tab-content">
+          <div class="article-content">
+
+            <div class="article-section">
+              <h3>공통 진행 방식</h3>
+              <p>입장 후 <b>10초 준비 시간</b>이 주어집니다.</p>
+              <p>이후 <b>2분 제한시간</b> 내 최대한 많은 웨이브를 클리어해야 합니다.</p>
+              <p>던전은 총 <b>15웨이브</b>로 구성되어 있습니다.</p>
+              <p>현재 웨이브의 모든 몬스터를 처치하면 다음 웨이브로 자동 진행됩니다.</p>
+              <p><b>15웨이브 완료</b> 또는 <b>2분 초과</b> 시 던전이 종료되고 획득 보상이 정산됩니다.</p>
+            </div>
+
+            <div class="article-section">
+              <h3>주문서 던전</h3>
+              <p>몬스터를 처치할 때마다 확률적으로 주문서가 드랍됩니다.</p>
+              <p><b>웨이브 구성: 총 2,090마리</b></p>
+            </div>
+
+            <div class="article-section">
+              <h3>웨이브 구성</h3>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>웨이브</th>
+                      <th>몬스터 수</th>
+                      <th>몬스터 체력</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>1</td><td>30</td><td>1</td></tr>
+                    <tr><td>2</td><td>50</td><td>200</td></tr>
+                    <tr><td>3</td><td>60</td><td>1,000</td></tr>
+                    <tr><td>4</td><td>70</td><td>20만</td></tr>
+                    <tr><td>5</td><td>90</td><td>100만</td></tr>
+                    <tr><td>6</td><td>100</td><td>500만</td></tr>
+                    <tr><td>7</td><td>120</td><td>2,500만</td></tr>
+                    <tr><td>8</td><td>130</td><td>1.3억</td></tr>
+                    <tr><td>9</td><td>150</td><td>6.5억</td></tr>
+                    <tr><td>10</td><td>160</td><td>30억</td></tr>
+                    <tr><td>11</td><td>180</td><td>150억</td></tr>
+                    <tr><td>12</td><td>200</td><td>800억</td></tr>
+                    <tr><td>13</td><td>220</td><td>4,000억</td></tr>
+                    <tr><td>14</td><td>250</td><td>2조</td></tr>
+                    <tr><td>15</td><td>280</td><td>10조</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="article-section">
+              <h3>드랍 확률</h3>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>아이템</th>
+                      <th>드랍 확률</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>30% 주문서</td><td>50%</td></tr>
+                    <tr><td>혼돈의 주문서</td><td>1%</td></tr>
+                    <tr><td>악세서리 공격력 주문서</td><td>3%</td></tr>
+                    <tr><td>악세서리 마력 주문서</td><td>3%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 펫 던전 -->
+        <div id="pet" class="tab-content">
+          <div class="article-content">
+
+            <div class="article-section">
+              <h3>공통 진행 방식</h3>
+              <p>입장 후 <b>10초 준비 시간</b>이 주어집니다.</p>
+              <p>이후 <b>2분 제한시간</b> 내 최대한 많은 웨이브를 클리어해야 합니다.</p>
+              <p>던전은 총 <b>15웨이브</b>로 구성되어 있습니다.</p>
+              <p>현재 웨이브의 모든 몬스터를 처치하면 다음 웨이브로 자동 진행됩니다.</p>
+              <p><b>15웨이브 완료</b> 또는 <b>2분 초과</b> 시 던전이 종료되고 획득 보상이 정산됩니다.</p>
+            </div>
+
+            <div class="article-section">
+              <h3>펫 던전</h3>
+              <p>몬스터를 처치할 때마다 확률적으로 펫 소환권이 드랍됩니다.</p>
+              <p>높은 웨이브일수록 드랍 확률이 낮아지지만, 몬스터 수가 많아져 웨이브당 기대 소환권은 약 2장으로 균일합니다.</p>
+              <p><b>웨이브 구성: 총 563마리 / 기대 소환권 총 30장</b></p>
+            </div>
+
+            <div class="article-section">
+              <h3>웨이브 구성</h3>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>웨이브</th>
+                      <th>몬스터 수</th>
+                      <th>몬스터 체력</th>
+                      <th>소환권 드랍률</th>
+                      <th>기대 소환권</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>1</td><td>5</td><td>1</td><td>40.0%</td><td>2장</td></tr>
+                    <tr><td>2</td><td>8</td><td>200</td><td>25.0%</td><td>2장</td></tr>
+                    <tr><td>3</td><td>10</td><td>3,000</td><td>20.0%</td><td>2장</td></tr>
+                    <tr><td>4</td><td>15</td><td>100만</td><td>13.3%</td><td>2장</td></tr>
+                    <tr><td>5</td><td>20</td><td>500만</td><td>10.0%</td><td>2장</td></tr>
+                    <tr><td>6</td><td>25</td><td>2,500만</td><td>8.0%</td><td>2장</td></tr>
+                    <tr><td>7</td><td>30</td><td>1.3억</td><td>6.7%</td><td>2장</td></tr>
+                    <tr><td>8</td><td>35</td><td>6.5억</td><td>5.7%</td><td>2장</td></tr>
+                    <tr><td>9</td><td>40</td><td>30억</td><td>5.0%</td><td>2장</td></tr>
+                    <tr><td>10</td><td>45</td><td>150억</td><td>4.4%</td><td>2장</td></tr>
+                    <tr><td>11</td><td>50</td><td>800억</td><td>4.0%</td><td>2장</td></tr>
+                    <tr><td>12</td><td>55</td><td>4,000억</td><td>3.6%</td><td>2장</td></tr>
+                    <tr><td>13</td><td>65</td><td>2조</td><td>3.1%</td><td>2장</td></tr>
+                    <tr><td>14</td><td>75</td><td>10조</td><td>2.7%</td><td>2장</td></tr>
+                    <tr><td>15</td><td>85</td><td>50조</td><td>2.4%</td><td>2장</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<script type="module">
+  import { renderTable } from "../../js/table-viewer.js";
+  renderTable("../../datas/town-defense.csv", "tableContainer", { search: false });
+  renderTable("../../datas/town-defense-hard.csv", "defenseHardTableContainer", { search: false });
+  renderTable("../../datas/equipment-raid.csv", "equipmentRaidTableContainer", {
+    search: false,
+    hiddenColumns: ["보스 HP 원본"],
+    tipColumns: { "보스 HP": "보스 HP 원본" }
+  });
+</script>
+<script>
+  const tabButtons = document.querySelectorAll(".tab-btn");
+  const tabContents = document.querySelectorAll(".tab-content");
+
+  tabButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      const target = button.dataset.tab;
+
+      tabButtons.forEach(btn => btn.classList.remove("active"));
+      tabContents.forEach(content => content.classList.remove("active"));
+
+      button.classList.add("active");
+      document.getElementById(target).classList.add("active");
+    });
+  });
+</script>
+</body>
+</html>
+
+

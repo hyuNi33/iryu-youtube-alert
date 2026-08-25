@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>장비 강화 효율표 - 이류월드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+  <style>
+    .efficiency-page {
+      display: grid;
+      gap: 18px;
+    }
+
+    .efficiency-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .efficiency-chip,
+    .efficiency-section {
+      border: 1px solid var(--result-border);
+      border-radius: 8px;
+      background: var(--card-bg);
+    }
+
+    .efficiency-chip {
+      padding: 14px 16px;
+      background: var(--mini-box-bg);
+    }
+
+    .efficiency-chip span {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--mini-title-color);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .efficiency-chip strong {
+      color: var(--result-value-color);
+      font-size: 18px;
+      line-height: 1.35;
+    }
+
+    .efficiency-section {
+      overflow: hidden;
+    }
+
+    .efficiency-section h2 {
+      margin: 0;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--result-row-border);
+      background: linear-gradient(180deg, var(--mini-box-bg), var(--card-bg));
+      color: var(--section-title-color);
+      font-size: 20px;
+      line-height: 1.35;
+    }
+
+    .efficiency-body {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .efficiency-note {
+      padding: 14px 16px;
+      border: 1px solid rgba(77, 166, 255, 0.35);
+      border-left: 5px solid var(--main-blue);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--main-blue) 10%, var(--card-bg));
+      color: var(--result-text);
+      font-weight: 800;
+      line-height: 1.7;
+      word-break: keep-all;
+    }
+
+    .efficiency-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--result-border);
+      border-radius: 8px;
+      background: var(--table-bg);
+    }
+
+    .efficiency-table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      table-layout: auto;
+      color: var(--result-text);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .efficiency-table th,
+    .efficiency-table td {
+      padding: 12px 14px;
+      border: 0;
+      border-bottom: 1px solid var(--table-td-border);
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .efficiency-table th {
+      background: var(--main-blue);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .efficiency-table td:first-child,
+    .efficiency-table th:first-child {
+      text-align: left;
+    }
+
+    .efficiency-table tbody tr:nth-child(even) {
+      background: var(--table-even-row);
+    }
+
+    .efficiency-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .efficiency-table strong {
+      color: var(--result-highlight);
+    }
+
+    .priority-high {
+      color: #2f9e44;
+      font-weight: 900;
+    }
+
+    .priority-mid {
+      color: #f59e0b;
+      font-weight: 900;
+    }
+
+    .priority-low {
+      color: #e5484d;
+      font-weight: 900;
+    }
+
+    @media (max-width: 900px) {
+      .efficiency-summary {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="container">
+    <aside class="sidebar"></aside>
+
+    <main class="content">
+      <div class="top-banner">
+        <h1>장비 강화 효율표</h1>
+        <p>17부위 강화 시 공격력 환산값과 강화 비용을 기준으로 효율 순서를 정리했습니다.</p>
+      </div>
+
+      <section class="calc-card efficiency-page">
+        <div class="efficiency-summary">
+          <div class="efficiency-chip">
+            <span>환산 기준</span>
+            <strong>공격력 1 = 스탯 11~13</strong>
+          </div>
+          <div class="efficiency-chip">
+            <span>핵심 결론</span>
+            <strong>무기 고강화 우선</strong>
+          </div>
+          <div class="efficiency-chip">
+            <span>초반 효율</span>
+            <strong>좋은 부위 노말2 먼저</strong>
+          </div>
+        </div>
+
+        <article class="efficiency-section">
+          <h2>계산 기준</h2>
+          <div class="efficiency-body">
+            <div class="efficiency-note">
+              효율 = 기본 옵션의 공격력 환산값 × 이전 레벨 대비 증가한 % ÷ 강화 갯수
+            </div>
+            <div class="efficiency-table-wrap">
+              <table class="efficiency-table">
+                <thead>
+                  <tr>
+                    <th>구분</th>
+                    <th>기본 옵션 예시</th>
+                    <th>공격력 환산값</th>
+                    <th>효율 판단</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td><strong>무기</strong></td><td>공격력 +700 이상</td><td>700+</td><td class="priority-high">최우선</td></tr>
+                  <tr><td><strong>고스탯 방어구</strong></td><td>스탯 +400</td><td>약 31~36</td><td class="priority-high">상위</td></tr>
+                  <tr><td><strong>고스탯 방어구</strong></td><td>스탯 +300</td><td>약 23~27</td><td class="priority-high">상위</td></tr>
+                  <tr><td><strong>공격력 장비</strong></td><td>공격력 +30</td><td>30</td><td class="priority-high">상위</td></tr>
+                  <tr><td><strong>공격력 장비</strong></td><td>공격력 +20</td><td>20</td><td class="priority-mid">중상위</td></tr>
+                  <tr><td><strong>공격력 장비</strong></td><td>공격력 +10</td><td>10</td><td class="priority-mid">중간</td></tr>
+                  <tr><td><strong>저스탯 장비</strong></td><td>스탯 +60</td><td>약 5</td><td class="priority-low">후순위</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+
+        <article class="efficiency-section">
+          <h2>추천 강화 순서</h2>
+          <div class="efficiency-body">
+            <div class="efficiency-table-wrap">
+              <table class="efficiency-table">
+                <thead>
+                  <tr>
+                    <th>순서</th>
+                    <th>강화 대상</th>
+                    <th>추천 목표</th>
+                    <th>이유</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td><strong>1</strong></td><td>무기</td><td>레어5~에픽2</td><td>기본 공격력이 높아 초반 효율이 압도적입니다.</td></tr>
+                  <tr><td><strong>2</strong></td><td>스탯 300~400 방어구</td><td>노말2</td><td>노말2 비용이 낮고 기본 스탯이 높습니다.</td></tr>
+                  <tr><td><strong>3</strong></td><td>공격력 +30 장비</td><td>노말2</td><td>고스탯 방어구와 비슷한 효율입니다.</td></tr>
+                  <tr><td><strong>4</strong></td><td>무기</td><td>레전더리5~미스틱5</td><td>다른 장비 노말3 이상보다 무기 효율이 여전히 높습니다.</td></tr>
+                  <tr><td><strong>5</strong></td><td>공격력 +20 장비</td><td>노말2</td><td>저비용으로 효율을 챙기는 구간입니다.</td></tr>
+                  <tr><td><strong>6</strong></td><td>공격력 +10 장비</td><td>노말2</td><td>무기 고강화 후 챙길 만합니다.</td></tr>
+                  <tr><td><strong>7</strong></td><td>스탯 +60 이하 장비</td><td>노말2</td><td>후순위지만 노말2는 싸서 투자 가능합니다.</td></tr>
+                  <tr><td><strong>8</strong></td><td>무기</td><td>에이션트5</td><td>기본값 차이가 커서 최종까지 우선도가 높습니다.</td></tr>
+                  <tr><td><strong>9</strong></td><td>공격력 +30 / 고스탯 장비</td><td>노말3 이상</td><td>무기 에이션트5 이후 본격적으로 올립니다.</td></tr>
+                  <tr><td><strong>10</strong></td><td>나머지 장비</td><td>여유분</td><td>효율 좋은 장비를 올린 뒤 균등하게 따라갑니다.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+
+        <article class="efficiency-section">
+          <h2>간단 루트</h2>
+          <div class="efficiency-body">
+            <div class="efficiency-table-wrap">
+              <table class="efficiency-table">
+                <thead>
+                  <tr>
+                    <th>단계</th>
+                    <th>목표</th>
+                    <th>메모</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td><strong>1단계</strong></td><td>무기 레어5</td><td>가장 먼저 체감 효율을 확보합니다.</td></tr>
+                  <tr><td><strong>2단계</strong></td><td>고스탯 / 공격력 +30 장비 노말2</td><td>싼 비용으로 좋은 부위만 먼저 찍습니다.</td></tr>
+                  <tr><td><strong>3단계</strong></td><td>무기 레전더리5</td><td>무기 기본 공격력 차이를 활용합니다.</td></tr>
+                  <tr><td><strong>4단계</strong></td><td>공격력 +20 / +10 장비 노말2</td><td>중간 효율 부위를 정리합니다.</td></tr>
+                  <tr><td><strong>5단계</strong></td><td>무기 미스틱5~에이션트5</td><td>대부분의 장비보다 우선도가 높습니다.</td></tr>
+                  <tr><td><strong>6단계</strong></td><td>고스탯 / 공격력 +30 장비 노말3~레어5</td><td>무기 이후 상위 장비를 강화합니다.</td></tr>
+                  <tr><td><strong>7단계</strong></td><td>나머지 부위 균등 강화</td><td>남은 재화로 낮은 레벨부터 맞춥니다.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+
+        <article class="efficiency-section">
+          <h2>강화표 효율 요약</h2>
+          <div class="efficiency-body">
+            <div class="efficiency-note">
+              강화 %는 뒤로 갈수록 커지지만, 강화 갯수가 더 빠르게 증가하므로 갯수 대비 효율은 노말2 이후 점점 낮아집니다.
+            </div>
+            <div class="efficiency-table-wrap">
+              <table class="efficiency-table">
+                <thead>
+                  <tr>
+                    <th>구간</th>
+                    <th>특징</th>
+                    <th>추천 판단</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td><strong>노말1 → 노말2</strong></td><td>38개로 2.3% 증가</td><td class="priority-high">전 구간 최고 효율</td></tr>
+                  <tr><td><strong>노말2 → 레어5</strong></td><td>추가 %는 작지만 비용도 낮은 편</td><td class="priority-high">무기와 상위 장비 위주</td></tr>
+                  <tr><td><strong>레어5 → 유니크5</strong></td><td>비용 증가가 본격화</td><td class="priority-mid">무기 우선, 좋은 장비만 선택</td></tr>
+                  <tr><td><strong>유니크5 → 미스틱5</strong></td><td>강화 갯수가 크게 증가</td><td class="priority-mid">무기 중심으로 투자</td></tr>
+                  <tr><td><strong>미스틱5 → 에이션트5</strong></td><td>비용이 매우 큼</td><td class="priority-low">무기 또는 최상위 장비만</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+</div>
+</body>
+</html>

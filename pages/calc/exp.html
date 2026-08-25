@@ -1,0 +1,2787 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>경험치 계산기 - 이류월드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+  <style>
+    body.measure-embed .sidebar,
+    body.measure-embed .top-banner,
+    body.measure-embed .tab-bar {
+      display: none;
+    }
+
+    body.measure-embed {
+      background: transparent;
+      overflow: hidden;
+    }
+
+    body.measure-embed .wrapper {
+      padding: 0;
+    }
+
+    body.measure-embed .container {
+      display: block;
+    }
+
+    body.measure-embed .content {
+      width: 100%;
+      max-width: none;
+      padding: 0;
+    }
+
+    body.measure-embed .calc-card {
+      margin: 0;
+      box-shadow: none;
+      border: 0;
+      background: transparent;
+    }
+
+    body.measure-embed .tab-content {
+      display: none;
+    }
+
+    body.measure-embed #tab-screenExp {
+      display: block;
+    }
+
+    body.measure-embed .screen-exp-actions {
+      margin: 16px 0 12px;
+    }
+
+    body.measure-embed .screen-exp-preview {
+      min-height: 300px;
+    }
+
+    body.measure-embed .screen-exp-placeholder span {
+      max-width: 460px;
+      padding: 16px 20px;
+    }
+
+    body.measure-embed .screen-exp-status {
+      margin-top: 10px;
+    }
+
+    body.measure-embed #screenResult {
+      margin-top: 10px;
+    }
+
+    .screen-result-snapshot-notice {
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <script>if(new URLSearchParams(location.search).get("embed")==="screenExp")document.body.classList.add("measure-embed")</script>
+
+  <div class="wrapper">
+    <div class="container">
+
+      <aside class="sidebar"></aside>
+
+      <main class="content">
+        <div class="top-banner">
+          <h1>경험치 시간 계산기</h1>
+          <p>현재 레벨, 목표 레벨, 1분당 경험치를 입력해서 필요한 시간을 계산합니다.</p>
+        </div>
+
+        <section class="calc-card">
+          <div class="tab-bar">
+            <button class="tab-btn active" data-tab="expCalc">경험치 계산</button>
+            <button class="tab-btn" data-tab="expForecast">날짜별 예상</button>
+            <!--<button class="tab-btn" data-tab="expMinute">1분당 경험치 계산</button>-->
+            <button class="tab-btn" data-tab="cycleOpt">사이클 최적화</button>
+            <button class="tab-btn" data-tab="sweepLevel">소탕 레벨 계산</button>
+            <button class="tab-btn" data-tab="screenExp">경험치 측정기</button>
+          </div>
+
+          <div class="tab-content active" id="tab-expCalc">
+            <div class="form-list">
+              <div class="form-row">
+                <label for="currentLv">현재 레벨</label>
+                <input type="number" id="currentLv" placeholder="현재 레벨을 입력하세요 예)120" min="1">
+              </div>
+
+              <div class="form-row">
+                <label for="targetLv">목표 레벨</label>
+                <input type="number" id="targetLv" placeholder="목표 레벨을 입력하세요 예)455" min="1">
+              </div>
+
+              <div class="form-row">
+                <label for="expPerMinute">1분당 경험치</label>
+                <input type="number" id="expPerMinute" placeholder="1분당 경험치를 입력하세요 예)30000000" min="1">
+              </div>
+
+              <div class="form-row">
+                <label for="hourglassLv">모래시계 레벨</label>
+                <input type="number" id="hourglassLv" value="0" min="0" max="50">
+              </div>
+            </div>
+
+            <div class="action-area">
+              <button type="button" class="btn btn-green btn-large" onclick="calcExpTime()">계산하기</button>
+            </div>
+
+            <div id="result" class="result-box">여기에 결과가 표시됩니다.</div>
+          </div>
+
+          <div class="tab-content" id="tab-expForecast">
+            <div class="form-list">
+              <div class="form-row">
+                <label for="forecastCurrentLv">현재 레벨</label>
+                <input type="number" id="forecastCurrentLv" placeholder="현재 레벨을 입력하세요 예)120" min="1">
+              </div>
+
+              <div class="form-row">
+                <label for="forecastCurrentExp">현재 경험치</label>
+                <input type="number" id="forecastCurrentExp" placeholder="현재 레벨에서 쌓인 경험치 예)150000000" min="0" value="0">
+              </div>
+
+              <div class="form-row">
+                <label for="forecastMaxLv">현재 나의 만렙</label>
+                <input type="number" id="forecastMaxLv" placeholder="현재 도달 가능한 최대 레벨 예)200" min="1" value="300">
+              </div>
+
+              <div class="form-row">
+                <label for="forecastExpPerMinute">1분당 경험치</label>
+                <input type="number" id="forecastExpPerMinute" placeholder="1분당 경험치를 입력하세요 예)30000000" min="1">
+              </div>
+
+              <div class="form-row">
+                <label for="forecastTargetTime">목표 날짜/시간</label>
+                <input type="datetime-local" id="forecastTargetTime">
+              </div>
+
+              <div class="form-row">
+                <label for="forecastHourglassLv">모래시계 레벨</label>
+                <input type="number" id="forecastHourglassLv" value="0" min="0" max="50">
+              </div>
+            </div>
+
+            <div class="action-area">
+              <button type="button" class="btn btn-green btn-large" onclick="calcExpForecast()">계산하기</button>
+            </div>
+
+            <div id="forecastResult" class="result-box">여기에 결과가 표시됩니다.</div>
+          </div>
+
+           <div class="tab-content" id="tab-expMinute">
+            <div class="form-list">
+              <div class="form-row">
+                <label for="firstExp">앞 경험치</label>
+                <input type="number" id="firstExp" placeholder="앞에 경험치를 입력하세요 예) 9450000000" min="1">
+              </div>
+
+              <div class="form-row">
+                <label for="encyExp">도감 경험치 (%)</label>
+                <input type="number" id="encyExp" placeholder="도감 경험치를 입력하세요 예) 14" min="0">
+              </div>
+
+              <div class="form-row">
+                <label for="holySymbol">홀리심볼 경험치 (%)</label>
+                <input type="number" id="holySymbol" placeholder="홀리심볼 경험치를 입력하세요 예) 70" min="0">
+              </div>
+
+              <div class="form-row">
+                <label for="numAnimal">잡는 마릿수</label>
+                <input type="number" id="numAnimal" placeholder="잡는 마릿수를 입력하세요 예)8" min="1">
+              </div>
+
+              <div class="form-row">
+                <label for="animalTime">걸리는 시간</label>
+                <input type="number" id="animalTime" placeholder="잡는데 걸리는 시간을 입력하세요 예)3" min="1">
+              </div>
+            </div>
+
+            <div class="action-area">
+              <button type="button" class="btn btn-green btn-large" onclick="expMinuteTime()">계산하기</button>
+            </div>
+
+            <div id="expMinuteResult" class="result-box">여기에 결과가 표시됩니다.</div>
+          </div>
+
+          <div class="tab-content" id="tab-cycleOpt">
+            <p style="color: var(--warning-color); font-size: 14px; font-weight: 600; margin-bottom: 14px;">
+              ※ 4초월 이상부터 사용하는 기능으로 "사냥터 변경", "초월기준" 으로부터 오랜 기간이 걸려서 환생 싸이클을 구성해야하는경우 사용합니다.
+            </p>
+            <div class="form-list">
+              <div class="form-row">
+                <label for="sweepExp">소탕시 획득 경험치</label>
+                <input type="number" id="sweepExp" placeholder="소탕 1회 경험치 예)500000000" min="0">
+              </div>
+
+              <div class="form-row">
+                <label for="sweepCount">소탕 횟수</label>
+                <select id="sweepCount" class="styled-select">
+                  <option value="1">1회</option>
+                  <option value="2">2회</option>
+                  <option value="3">3회</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label for="totalHours">총 시간 (시간)</label>
+                <select id="totalHours" class="styled-select">
+                  <option value="12">12시간</option>
+                  <option value="24">24시간</option>
+                  <option value="48">48시간</option>
+                  <option value="72">72시간</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label for="cycleExpPerMinute">1분당 경험치</label>
+                <input type="number" id="cycleExpPerMinute" placeholder="1분당 경험치를 입력하세요" min="1">
+              </div>
+
+              <div class="form-row">
+                <label for="cycleHourglassLv">모래시계 레벨</label>
+                <input type="number" id="cycleHourglassLv" value="0" min="0" max="50">
+              </div>
+            </div>
+
+            <div class="action-area">
+              <button type="button" class="btn btn-green btn-large" onclick="calcCycleOpt()">계산하기</button>
+            </div>
+
+            <div id="cycleResult" class="result-box">여기에 결과가 표시됩니다.</div>
+          </div>
+
+          <div class="tab-content" id="tab-sweepLevel">
+            <div class="form-list">
+              <div class="form-row">
+                <label for="sweepLevelExp">소탕 시 획득 경험치</label>
+                <input type="number" id="sweepLevelExp" placeholder="소탕 1회 경험치 예)500000000" min="0">
+              </div>
+
+              <div class="form-row">
+                <label for="sweepLevelCount">소탕 횟수</label>
+                <select id="sweepLevelCount" class="styled-select">
+                  <option value="1">1회</option>
+                  <option value="2">2회</option>
+                  <option value="3">3회</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label for="sweepLevelHourglassLv">모래시계 레벨</label>
+                <input type="number" id="sweepLevelHourglassLv" value="0" min="0" max="50">
+              </div>
+            </div>
+
+            <div class="action-area">
+              <button type="button" class="btn btn-green btn-large" onclick="calcSweepLevel()">계산하기</button>
+            </div>
+
+            <div id="sweepLevelResult" class="result-box">여기에 결과가 표시됩니다.</div>
+          </div>
+
+          <div class="tab-content" id="tab-screenExp">
+            <p class="beta-notice">
+              화면 캡처는 브라우저 안에서만 처리되며 서버로 전송되지 않습니다. 경험치 바 색상과 이펙트에 따라 오차가 있을 수 있습니다.
+            </p>
+
+            <div class="screen-exp-guide" id="screenGuide">
+              <div class="screen-exp-guide-header">
+                <div class="screen-exp-guide-title">사용법</div>
+                <button type="button" class="screen-exp-guide-toggle" id="screenGuideToggleBtn" aria-expanded="true" aria-controls="screenGuideBody">접기</button>
+              </div>
+              <div class="screen-exp-guide-body" id="screenGuideBody">
+                <ol>
+                  <li>`화면 선택 시작`으로 게임 화면을 선택합니다.</li>
+                  <li>하단 1/3 확대 미리보기에서 경험치 바 영역을 대략 드래그해서 지정합니다.</li>
+                  <li><strong class="screen-exp-emphasis">초록색 진행 영역과 회색 빈 영역</strong>을 기준으로 맞추되, 정확히 딱 맞추기 어렵다면 경험치 바 안쪽을 <strong>대략적으로</strong> 잡아도 됩니다.</li>
+                  <li>한 번 선택한 뒤에는 상하좌우 손잡이로 빨간 선을 조절합니다. 돋보기의 굵은 십자선이 조절 중인 기준선입니다.</li>
+                  <li>다시 선택하려면 `Delete` 키로 영역을 지웁니다.</li>
+                  <li><strong class="screen-exp-warning">측정 중에는 경험치 바 영역 위에 마우스 포인터를 두지 마세요.</strong> 포인터가 캡처 영역에 겹치면 픽셀 인식이 흔들릴 수 있습니다.</li>
+                  <li>현재 레벨, 모래시계 레벨, 측정 시간을 확인한 뒤 `측정 시작`을 누릅니다. <strong class="screen-exp-warning">명확한 지표 수집을 위해 3분 이상 측정을 권장합니다.</strong></li>
+                  <li><strong class="screen-exp-warning">레벨업 시 오인식 가능성이 있습니다.</strong> 해당 부분을 고려해서 사용해 주세요.</li>
+                  <li>테스트 결과 경험치 퍼센트 인식 오차는 대체로 <strong>0.1% 미만</strong>이지만, 측정 결과를 맹신하지 말고 <u>2~3번 반복 측정</u>해서 비교해 주세요.</li>
+                </ol>
+                <div class="screen-exp-guide-example">
+                  <div class="screen-exp-guide-example-title">정밀 조정 예시</div>
+                  <img src="../../assets/guide/screen-exp-roi-guide.webp" alt="경험치 측정 정밀 조정 예시">
+                  <p class="screen-exp-guide-caption">
+                    예시처럼 빨간 선이 경험치바의 <strong>초록색/회색 색 띠</strong>를 감싸도록 조절하면 인식이 안정적입니다.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-list">
+              <div class="form-row">
+                <label for="screenCurrentLv">현재 레벨</label>
+                <input type="number" id="screenCurrentLv" placeholder="현재 레벨을 입력하세요" min="1">
+              </div>
+
+              <div class="form-row">
+                <label for="screenHourglassLv">모래시계 레벨</label>
+                <input type="number" id="screenHourglassLv" value="0" min="0" max="50">
+              </div>
+
+              <div class="form-row">
+                <label for="screenMeasureSeconds">측정 시간</label>
+                <select id="screenMeasureSeconds" class="styled-select">
+                  <option value="60" selected>1분</option>
+                  <option value="180">3분</option>
+                  <option value="300">5분</option>
+                  <option value="600">10분</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label for="screenSampleSeconds">샘플링 간격(초)</label>
+                <input type="number" id="screenSampleSeconds" value="1.5" min="0.5" max="10" step="0.1">
+              </div>
+            </div>
+
+            <div class="screen-exp-actions">
+              <button type="button" class="btn btn-green" id="screenStartCaptureBtn">화면 선택 시작</button>
+              <button type="button" class="btn btn-gray" id="screenStartMeasureBtn">측정 시작</button>
+              <button type="button" class="btn btn-gray" id="screenStopMeasureBtn">측정 중지</button>
+            </div>
+
+            <div class="screen-exp-preview" id="screenPreviewWrap">
+              <canvas id="screenPreviewCanvas" class="screen-exp-preview-canvas"></canvas>
+              <video id="screenVideo" muted playsinline></video>
+              <div class="screen-exp-roi" id="screenRoiBox"></div>
+              <div class="screen-exp-resize-handle screen-exp-resize-top" id="screenRoiTopHandle" title="위쪽 높이 조정"></div>
+              <div class="screen-exp-resize-handle screen-exp-resize-left" id="screenRoiLeftHandle" title="왼쪽 폭 조정"></div>
+              <div class="screen-exp-resize-handle screen-exp-resize-right" id="screenRoiRightHandle" title="오른쪽 폭 조정"></div>
+              <div class="screen-exp-resize-handle screen-exp-resize-bottom" id="screenRoiBottomHandle" title="아래쪽 높이 조정"></div>
+              <canvas class="screen-exp-magnifier" id="screenMagnifierCanvas"></canvas>
+              <div class="screen-exp-placeholder" id="screenPlaceholder"><span>화면 선택 후 하단 확대 미리보기에서 경험치 바 영역을 드래그하세요.</span></div>
+            </div>
+            <canvas id="screenCanvas" hidden></canvas>
+
+            <div id="screenStatus" class="screen-exp-status">대기 중</div>
+            <div id="screenResult" class="result-box">측정 결과가 여기에 표시됩니다.</div>
+          </div>
+        </section>
+      </main>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import { initExpData, calculateLevelUpTime, calculateLevelAtMinutes, calculateCycleLevel, getExpNeedForLevel } from "../../js/calc/exp.js";
+    import { startCapture, stopCapture, captureExpRatio } from "../../js/calc/screen-exp.js";
+    import { saveInputs, loadInputs } from "../../js/storage.js";
+
+    await initExpData("../..");
+
+    const IS_SCREEN_MEASURE_EMBED = new URLSearchParams(location.search).get("embed") === "screenExp";
+    if (IS_SCREEN_MEASURE_EMBED) document.body.classList.add("measure-embed");
+
+    function postMeasureEmbedHeight() {
+      if (!IS_SCREEN_MEASURE_EMBED || window.parent === window) return;
+      requestAnimationFrame(() => {
+        window.parent.postMessage({
+          type: "iryuMeasureFrameHeight",
+          height: document.documentElement.scrollHeight
+        }, location.origin);
+      });
+    }
+
+    if (IS_SCREEN_MEASURE_EMBED) {
+      window.addEventListener("load", postMeasureEmbedHeight);
+      window.addEventListener("resize", postMeasureEmbedHeight);
+      window.addEventListener("message", event => {
+        if (event.origin !== location.origin) return;
+        if (event.data?.type === "iryuMeasureRequestHeight") postMeasureEmbedHeight();
+        if (event.data?.type === "iryuMeasureTheme" && event.data.theme) {
+          document.documentElement.setAttribute("data-theme", event.data.theme);
+        }
+      });
+      if (window.ResizeObserver) {
+        new ResizeObserver(postMeasureEmbedHeight).observe(document.body);
+      }
+      setTimeout(postMeasureEmbedHeight, 300);
+    }
+
+    const SCREEN_GUIDE_COLLAPSED_KEY = "iryu_screen_exp_guide_collapsed";
+    const SCREEN_ROI_STORAGE_KEY = "iryu_screen_exp_roi";
+
+    // === 탭 전환 ===
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    if (IS_SCREEN_MEASURE_EMBED) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      document.querySelector('.tab-btn[data-tab="screenExp"]')?.classList.add("active");
+      document.getElementById("tab-screenExp")?.classList.add("active");
+    }
+
+    // === 입력 ID 정의 ===
+    const TAB1_IDS = ["currentLv", "targetLv", "expPerMinute", "hourglassLv"];
+    const FORECAST_IDS = ["forecastCurrentLv", "forecastCurrentExp", "forecastMaxLv", "forecastExpPerMinute", "forecastTargetTime", "forecastHourglassLv"];
+    const TAB2_IDS = ["sweepExp", "sweepCount", "totalHours", "cycleExpPerMinute", "cycleHourglassLv"];
+    const TAB3_IDS = ["firstExp", "encyExp", "holySymbol", "numAnimal", "animalTime"];
+    const SWEEP_LEVEL_IDS = ["sweepLevelExp", "sweepLevelCount", "sweepLevelHourglassLv"];
+    const SCREEN_IDS = ["screenCurrentLv", "screenHourglassLv", "screenMeasureSeconds", "screenSampleSeconds"];
+    const SHARED_GROUPS = [
+      ["currentLv", "forecastCurrentLv", "screenCurrentLv"],
+      ["expPerMinute", "forecastExpPerMinute", "cycleExpPerMinute"],
+      ["hourglassLv", "forecastHourglassLv", "cycleHourglassLv", "sweepLevelHourglassLv", "screenHourglassLv"]
+    ];
+
+    // === 저장 함수 ===
+    function saveAll() {
+      const data = {};
+      for (const id of TAB1_IDS) data[id] = document.getElementById(id).value;
+      for (const id of FORECAST_IDS) data[id] = document.getElementById(id).value;
+      for (const id of ["sweepExp", "sweepCount", "totalHours"]) data[id] = document.getElementById(id).value;
+      for (const id of TAB3_IDS) data[id] = document.getElementById(id).value;
+      for (const id of SWEEP_LEVEL_IDS) data[id] = document.getElementById(id).value;
+      for (const id of SCREEN_IDS) data[id] = document.getElementById(id).value;
+      saveInputs("exp", data);
+    }
+
+    // === 저장된 값 복원 ===
+    const saved = loadInputs("exp");
+    if (saved) {
+      for (const id of TAB1_IDS) {
+        if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
+      }
+      for (const id of FORECAST_IDS) {
+        if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
+      }
+      if (saved.currentExp !== undefined && saved.forecastCurrentExp === undefined) {
+        document.getElementById("forecastCurrentExp").value = saved.currentExp;
+      }
+      if (saved.targetTime !== undefined && saved.forecastTargetTime === undefined) {
+        document.getElementById("forecastTargetTime").value = saved.targetTime;
+      }
+      for (const id of ["sweepExp", "sweepCount", "totalHours"]) {
+        if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
+      }
+      for (const id of TAB3_IDS) {
+        if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
+      }
+      for (const id of SWEEP_LEVEL_IDS) {
+        if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
+      }
+      for (const id of SCREEN_IDS) {
+        if (saved[id] !== undefined) document.getElementById(id).value = saved[id];
+      }
+      // 공유 입력 복원
+      for (const group of SHARED_GROUPS) {
+        const savedId = group.find(id => saved[id] !== undefined);
+        if (!savedId) continue;
+        for (const id of group) document.getElementById(id).value = saved[savedId];
+      }
+    }
+
+    const forecastTargetTimeInput = document.getElementById("forecastTargetTime");
+    if (!forecastTargetTimeInput.value) {
+      const now = new Date();
+      now.setSeconds(0, 0);
+      const offsetMs = now.getTimezoneOffset() * 60000;
+      forecastTargetTimeInput.value = new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
+    }
+
+    // === 입력 변경 시 저장 + 공유 입력 동기화 ===
+    for (const id of [...TAB1_IDS, ...FORECAST_IDS, ...TAB2_IDS, ...TAB3_IDS, ...SWEEP_LEVEL_IDS, ...SCREEN_IDS]) {
+      document.getElementById(id).addEventListener("change", () => {
+        for (const group of SHARED_GROUPS) {
+          if (!group.includes(id)) continue;
+          const value = document.getElementById(id).value;
+          for (const targetId of group) document.getElementById(targetId).value = value;
+        }
+        saveAll();
+      });
+    }
+
+    const screenGuide = document.getElementById("screenGuide");
+    const screenGuideToggleBtn = document.getElementById("screenGuideToggleBtn");
+
+    function setScreenGuideCollapsed(collapsed) {
+      screenGuide.classList.toggle("collapsed", collapsed);
+      screenGuideToggleBtn.textContent = collapsed ? "펼치기" : "접기";
+      screenGuideToggleBtn.setAttribute("aria-expanded", String(!collapsed));
+      localStorage.setItem(SCREEN_GUIDE_COLLAPSED_KEY, String(collapsed));
+    }
+
+    setScreenGuideCollapsed(localStorage.getItem(SCREEN_GUIDE_COLLAPSED_KEY) === "true");
+    screenGuideToggleBtn.addEventListener("click", () => {
+      setScreenGuideCollapsed(!screenGuide.classList.contains("collapsed"));
+    });
+
+    // === 화면 인식(beta) ===
+    const screenVideo = document.getElementById("screenVideo");
+    const screenPreviewCanvas = document.getElementById("screenPreviewCanvas");
+    const screenCanvas = document.getElementById("screenCanvas");
+    const screenPreviewWrap = document.getElementById("screenPreviewWrap");
+    const screenRoiBox = document.getElementById("screenRoiBox");
+    const screenRoiTopHandle = document.getElementById("screenRoiTopHandle");
+    const screenRoiLeftHandle = document.getElementById("screenRoiLeftHandle");
+    const screenRoiRightHandle = document.getElementById("screenRoiRightHandle");
+    const screenRoiBottomHandle = document.getElementById("screenRoiBottomHandle");
+    const screenMagnifierCanvas = document.getElementById("screenMagnifierCanvas");
+    const screenPlaceholder = document.getElementById("screenPlaceholder");
+    const screenStatus = document.getElementById("screenStatus");
+    const screenResult = document.getElementById("screenResult");
+    const screenStartCaptureBtn = document.getElementById("screenStartCaptureBtn");
+    const screenStartMeasureBtn = document.getElementById("screenStartMeasureBtn");
+    const screenStopMeasureBtn = document.getElementById("screenStopMeasureBtn");
+
+    let screenStream = null;
+    let screenRoi = null;
+    let screenPreviewRoi = null;
+    let screenDragStart = null;
+    let screenMoveStart = null;
+    let screenResizeSide = null;
+    let screenResizePointerOffset = 0;
+    let screenMeasureTimer = null;
+    let screenMeasureInterval = null;
+    let screenPreviewAnimation = null;
+    let screenLastPreviewDraw = 0;
+    let screenMeasureStart = null;
+    let screenStartRatio = null;
+    let screenPrevRatio = null;
+    let screenStartLevel = null;
+    let screenCurrentMeasureLevel = null;
+    let screenMeasureHourglassLv = 0;
+    let screenMeasureHourglassMultiplier = 1;
+    let screenTotalGainedExp = 0;
+    let screenLevelUpCount = 0;
+    let screenPendingLevelUp = null;
+    let screenLevelUpArmed = false;
+    let screenMeasurementInvalidated = false;
+    let screenRecentExpSamples = [];
+    let screenRatioTrendSamples = [];
+    let screenAcceptedRatioSamples = [];
+    let screenLastAcceptedSampleTime = null;
+    let screenLevelUpStabilizeUntil = 0;
+    let screenSampleInProgress = false;
+    let screenLastResult = null;
+    let screenCompleteAudioContext = null;
+    let screenDisplayedAverageExpPerMinute = 0;
+    let screenStableAverageExpPerMinute = 0;
+    const SCREEN_PREVIEW_CROP_TOP_RATIO = 2 / 3;
+    const SCREEN_PREVIEW_CROP_HEIGHT_RATIO = 1 / 3;
+    const SCREEN_PREVIEW_FPS = 15;
+    const SCREEN_DEFAULT_MEASURE_INTERVAL_MS = 1500;
+    const SCREEN_MIN_MEASURE_INTERVAL_MS = 500;
+    const SCREEN_MAX_MEASURE_INTERVAL_MS = 10000;
+    const SCREEN_SAMPLE_BATCH_COUNT = 3;
+    const SCREEN_SAMPLE_BATCH_DELAY_MS = 70;
+    const SCREEN_SAMPLE_MAX_SPREAD = 0.1;
+    const SCREEN_SPIKE_RECHECK_COUNT = 3;
+    const SCREEN_SPIKE_RECHECK_DELAY_MS = 60;
+    const SCREEN_LEVEL_UP_STABILIZE_MS = 5000;
+    const SCREEN_SPIKE_WARMUP_MS = 5000;
+    const SCREEN_MIN_TREND_SAMPLES = 3;
+    const SCREEN_RECHECK_CONSISTENCY_RATIO = 0.08;
+    const SCREEN_ACCEPTED_SAMPLE_WINDOW_MS = 15000;
+    const SCREEN_NOISE_MULTIPLIER = 4;
+    const SCREEN_MIN_LEVEL_UP_DROP = 0.02;
+    const SCREEN_LEVEL_UP_ARM_RATIO = 0.95;
+    const SCREEN_LEVEL_UP_DIRECT_MAX_RATIO = 0.25;
+    const SCREEN_LEVEL_UP_DIRECT_MIN_DROP = 0.45;
+    const SCREEN_LEVEL_UP_MAX_POST_RATIO = 0.25;
+    const SCREEN_LEVEL_UP_LARGE_GAIN_MAX_RATIO = 0.85;
+    const SCREEN_LEVEL_UP_LARGE_GAIN_MIN_DROP = 0.2;
+    const SCREEN_LEVEL_UP_WRAP_MIN_PRE_RATIO = 0.5;
+    const SCREEN_LEVEL_UP_WRAP_MIN_DROP = 0.35;
+    const SCREEN_LEVEL_UP_POST_RATIO_MARGIN = 0.03;
+    const SCREEN_LEVEL_UP_CONFIRM_COUNT = 2;
+    const SCREEN_LEVEL_UP_LARGE_GAIN_CONFIRM_COUNT = 4;
+    const SCREEN_LEVEL_UP_LARGE_GAIN_CONFIRM_MS = 6000;
+    const SCREEN_AVERAGE_SMOOTH_ALPHA = 0.25;
+    const SCREEN_AVERAGE_LEVEL_UP_ALPHA = 0.04;
+    const SCREEN_LEVEL_UP_WARNING_RATIO = 0.8;
+    const SCREEN_LEVEL_UP_DYNAMIC_MIN_DROP = 0.08;
+
+    function setScreenStatus(message) {
+      screenStatus.textContent = message;
+    }
+
+    function setScreenResult(message) {
+      screenResult.innerHTML = message;
+    }
+
+    function getScreenSampleIntervalMs() {
+      const input = document.getElementById("screenSampleSeconds");
+      const seconds = Number(input?.value);
+      if (!Number.isFinite(seconds) || seconds <= 0) return SCREEN_DEFAULT_MEASURE_INTERVAL_MS;
+
+      return Math.round(Math.max(
+        SCREEN_MIN_MEASURE_INTERVAL_MS,
+        Math.min(SCREEN_MAX_MEASURE_INTERVAL_MS, seconds * 1000)
+      ));
+    }
+
+    function getScreenCompleteAudioContext() {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+      if (!screenCompleteAudioContext) {
+        screenCompleteAudioContext = new AudioContextClass();
+      }
+      return screenCompleteAudioContext;
+    }
+
+    async function unlockScreenCompleteSound() {
+      const audioContext = getScreenCompleteAudioContext();
+      if (!audioContext) return;
+
+      try {
+        if (audioContext.state === "suspended") {
+          await audioContext.resume();
+        }
+
+        const startedAt = audioContext.currentTime;
+        const gain = audioContext.createGain();
+        const oscillator = audioContext.createOscillator();
+        gain.gain.setValueAtTime(0.0001, startedAt);
+        oscillator.frequency.setValueAtTime(440, startedAt);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start(startedAt);
+        oscillator.stop(startedAt + 0.03);
+        window.setTimeout(() => gain.disconnect(), 100);
+      } catch (error) {
+        console.warn("Failed to unlock measurement complete sound.", error);
+      }
+    }
+
+    async function playScreenCompleteSound() {
+      const audioContext = getScreenCompleteAudioContext();
+      if (!audioContext) return;
+
+      try {
+        if (audioContext.state === "suspended") {
+          await audioContext.resume();
+        }
+      } catch (error) {
+        console.warn("Failed to resume measurement complete sound.", error);
+        return;
+      }
+
+      const startedAt = audioContext.currentTime;
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(0.0001, startedAt);
+      gain.gain.exponentialRampToValueAtTime(0.28, startedAt + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startedAt + 0.65);
+      gain.connect(audioContext.destination);
+
+      [880, 1174.66].forEach((frequency, index) => {
+        const oscillator = audioContext.createOscillator();
+        const noteStart = startedAt + index * 0.16;
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(frequency, noteStart);
+        oscillator.connect(gain);
+        oscillator.start(noteStart);
+        oscillator.stop(noteStart + 0.22);
+      });
+
+      window.setTimeout(() => gain.disconnect(), 900);
+    }
+
+    function getVideoLayout() {
+      const rect = screenPreviewCanvas.getBoundingClientRect();
+      const wrapRect = screenPreviewWrap.getBoundingClientRect();
+      const cropTop = screenVideo.videoHeight * SCREEN_PREVIEW_CROP_TOP_RATIO;
+      const cropHeight = screenVideo.videoHeight * SCREEN_PREVIEW_CROP_HEIGHT_RATIO;
+      return {
+        rect,
+        displayWidth: rect.width,
+        displayHeight: rect.height,
+        offsetX: rect.left - wrapRect.left,
+        offsetY: rect.top - wrapRect.top,
+        cropTop,
+        cropHeight
+      };
+    }
+
+    function getVideoPoint(event) {
+      const layout = getVideoLayout();
+      const rawViewX = event.clientX - layout.rect.left;
+      const rawViewY = event.clientY - layout.rect.top;
+      const viewX = Math.max(0, Math.min(layout.displayWidth, rawViewX));
+      const viewY = Math.max(0, Math.min(layout.displayHeight, rawViewY));
+      const scaleX = screenVideo.videoWidth / layout.displayWidth;
+      const scaleY = layout.cropHeight / layout.displayHeight;
+
+      return {
+        x: viewX * scaleX,
+        y: layout.cropTop + viewY * scaleY,
+        viewX,
+        viewY
+      };
+    }
+
+    function stopPreviewLoop() {
+      if (!screenPreviewAnimation) return;
+      cancelAnimationFrame(screenPreviewAnimation);
+      screenPreviewAnimation = null;
+      screenLastPreviewDraw = 0;
+    }
+
+    function drawPreviewFrame(timestamp = 0) {
+      const minFrameMs = 1000 / SCREEN_PREVIEW_FPS;
+      if (timestamp && screenLastPreviewDraw && timestamp - screenLastPreviewDraw < minFrameMs) {
+        screenPreviewAnimation = requestAnimationFrame(drawPreviewFrame);
+        return;
+      }
+      if (timestamp) screenLastPreviewDraw = timestamp;
+
+      if (!screenStream || !screenVideo.videoWidth || !screenVideo.videoHeight) {
+        screenPreviewAnimation = requestAnimationFrame(drawPreviewFrame);
+        return;
+      }
+
+      const cropTop = screenVideo.videoHeight * SCREEN_PREVIEW_CROP_TOP_RATIO;
+      const cropHeight = screenVideo.videoHeight * SCREEN_PREVIEW_CROP_HEIGHT_RATIO;
+      const cropRatio = screenVideo.videoWidth / cropHeight;
+      const cssWidth = Math.max(1, screenPreviewWrap.clientWidth);
+      const cssHeight = Math.max(180, Math.min(340, cssWidth / cropRatio));
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const canvasWidth = Math.round(cssWidth * dpr);
+      const canvasHeight = Math.round(cssHeight * dpr);
+
+      if (screenPreviewCanvas.width !== canvasWidth || screenPreviewCanvas.height !== canvasHeight) {
+        screenPreviewCanvas.width = canvasWidth;
+        screenPreviewCanvas.height = canvasHeight;
+        screenPreviewCanvas.style.width = cssWidth + "px";
+        screenPreviewCanvas.style.height = cssHeight + "px";
+      }
+
+      const ctx = screenPreviewCanvas.getContext("2d");
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      ctx.drawImage(screenVideo, 0, cropTop, screenVideo.videoWidth, cropHeight, 0, 0, canvasWidth, canvasHeight);
+      drawPreviewRoi(ctx, canvasWidth, canvasHeight, cropTop, cropHeight);
+      screenPreviewAnimation = requestAnimationFrame(drawPreviewFrame);
+    }
+
+    function drawPreviewRoi(ctx, canvasWidth, canvasHeight, cropTop, cropHeight) {
+      const roi = screenPreviewRoi || screenRoi;
+      if (!roi || !screenVideo.videoWidth) return;
+
+      const x = roi.x / screenVideo.videoWidth * canvasWidth;
+      const y = (roi.y - cropTop) / cropHeight * canvasHeight;
+      const width = roi.width / screenVideo.videoWidth * canvasWidth;
+      const height = roi.height / cropHeight * canvasHeight;
+      const lineWidth = Math.max(2, 2 * (window.devicePixelRatio || 1));
+
+      ctx.save();
+      ctx.strokeStyle = "#ff2d2d";
+      ctx.fillStyle = "rgba(255, 45, 45, 0.12)";
+      ctx.lineWidth = lineWidth;
+      ctx.fillRect(x, y, width, height);
+      ctx.strokeRect(x, y, width, height);
+      ctx.restore();
+    }
+
+    function startPreviewLoop() {
+      stopPreviewLoop();
+      screenPreviewAnimation = requestAnimationFrame(drawPreviewFrame);
+    }
+
+    function getHourglassInput() {
+      const hourglassLv = Number(document.getElementById("screenHourglassLv").value);
+      if (!Number.isInteger(hourglassLv) || hourglassLv < 0 || hourglassLv > 50) {
+        return { error: "모래시계 레벨은 0~50 사이의 정수여야 합니다." };
+      }
+
+      return { hourglassLv, multiplier: 1 + (hourglassLv * 0.1) };
+    }
+
+    function getAdjustedExpNeed(level) {
+      const levelInfo = getExpNeedForLevel(level);
+      if (levelInfo.error) return levelInfo;
+      return {
+        level: levelInfo.level,
+        baseExpNeed: levelInfo.expNeed,
+        expNeed: levelInfo.expNeed * screenMeasureHourglassMultiplier
+      };
+    }
+
+    function syncCurrentLevelInputs(level) {
+      const value = String(level);
+      document.getElementById("currentLv").value = value;
+      document.getElementById("screenCurrentLv").value = value;
+      saveAll();
+    }
+
+    function setRoiBoxStyle(left, top, width, height) {
+      screenRoiBox.style.left = left + "px";
+      screenRoiBox.style.top = top + "px";
+      screenRoiBox.style.width = width + "px";
+      screenRoiBox.style.height = height + "px";
+      screenRoiBox.classList.add("show");
+
+      screenRoiTopHandle.style.left = left + "px";
+      screenRoiTopHandle.style.top = top + "px";
+      screenRoiTopHandle.style.width = width + "px";
+      screenRoiTopHandle.classList.add("show");
+
+      screenRoiLeftHandle.style.left = left + "px";
+      screenRoiLeftHandle.style.top = top + "px";
+      screenRoiLeftHandle.style.height = height + "px";
+      screenRoiLeftHandle.classList.add("show");
+
+      screenRoiRightHandle.style.left = (left + width) + "px";
+      screenRoiRightHandle.style.top = top + "px";
+      screenRoiRightHandle.style.height = height + "px";
+      screenRoiRightHandle.classList.add("show");
+
+      screenRoiBottomHandle.style.left = left + "px";
+      screenRoiBottomHandle.style.top = (top + height) + "px";
+      screenRoiBottomHandle.style.width = width + "px";
+      screenRoiBottomHandle.classList.add("show");
+    }
+
+    function hideRoiBox() {
+      screenRoiBox.classList.remove("show");
+      screenRoiTopHandle.classList.remove("show");
+      screenRoiLeftHandle.classList.remove("show");
+      screenRoiRightHandle.classList.remove("show");
+      screenRoiBottomHandle.classList.remove("show");
+      hideMagnifier();
+    }
+
+    function isValidScreenRoi(roi, videoWidth = screenVideo.videoWidth, videoHeight = screenVideo.videoHeight) {
+      if (!roi || !videoWidth || !videoHeight) return false;
+      const minWidth = Math.max(10, videoWidth * 0.02);
+      const minHeight = Math.max(4, videoHeight * 0.004);
+      return Number.isFinite(roi.x) && Number.isFinite(roi.y) &&
+        Number.isFinite(roi.width) && Number.isFinite(roi.height) &&
+        roi.x >= 0 && roi.y >= 0 &&
+        roi.width >= minWidth && roi.height >= minHeight &&
+        roi.x + roi.width <= videoWidth && roi.y + roi.height <= videoHeight;
+    }
+
+    function saveScreenRoi() {
+      if (!isValidScreenRoi(screenRoi)) return;
+
+      const videoWidth = screenVideo.videoWidth;
+      const videoHeight = screenVideo.videoHeight;
+      localStorage.setItem(SCREEN_ROI_STORAGE_KEY, JSON.stringify({
+        x: screenRoi.x,
+        y: screenRoi.y,
+        width: screenRoi.width,
+        height: screenRoi.height,
+        videoWidth,
+        videoHeight,
+        ratioX: screenRoi.x / videoWidth,
+        ratioY: screenRoi.y / videoHeight,
+        ratioWidth: screenRoi.width / videoWidth,
+        ratioHeight: screenRoi.height / videoHeight
+      }));
+    }
+
+    function removeStoredScreenRoi() {
+      localStorage.removeItem(SCREEN_ROI_STORAGE_KEY);
+    }
+
+    function getStoredScreenRoi() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(SCREEN_ROI_STORAGE_KEY) || "null");
+        if (!saved || !screenVideo.videoWidth || !screenVideo.videoHeight) return null;
+
+        const hasRatios = [saved.ratioX, saved.ratioY, saved.ratioWidth, saved.ratioHeight].every(Number.isFinite);
+        const roi = hasRatios
+          ? {
+              x: saved.ratioX * screenVideo.videoWidth,
+              y: saved.ratioY * screenVideo.videoHeight,
+              width: saved.ratioWidth * screenVideo.videoWidth,
+              height: saved.ratioHeight * screenVideo.videoHeight
+            }
+          : {
+              x: saved.x,
+              y: saved.y,
+              width: saved.width,
+              height: saved.height
+            };
+
+        const normalized = {
+          x: Math.round(roi.x),
+          y: Math.round(roi.y),
+          width: Math.round(roi.width),
+          height: Math.round(roi.height)
+        };
+
+        return isValidScreenRoi(normalized) ? normalized : null;
+      } catch (e) {
+        removeStoredScreenRoi();
+        return null;
+      }
+    }
+
+    function applyStoredScreenRoi() {
+      const storedRoi = getStoredScreenRoi();
+      if (!storedRoi) return false;
+
+      screenRoi = storedRoi;
+      screenPreviewRoi = null;
+      showRoiFromVideoRoi(screenRoi);
+      setScreenStatus("저장된 영역을 불러왔습니다. 필요하면 경계를 조절하세요.");
+      return true;
+    }
+
+    function updateRoiBox(start, end) {
+      const layout = getVideoLayout();
+      const left = layout.offsetX + Math.min(start.viewX, end.viewX);
+      const top = layout.offsetY + Math.min(start.viewY, end.viewY);
+      const width = Math.abs(end.viewX - start.viewX);
+      const height = Math.abs(end.viewY - start.viewY);
+
+      screenPreviewRoi = {
+        x: Math.min(start.x, end.x),
+        y: Math.min(start.y, end.y),
+        width: Math.abs(end.x - start.x),
+        height: Math.abs(end.y - start.y)
+      };
+
+      setRoiBoxStyle(left, top, width, height);
+    }
+
+    function showRoiFromVideoRoi(roi) {
+      const layout = getVideoLayout();
+      const scaleX = layout.displayWidth / screenVideo.videoWidth;
+      const scaleY = layout.displayHeight / layout.cropHeight;
+
+      setRoiBoxStyle(
+        layout.offsetX + roi.x * scaleX,
+        layout.offsetY + (roi.y - layout.cropTop) * scaleY,
+        roi.width * scaleX,
+        roi.height * scaleY
+      );
+    }
+
+    function isPointInsideScreenRoi(point) {
+      if (!screenRoi) return false;
+      return point.x >= screenRoi.x &&
+        point.x <= screenRoi.x + screenRoi.width &&
+        point.y >= screenRoi.y &&
+        point.y <= screenRoi.y + screenRoi.height;
+    }
+
+    function showMagnifier(point, guideSide) {
+      if (!screenVideo.videoWidth || !screenVideo.videoHeight) return;
+
+      const cssSize = window.matchMedia("(max-width: 640px)").matches ? 140 : 168;
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const canvasSize = Math.round(cssSize * dpr);
+      if (screenMagnifierCanvas.width !== canvasSize || screenMagnifierCanvas.height !== canvasSize) {
+        screenMagnifierCanvas.width = canvasSize;
+        screenMagnifierCanvas.height = canvasSize;
+      }
+      screenMagnifierCanvas.style.width = cssSize + "px";
+      screenMagnifierCanvas.style.height = cssSize + "px";
+
+      const zoom = 5;
+      const sourceSize = cssSize / zoom;
+      const desiredSourceX = point.x - sourceSize / 2;
+      const desiredSourceY = point.y - sourceSize / 2;
+      const sourceX = Math.max(0, desiredSourceX);
+      const sourceY = Math.max(0, desiredSourceY);
+      const sourceRight = Math.min(screenVideo.videoWidth, desiredSourceX + sourceSize);
+      const sourceBottom = Math.min(screenVideo.videoHeight, desiredSourceY + sourceSize);
+      const visibleSourceWidth = sourceRight - sourceX;
+      const visibleSourceHeight = sourceBottom - sourceY;
+      const destX = Math.max(0, -desiredSourceX / sourceSize * canvasSize);
+      const destY = Math.max(0, -desiredSourceY / sourceSize * canvasSize);
+      const destWidth = visibleSourceWidth / sourceSize * canvasSize;
+      const destHeight = visibleSourceHeight / sourceSize * canvasSize;
+      const guideX = canvasSize / 2;
+      const guideY = canvasSize / 2;
+      const ctx = screenMagnifierCanvas.getContext("2d");
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.clearRect(0, 0, canvasSize, canvasSize);
+      ctx.fillStyle = "#111";
+      ctx.fillRect(0, 0, canvasSize, canvasSize);
+      ctx.drawImage(screenVideo, sourceX, sourceY, visibleSourceWidth, visibleSourceHeight, destX, destY, destWidth, destHeight);
+      ctx.strokeStyle = "rgba(255, 45, 45, 0.95)";
+      ctx.lineWidth = Math.max(1, dpr);
+      ctx.beginPath();
+      ctx.moveTo(guideX, 0);
+      ctx.lineTo(guideX, canvasSize);
+      ctx.moveTo(0, guideY);
+      ctx.lineTo(canvasSize, guideY);
+      ctx.stroke();
+      if (guideSide === "left" || guideSide === "right") {
+        ctx.lineWidth = Math.max(3, 3 * dpr);
+        ctx.beginPath();
+        ctx.moveTo(guideX, 0);
+        ctx.lineTo(guideX, canvasSize);
+        ctx.stroke();
+      } else if (guideSide === "top" || guideSide === "bottom") {
+        ctx.lineWidth = Math.max(3, 3 * dpr);
+        ctx.beginPath();
+        ctx.moveTo(0, guideY);
+        ctx.lineTo(canvasSize, guideY);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = "rgba(255, 45, 45, 0.95)";
+      ctx.lineWidth = Math.max(2, 2 * dpr);
+      ctx.strokeRect(dpr, dpr, canvasSize - (2 * dpr), canvasSize - (2 * dpr));
+
+      const wrapRect = screenPreviewWrap.getBoundingClientRect();
+      const previewRect = screenPreviewCanvas.getBoundingClientRect();
+      const layout = getVideoLayout();
+      const offsetX = previewRect.left - wrapRect.left;
+      const offsetY = previewRect.top - wrapRect.top;
+      const margin = 12;
+      let left = offsetX + point.viewX + 18;
+      let top = offsetY + point.viewY - cssSize - 18;
+
+      if (left + cssSize + margin > wrapRect.width) left = offsetX + point.viewX - cssSize - 18;
+      if (top < margin) top = offsetY + point.viewY + 18;
+      left = Math.max(margin, Math.min(left, wrapRect.width - cssSize - margin));
+      top = Math.max(margin, Math.min(top, wrapRect.height - cssSize - margin));
+
+      screenMagnifierCanvas.style.left = left + "px";
+      screenMagnifierCanvas.style.top = top + "px";
+      screenMagnifierCanvas.classList.add("show");
+    }
+
+    function getResizeGuidePoint(side, point) {
+      if (!screenRoi) return point;
+
+      const left = screenRoi.x;
+      const right = screenRoi.x + screenRoi.width;
+      const top = screenRoi.y;
+      const bottom = screenRoi.y + screenRoi.height;
+      const x = Math.max(left, Math.min(right, point.x));
+      const y = Math.max(top, Math.min(bottom, point.y));
+      const layout = getVideoLayout();
+      const scaleX = layout.displayWidth / screenVideo.videoWidth;
+      const scaleY = layout.displayHeight / layout.cropHeight;
+
+      const guide = {
+        left: { x: left, y },
+        right: { x: right, y },
+        top: { x, y: top },
+        bottom: { x, y: bottom }
+      }[side] || point;
+
+      return {
+        x: guide.x,
+        y: guide.y,
+        viewX: guide.x * scaleX,
+        viewY: (guide.y - layout.cropTop) * scaleY
+      };
+    }
+
+    function hideMagnifier() {
+      screenMagnifierCanvas.classList.remove("show");
+    }
+
+    function clearScreenRoi() {
+      if (screenMeasureStart) {
+        stopScreenMeasure();
+        screenStartRatio = null;
+        screenMeasureStart = null;
+        screenPrevRatio = null;
+        screenCurrentMeasureLevel = null;
+        screenPendingLevelUp = null;
+      }
+      screenRoi = null;
+      screenPreviewRoi = null;
+      screenDragStart = null;
+      screenMoveStart = null;
+      screenResizeSide = null;
+      screenResizePointerOffset = 0;
+      removeStoredScreenRoi();
+      hideRoiBox();
+      setScreenStatus("영역을 삭제했습니다. 다시 드래그하세요.");
+    }
+
+    function getResizeControlPoint(point) {
+      if (!screenResizeSide) return point;
+
+      if (screenResizeSide === "left" || screenResizeSide === "right") {
+        return { ...point, x: point.x - screenResizePointerOffset };
+      }
+
+      return { ...point, y: point.y - screenResizePointerOffset };
+    }
+
+    function startResizeRoi(side, event) {
+      if (!screenRoi || !screenVideo.videoWidth) return;
+      screenResizeSide = side;
+      const point = getVideoPoint(event);
+      if (side === "left") screenResizePointerOffset = point.x - screenRoi.x;
+      if (side === "right") screenResizePointerOffset = point.x - (screenRoi.x + screenRoi.width);
+      if (side === "top") screenResizePointerOffset = point.y - screenRoi.y;
+      if (side === "bottom") screenResizePointerOffset = point.y - (screenRoi.y + screenRoi.height);
+      event.preventDefault();
+      event.stopPropagation();
+      showMagnifier(getResizeGuidePoint(side, getResizeControlPoint(point)), side);
+      const label = { left: "왼쪽", right: "오른쪽", top: "위쪽", bottom: "아래쪽" }[side];
+      setScreenStatus(`${label} 경계를 조정 중입니다.`);
+    }
+
+    function resizeRoi(event) {
+      if (!screenResizeSide || !screenRoi) return;
+
+      const point = getResizeControlPoint(getVideoPoint(event));
+      const minWidth = Math.max(10, screenVideo.videoWidth * 0.02);
+      const minHeight = Math.max(4, screenVideo.videoHeight * 0.004);
+
+      if (screenResizeSide === "left") {
+        const right = screenRoi.x + screenRoi.width;
+        const nextX = Math.max(0, Math.min(point.x, right - minWidth));
+        screenRoi = {
+          x: nextX,
+          y: screenRoi.y,
+          width: right - nextX,
+          height: screenRoi.height
+        };
+      } else if (screenResizeSide === "right") {
+        const nextRight = Math.min(screenVideo.videoWidth, Math.max(point.x, screenRoi.x + minWidth));
+        screenRoi = {
+          x: screenRoi.x,
+          y: screenRoi.y,
+          width: nextRight - screenRoi.x,
+          height: screenRoi.height
+        };
+      } else if (screenResizeSide === "top") {
+        const bottom = screenRoi.y + screenRoi.height;
+        const nextY = Math.max(0, Math.min(point.y, bottom - minHeight));
+        screenRoi = {
+          x: screenRoi.x,
+          y: nextY,
+          width: screenRoi.width,
+          height: bottom - nextY
+        };
+      } else if (screenResizeSide === "bottom") {
+        const nextBottom = Math.min(screenVideo.videoHeight, Math.max(point.y, screenRoi.y + minHeight));
+        screenRoi = {
+          x: screenRoi.x,
+          y: screenRoi.y,
+          width: screenRoi.width,
+          height: nextBottom - screenRoi.y
+        };
+      }
+
+      showRoiFromVideoRoi(screenRoi);
+      showMagnifier(getResizeGuidePoint(screenResizeSide, point), screenResizeSide);
+    }
+
+    function stopResizeRoi() {
+      if (!screenResizeSide) return;
+      screenResizeSide = null;
+      screenResizePointerOffset = 0;
+      saveScreenRoi();
+      hideMagnifier();
+      setScreenStatus("영역 조정 완료. 측정을 시작하세요.");
+    }
+
+    function captureRatio() {
+      return captureExpRatio(screenVideo, screenRoi, screenCanvas);
+    }
+
+    function captureRatioForRoi(roi) {
+      return captureExpRatio(screenVideo, roi, screenCanvas);
+    }
+
+    function clampScreenRoi(roi) {
+      if (!roi || !screenVideo.videoWidth || !screenVideo.videoHeight) return null;
+
+      const x = Math.max(0, Math.min(screenVideo.videoWidth, roi.x));
+      const y = Math.max(0, Math.min(screenVideo.videoHeight, roi.y));
+      const width = Math.max(0, Math.min(roi.width, screenVideo.videoWidth - x));
+      const height = Math.max(0, Math.min(roi.height, screenVideo.videoHeight - y));
+      const normalized = {
+        x: Math.round(x),
+        y: Math.round(y),
+        width: Math.round(width),
+        height: Math.round(height)
+      };
+
+      return isValidScreenRoi(normalized) ? normalized : null;
+    }
+
+    function getStartRoiCandidates(baseRoi) {
+      const offsets = [
+        { x: 0, y: 0, width: 0, height: 0 },
+        { x: 0, y: 1, width: 0, height: -2 },
+        { x: 0, y: 2, width: 0, height: -4 },
+        { x: -2, y: 0, width: 4, height: 0 },
+        { x: -2, y: 1, width: 4, height: -2 },
+        { x: -3, y: 2, width: 6, height: -4 },
+        { x: 0, y: -1, width: 0, height: 2 }
+      ];
+      const seen = new Set();
+      const candidates = [];
+
+      for (const offset of offsets) {
+        const candidate = clampScreenRoi({
+          x: baseRoi.x + offset.x,
+          y: baseRoi.y + offset.y,
+          width: baseRoi.width + offset.width,
+          height: baseRoi.height + offset.height
+        });
+        if (!candidate) continue;
+
+        const key = `${candidate.x}:${candidate.y}:${candidate.width}:${candidate.height}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        candidates.push(candidate);
+      }
+
+      return candidates;
+    }
+
+    function getMedian(values) {
+      if (values.length === 0) return 0;
+      const sorted = [...values].sort((a, b) => a - b);
+      return sorted[Math.floor(sorted.length / 2)];
+    }
+
+    async function captureStableRatio(count = SCREEN_SAMPLE_BATCH_COUNT, delayMs = SCREEN_SAMPLE_BATCH_DELAY_MS) {
+      const samples = [];
+      let lastError = null;
+
+      for (let i = 0; i < count; i++) {
+        const sample = captureRatio();
+        if (sample.error) {
+          lastError = sample.error;
+        } else {
+          samples.push(sample.ratio);
+        }
+        if (i < count - 1) await wait(delayMs);
+      }
+
+      if (samples.length < Math.max(2, Math.ceil(count / 2))) {
+        return { error: lastError || "경험치 바 진행률을 안정적으로 인식하지 못했습니다." };
+      }
+
+      const sorted = [...samples].sort((a, b) => a - b);
+      const ratio = getMedian(sorted);
+      const spread = sorted[sorted.length - 1] - sorted[0];
+      const stableSamples = sorted.filter(value => Math.abs(value - ratio) <= SCREEN_SAMPLE_MAX_SPREAD / 2);
+
+      if (spread > SCREEN_SAMPLE_MAX_SPREAD && stableSamples.length < 2) {
+        return {
+          ok: true,
+          ratio,
+          spread,
+          ignored: true,
+          reason: "unstable-sample"
+        };
+      }
+
+      return {
+        ok: true,
+        ratio,
+        spread,
+        samples: samples.length
+      };
+    }
+
+    function addRatioTrendSample(deltaRatio, elapsedSeconds) {
+      if (!Number.isFinite(deltaRatio) || !Number.isFinite(elapsedSeconds) || deltaRatio <= 0 || elapsedSeconds <= 0) return;
+
+      const now = Date.now();
+      screenRatioTrendSamples.push({ time: now, ratioPerSecond: deltaRatio / elapsedSeconds });
+      screenRatioTrendSamples = screenRatioTrendSamples.filter(sample => now - sample.time <= 60000).slice(-40);
+    }
+
+    function addAcceptedRatioSample(ratio, sampledAt = Date.now()) {
+      if (!Number.isFinite(ratio)) return;
+
+      screenAcceptedRatioSamples.push({ time: sampledAt, ratio });
+      screenAcceptedRatioSamples = screenAcceptedRatioSamples
+        .filter(sample => sampledAt - sample.time <= SCREEN_ACCEPTED_SAMPLE_WINDOW_MS)
+        .slice(-12);
+    }
+
+    function getRecentRatioTrend(sampledAt = Date.now()) {
+      const samples = screenAcceptedRatioSamples.filter(sample => sampledAt - sample.time <= SCREEN_ACCEPTED_SAMPLE_WINDOW_MS);
+      if (samples.length < 2) {
+        return { ready: false, velocity: 0, noise: SCREEN_MIN_LEVEL_UP_DROP, positiveSteps: 0, expectedRatio: screenPrevRatio ?? 0 };
+      }
+
+      const first = samples[0];
+      const last = samples[samples.length - 1];
+      const elapsedSeconds = Math.max(0.001, (last.time - first.time) / 1000);
+      const velocity = Math.max(0, (last.ratio - first.ratio) / elapsedSeconds);
+      const residuals = [];
+      let positiveSteps = 0;
+
+      for (let i = 1; i < samples.length; i++) {
+        const prev = samples[i - 1];
+        const current = samples[i];
+        const stepSeconds = Math.max(0.001, (current.time - prev.time) / 1000);
+        const actualDelta = current.ratio - prev.ratio;
+        const expectedDelta = velocity * stepSeconds;
+        if (actualDelta > 0) positiveSteps++;
+        residuals.push(Math.abs(actualDelta - expectedDelta));
+      }
+
+      const elapsedFromLastSeconds = screenLastAcceptedSampleTime ? Math.max(0, (sampledAt - screenLastAcceptedSampleTime) / 1000) : 0;
+      return {
+        ready: samples.length >= SCREEN_MIN_TREND_SAMPLES,
+        velocity,
+        noise: Math.max(SCREEN_MIN_LEVEL_UP_DROP, getMedian(residuals) * SCREEN_NOISE_MULTIPLIER),
+        positiveSteps,
+        expectedRatio: Math.min(1, (screenPrevRatio ?? last.ratio) + (velocity * elapsedFromLastSeconds))
+      };
+    }
+
+    function getRecentMaxPositiveRatioStep(sampledAt = Date.now()) {
+      const samples = screenAcceptedRatioSamples.filter(sample => sampledAt - sample.time <= SCREEN_ACCEPTED_SAMPLE_WINDOW_MS);
+      let maxStep = 0;
+
+      for (let i = 1; i < samples.length; i++) {
+        const step = samples[i].ratio - samples[i - 1].ratio;
+        if (step > maxStep) maxStep = step;
+      }
+
+      return maxStep;
+    }
+
+    function getRecentRatioPerSecond(sampledAt = Date.now()) {
+      const rates = screenRatioTrendSamples
+        .filter(sample => sampledAt - sample.time <= SCREEN_ACCEPTED_SAMPLE_WINDOW_MS)
+        .map(sample => sample.ratioPerSecond)
+        .filter(rate => Number.isFinite(rate) && rate > 0);
+
+      return rates.length ? getMedian(rates) : 0;
+    }
+
+    function getDynamicLevelUpWindow(prevRatio, sampledAt = Date.now(), trend = getRecentRatioTrend(sampledAt)) {
+      const elapsedSeconds = screenLastAcceptedSampleTime
+        ? Math.max(0.5, (sampledAt - screenLastAcceptedSampleTime) / 1000)
+        : 1;
+      const recentRateGain = getRecentRatioPerSecond(sampledAt) * elapsedSeconds;
+      const trendGain = trend.velocity * elapsedSeconds;
+      const recentStepGain = getRecentMaxPositiveRatioStep(sampledAt);
+      const expectedGain = Math.max(recentRateGain, trendGain, recentStepGain);
+      const noiseMargin = Math.max(0.03, Math.min(0.18, trend.noise * 2 + SCREEN_LEVEL_UP_POST_RATIO_MARGIN));
+      const hasRateBasis = recentRateGain > 0 || trendGain > 0 || recentStepGain > 0;
+      const canReachLevel = hasRateBasis && prevRatio + expectedGain + noiseMargin >= 1;
+      const expectedPostRatio = Math.max(0, prevRatio + expectedGain - 1);
+      const minPostRatio = Math.max(0, expectedPostRatio - noiseMargin);
+
+      return {
+        canReachLevel,
+        expectedGain,
+        expectedPostRatio,
+        minPostRatio,
+        maxPostRatio: Math.max(
+          0.04,
+          Math.min(SCREEN_LEVEL_UP_LARGE_GAIN_MAX_RATIO, expectedPostRatio + noiseMargin)
+        ),
+        minDrop: Math.max(SCREEN_LEVEL_UP_DYNAMIC_MIN_DROP, Math.min(0.3, noiseMargin))
+      };
+    }
+
+    function isLevelUpCandidateDrop(drop, ratio, sampledAt = Date.now()) {
+      if (screenPrevRatio === null || drop <= 0) return false;
+
+      const trend = getRecentRatioTrend(sampledAt);
+      const dynamicWindow = getDynamicLevelUpWindow(screenPrevRatio, sampledAt, trend);
+      if (
+        dynamicWindow.canReachLevel &&
+        ratio >= dynamicWindow.minPostRatio &&
+        ratio <= dynamicWindow.maxPostRatio &&
+        drop >= dynamicWindow.minDrop
+      ) {
+        return true;
+      }
+
+      if (
+        screenPrevRatio >= SCREEN_LEVEL_UP_WRAP_MIN_PRE_RATIO &&
+        ratio <= SCREEN_LEVEL_UP_LARGE_GAIN_MAX_RATIO &&
+        drop >= SCREEN_LEVEL_UP_WRAP_MIN_DROP
+      ) {
+        return true;
+      }
+
+      if (
+        screenLevelUpArmed &&
+        screenPrevRatio >= SCREEN_LEVEL_UP_ARM_RATIO &&
+        ratio <= SCREEN_LEVEL_UP_LARGE_GAIN_MAX_RATIO &&
+        drop >= (
+          ratio <= SCREEN_LEVEL_UP_DIRECT_MAX_RATIO
+            ? SCREEN_LEVEL_UP_DIRECT_MIN_DROP
+            : SCREEN_LEVEL_UP_LARGE_GAIN_MIN_DROP
+        )
+      ) {
+        return true;
+      }
+
+      if (trend.positiveSteps < 1) return false;
+
+      const dropFromExpected = trend.expectedRatio - ratio;
+      const threshold = trend.ready ? trend.noise : Math.max(0.05, trend.noise);
+      return screenPrevRatio >= SCREEN_LEVEL_UP_WRAP_MIN_PRE_RATIO &&
+        ratio <= SCREEN_LEVEL_UP_LARGE_GAIN_MAX_RATIO &&
+        drop >= (
+          ratio <= SCREEN_LEVEL_UP_DIRECT_MAX_RATIO
+            ? SCREEN_LEVEL_UP_WRAP_MIN_DROP
+            : SCREEN_LEVEL_UP_LARGE_GAIN_MIN_DROP
+        ) &&
+        dropFromExpected >= threshold;
+    }
+
+    function getLevelUpPostRatioLimit(prevRatio, sampledAt = Date.now(), trend = getRecentRatioTrend(sampledAt)) {
+      const dynamicWindow = getDynamicLevelUpWindow(prevRatio, sampledAt, trend);
+      const elapsedSeconds = screenLastAcceptedSampleTime
+        ? Math.max(0.5, (sampledAt - screenLastAcceptedSampleTime) / 1000)
+        : 1;
+      const remainingBeforeLevelUp = Math.max(0, 1 - prevRatio);
+      const expectedGainBeforeLevelUp = trend.velocity * elapsedSeconds;
+      const expectedPostRatio = Math.max(0, expectedGainBeforeLevelUp - remainingBeforeLevelUp);
+      const noiseMargin = Math.max(0.02, Math.min(0.05, trend.noise));
+
+      const normalLimit = Math.max(
+        0.04,
+        Math.min(SCREEN_LEVEL_UP_MAX_POST_RATIO, expectedPostRatio + noiseMargin + SCREEN_LEVEL_UP_POST_RATIO_MARGIN)
+      );
+
+      return {
+        normal: dynamicWindow.canReachLevel ? Math.max(normalLimit, dynamicWindow.maxPostRatio) : normalLimit,
+        largeGain: SCREEN_LEVEL_UP_LARGE_GAIN_MAX_RATIO
+      };
+    }
+
+    function getAllowedRatioIncrease(elapsedSeconds) {
+      const safeElapsedSeconds = Math.max(1, elapsedSeconds || 1);
+      const recentRates = screenRatioTrendSamples.map(sample => sample.ratioPerSecond).filter(Number.isFinite);
+      const recentRate = getMedian(recentRates);
+      const trendLimit = recentRate > 0 ? recentRate * safeElapsedSeconds * 6 + 0.03 : 0;
+      const isStabilizing = screenLevelUpStabilizeUntil > Date.now();
+      const baseLimit = isStabilizing ? 0.06 : 0.22;
+      const elapsedLimit = safeElapsedSeconds * (isStabilizing ? 0.025 : 0.08);
+
+      return Math.max(0.03, Math.min(baseLimit, Math.max(trendLimit, elapsedLimit)));
+    }
+
+    function isSuspiciousRatioJump(ratio, sampledAt = Date.now()) {
+      if (screenPrevRatio === null || ratio <= screenPrevRatio) return false;
+
+      const isWarmup = screenMeasureStart && sampledAt - screenMeasureStart <= SCREEN_SPIKE_WARMUP_MS;
+      const elapsedSeconds = screenLastAcceptedSampleTime ? (sampledAt - screenLastAcceptedSampleTime) / 1000 : 1;
+      const delta = ratio - screenPrevRatio;
+      if (isWarmup || screenRatioTrendSamples.length < SCREEN_MIN_TREND_SAMPLES) {
+        return delta > getAllowedRatioIncrease(elapsedSeconds);
+      }
+
+      return delta > getAllowedRatioIncrease(elapsedSeconds);
+    }
+
+    function getConsistentRecheckedSample(samples) {
+      const validSamples = samples.filter(sample => !sample.error && Number.isFinite(sample.ratio));
+      if (validSamples.length < 2) return null;
+
+      const medianRatio = getMedian(validSamples.map(sample => sample.ratio));
+      const consistentSamples = validSamples.filter(sample => Math.abs(sample.ratio - medianRatio) <= SCREEN_RECHECK_CONSISTENCY_RATIO);
+      if (consistentSamples.length < 2) return null;
+
+      const sample = consistentSamples[consistentSamples.length - 1];
+      return { ...sample, ratio: medianRatio, sampledAt: sample.sampledAt, rechecked: true, reason: "spike-consistent" };
+    }
+
+    async function getValidatedScreenSample(initialSample = null) {
+      const sampledAt = Date.now();
+      if (!initialSample) {
+        initialSample = await captureStableRatio();
+      }
+      if (initialSample.ignored) {
+        return { ...initialSample, ratio: screenPrevRatio ?? initialSample.ratio, sampledAt };
+      }
+      if (initialSample.error || !isSuspiciousRatioJump(initialSample.ratio, sampledAt)) {
+        return { ...initialSample, sampledAt };
+      }
+
+      setScreenStatus("갑작스러운 진행률 점프 감지. 픽셀을 다시 검사하는 중...");
+      const samples = [{ ...initialSample, sampledAt }];
+
+      for (let i = 0; i < SCREEN_SPIKE_RECHECK_COUNT; i++) {
+        await wait(SCREEN_SPIKE_RECHECK_DELAY_MS);
+        const rechecked = await captureStableRatio(2, SCREEN_SAMPLE_BATCH_DELAY_MS);
+        const recheckedAt = Date.now();
+        samples.push({ ...rechecked, sampledAt: recheckedAt });
+        if (rechecked.ignored) continue;
+        if (!rechecked.error && !isSuspiciousRatioJump(rechecked.ratio, recheckedAt)) {
+          return { ...rechecked, sampledAt: recheckedAt, rechecked: true };
+        }
+      }
+
+      const consistentSample = getConsistentRecheckedSample(samples);
+      if (consistentSample) {
+        return consistentSample;
+      }
+
+      return {
+        ok: true,
+        ratio: screenPrevRatio,
+        sampledAt: Date.now(),
+        ignored: true,
+        reason: "spike-ignored"
+      };
+    }
+
+    function stopScreenMeasure(message) {
+      if (screenMeasureTimer) {
+        clearTimeout(screenMeasureTimer);
+        screenMeasureTimer = null;
+      }
+      if (screenMeasureInterval) {
+        clearInterval(screenMeasureInterval);
+        screenMeasureInterval = null;
+      }
+      hideMagnifier();
+      if (message) setScreenStatus(message);
+    }
+
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function formatMeasureElapsed(seconds) {
+      seconds = Math.max(0, Math.floor(seconds));
+      const minutes = Math.floor(seconds / 60);
+      const restSeconds = seconds % 60;
+      return minutes > 0 ? `${minutes}분 ${restSeconds}초` : `${restSeconds}초`;
+    }
+
+    function formatExp(value) {
+      return Math.round(value || 0).toLocaleString("ko-KR");
+    }
+
+    function parseIntegerBigInt(value, { allowZero = true } = {}) {
+      const text = String(value ?? "").replace(/,/g, "").trim();
+      if (!/^\d+$/.test(text)) return null;
+      const parsed = BigInt(text);
+      if (!allowZero && parsed <= 0n) return null;
+      return parsed;
+    }
+
+    function roundDivBigInt(numerator, denominator) {
+      return (numerator + (denominator / 2n)) / denominator;
+    }
+
+    function formatIntegerExp(value) {
+      if (typeof value === "bigint") return value.toLocaleString("ko-KR");
+      return Math.round(Number(value) || 0).toLocaleString("ko-KR");
+    }
+
+    function formatScaledExp(value, scale) {
+      const scaledValue = typeof value === "bigint" ? value : BigInt(Math.round(Number(value) || 0));
+      const scaledBy = typeof scale === "bigint" ? scale : BigInt(scale);
+      return roundDivBigInt(scaledValue, scaledBy).toLocaleString("ko-KR");
+    }
+
+    function addRecentExpSample(gainedExp, options = {}) {
+      if (!Number.isFinite(gainedExp) || gainedExp <= 0) return;
+      if (options.levelUp) return;
+
+      const now = Date.now();
+      screenRecentExpSamples.push({ time: now, gainedExp });
+      screenRecentExpSamples = screenRecentExpSamples.filter(sample => now - sample.time <= 30000);
+    }
+
+    function getRollingExpPerMinute() {
+      if (screenRecentExpSamples.length === 0) return 0;
+
+      const now = Date.now();
+      screenRecentExpSamples = screenRecentExpSamples.filter(sample => now - sample.time <= 30000);
+
+      if (screenRecentExpSamples.length === 0) return 0;
+
+      const firstTime = screenRecentExpSamples[0].time;
+      const elapsedSeconds = Math.max(1, (now - firstTime) / 1000);
+      const gainedExp = screenRecentExpSamples.reduce((sum, sample) => sum + sample.gainedExp, 0);
+      return gainedExp / elapsedSeconds * 60;
+    }
+
+    function getTimingRange(gainedExp, elapsedSeconds) {
+      const timingMarginSeconds = 3;
+      const safeElapsedSeconds = Math.max(1, elapsedSeconds);
+      const slowerElapsedSeconds = safeElapsedSeconds + timingMarginSeconds;
+      const fasterElapsedSeconds = Math.max(1, safeElapsedSeconds - timingMarginSeconds);
+      const minExpPerMinute = gainedExp / slowerElapsedSeconds * 60;
+      const maxExpPerMinute = gainedExp / fasterElapsedSeconds * 60;
+
+      return {
+        timingMarginSeconds,
+        averageExpPerMinute: gainedExp / safeElapsedSeconds * 60,
+        minExpPerMinute,
+        maxExpPerMinute,
+        midpointExpPerMinute: (minExpPerMinute + maxExpPerMinute) / 2
+      };
+    }
+
+    function getSmoothedScreenAverage(targetAverage, decision) {
+      targetAverage = Number(targetAverage);
+      if (!Number.isFinite(targetAverage) || targetAverage <= 0) {
+        return screenDisplayedAverageExpPerMinute || 0;
+      }
+
+      const isLevelUpSensitive = decision?.levelUp ||
+        decision?.pendingLevelUp ||
+        String(decision?.reason || "").includes("level-up");
+
+      if (!screenDisplayedAverageExpPerMinute) {
+        screenDisplayedAverageExpPerMinute = isLevelUpSensitive && screenStableAverageExpPerMinute
+          ? screenStableAverageExpPerMinute
+          : targetAverage;
+        if (!isLevelUpSensitive) screenStableAverageExpPerMinute = screenDisplayedAverageExpPerMinute;
+        return screenDisplayedAverageExpPerMinute;
+      }
+
+      const anchorAverage = isLevelUpSensitive && screenStableAverageExpPerMinute
+        ? screenStableAverageExpPerMinute
+        : screenDisplayedAverageExpPerMinute;
+      const alpha = isLevelUpSensitive ? SCREEN_AVERAGE_LEVEL_UP_ALPHA : SCREEN_AVERAGE_SMOOTH_ALPHA;
+      const maxRise = isLevelUpSensitive ? 1.05 : 1.45;
+      const maxDrop = isLevelUpSensitive ? 0.95 : 0.65;
+      const clampedTarget = Math.max(
+        anchorAverage * maxDrop,
+        Math.min(targetAverage, anchorAverage * maxRise)
+      );
+
+      screenDisplayedAverageExpPerMinute =
+        (screenDisplayedAverageExpPerMinute * (1 - alpha)) + (clampedTarget * alpha);
+      if (!isLevelUpSensitive) {
+        screenStableAverageExpPerMinute =
+          (screenStableAverageExpPerMinute * 0.85) + (screenDisplayedAverageExpPerMinute * 0.15);
+      }
+      return screenDisplayedAverageExpPerMinute;
+    }
+
+    function getRatioPercentPerSecond() {
+      const rates = screenRatioTrendSamples.map(sample => sample.ratioPerSecond).filter(Number.isFinite);
+      if (rates.length === 0) return 0;
+      return getMedian(rates) * 100;
+    }
+
+    function getPendingLevelUpAllowedRatio(pendingLevelUp, sampledAt = Date.now()) {
+      const elapsedSeconds = pendingLevelUp.lastSampledAt
+        ? Math.max(0.5, (sampledAt - pendingLevelUp.lastSampledAt) / 1000)
+        : 1;
+      const rateGain = getRecentRatioPerSecond(sampledAt) * elapsedSeconds;
+      const noiseMargin = Math.max(SCREEN_RECHECK_CONSISTENCY_RATIO, (pendingLevelUp.cancelMargin || 0) + 0.03);
+      const maxIncrease = Math.max(noiseMargin, rateGain + noiseMargin);
+
+      return Math.min(
+        SCREEN_LEVEL_UP_LARGE_GAIN_MAX_RATIO,
+        Math.max(pendingLevelUp.maxPostRatio, pendingLevelUp.ratio + maxIncrease)
+      );
+    }
+
+    function renderScreenTimingHelp(label, tooltip, direction = "right") {
+      const directionClass = direction === "left" ? " screen-exp-help-left" : "";
+      return `${label}<span class="screen-exp-help${directionClass}" tabindex="0" data-tooltip="${tooltip}">?</span>`;
+    }
+
+    function renderScreenTimingRange(timingRange, formatter) {
+      return `
+        <span class="screen-exp-timing-range">
+          <span class="screen-exp-min">${renderScreenTimingHelp(`MIN : ${formatter(timingRange.minExpPerMinute)}`, "젠타이밍 때문에 실제 측정 시간이 3초 더 길었다고 가정한 보수적인 1분당 경험치입니다.", "left")}</span>
+          <span class="screen-exp-max">${renderScreenTimingHelp(`MAX : ${formatter(timingRange.maxExpPerMinute)}`, "젠타이밍 때문에 실제 측정 시간이 3초 더 짧았다고 가정한 최대 추정 1분당 경험치입니다.", "left")}</span>
+        </span>
+      `;
+    }
+
+    function getScreenApplyDisabledReason(elapsedSeconds, invalidated) {
+      if (invalidated) return "레벨업 감지가 포함된 측정은 경험치 튐 가능성이 있어 적용할 수 없습니다.";
+      if (elapsedSeconds < 60) return "1분 지나면 활성화됩니다.";
+      return "";
+    }
+
+    function renderScreenApplyButton(value, elapsedSeconds, invalidated) {
+      const rounded = Math.round(Number(value));
+      const disabledReason = getScreenApplyDisabledReason(elapsedSeconds, invalidated);
+      const disabled = disabledReason || !Number.isFinite(rounded) || rounded <= 0;
+      const title = disabledReason || "경험치 계산기와 사이클 최적화의 1분당 경험치에 적용합니다.";
+      const attr = disabled ? "disabled" : `data-apply-exp="${rounded}"`;
+      const buttonClass = disabled ? "btn btn-gray" : "btn btn-green";
+      const button = `<button type="button" class="${buttonClass} screen-exp-apply-value-btn" ${attr} title="${title}">경험치 계산기에 적용</button>`;
+
+      if (!disabled) return button;
+      return `<span class="screen-exp-disabled-tooltip" tabindex="0" data-tooltip="${title}">${button}</span>`;
+    }
+
+    function renderScreenDefaultResult() {
+      const timingRange = getTimingRange(0, 0);
+
+      setScreenResult(`
+        <div class="result-section">
+          <div class="result-title">화면 인식 결과(beta)</div>
+          <p class="beta-notice screen-result-snapshot-notice">정확한 경험치 측정은 스냅샷 측정기를 이용 바랍니다.</p>
+          <div class="result-row">
+            <span class="result-label">1분당 경험치 추정</span>
+            <div class="screen-exp-result-action">
+              <strong class="result-value highlight">
+                0
+                ${renderScreenTimingRange(timingRange, value => `${formatExp(value)} / 분`)}
+              </strong>
+              ${renderScreenApplyButton(0, 0, false)}
+            </div>
+          </div>
+          <div class="result-row">
+            <span class="result-label">${renderScreenTimingHelp("오차범위 고려 중간값", "MIN~MAX 범위의 중심 기준값입니다. 일반적으로 경험치 계산기에 적용하기 가장 무난한 값입니다.")}</span>
+            <div class="screen-exp-result-action">
+              <strong class="result-value screen-exp-midpoint">0</strong>
+              ${renderScreenApplyButton(0, 0, false)}
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    renderScreenDefaultResult();
+
+    function renderScreenLiveResult(ratio, elapsedSeconds, decision) {
+      const rollingAverage = getRollingExpPerMinute();
+      const timingRange = getTimingRange(screenTotalGainedExp, elapsedSeconds);
+      const rawTotalAverage = timingRange.averageExpPerMinute;
+      const totalAverage = getSmoothedScreenAverage(rawTotalAverage, decision);
+      const displayTimingRange = getTimingRange(totalAverage * Math.max(1, elapsedSeconds) / 60, elapsedSeconds);
+      const ratioPercentPerSecond = getRatioPercentPerSecond();
+      const statusText = decision?.reason || (decision?.levelUp ? "level-up-confirmed" : "normal");
+
+      setScreenResult(`
+        <div class="result-section">
+          <div class="result-title">실시간 측정 중</div>
+          <div class="result-row">
+            <span class="result-label">현재 추정</span>
+            <strong class="result-value">LV ${screenCurrentMeasureLevel} / ${(ratio * 100).toFixed(2)}%</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">모래시계 배율</span>
+            <strong class="result-value">LV ${screenMeasureHourglassLv} / ${screenMeasureHourglassMultiplier.toFixed(1)}배</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">경과 시간</span>
+            <strong class="result-value">${formatMeasureElapsed(elapsedSeconds)}</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">누적 획득 경험치</span>
+            <strong class="result-value">${formatExp(screenTotalGainedExp)}</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">전체 평균</span>
+            <div class="screen-exp-result-action">
+              <strong class="result-value highlight">
+                ${formatExp(totalAverage)} / 분
+                ${renderScreenTimingRange(displayTimingRange, value => `${formatExp(value)} / 분`)}
+              </strong>
+              ${renderScreenApplyButton(totalAverage, elapsedSeconds, screenMeasurementInvalidated)}
+            </div>
+          </div>
+          <div class="result-row">
+            <span class="result-label">${renderScreenTimingHelp("오차범위 고려 중간값", "MIN~MAX 범위의 중심 기준값입니다. 일반적으로 경험치 계산기에 적용하기 가장 무난한 값입니다.")}</span>
+            <div class="screen-exp-result-action">
+              <strong class="result-value screen-exp-midpoint">${formatExp(displayTimingRange.midpointExpPerMinute)} / 분</strong>
+              ${renderScreenApplyButton(displayTimingRange.midpointExpPerMinute, elapsedSeconds, screenMeasurementInvalidated)}
+            </div>
+          </div>
+          <div class="result-row">
+            <span class="result-label">초당 상승 경험치 퍼센트</span>
+            <strong class="result-value">${ratioPercentPerSecond.toFixed(3)}% / 초</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">최근 30초 평균</span>
+            <strong class="result-value">${formatExp(rollingAverage)} / 분</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">레벨업 감지</span>
+            <strong class="result-value">${screenLevelUpCount.toLocaleString("ko-KR")}회</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">샘플 상태</span>
+            <strong class="result-value">${statusText}</strong>
+          </div>
+        </div>
+      `);
+    }
+
+    async function evaluateStableStartRoi(roi, options = {}) {
+      const samples = [];
+      const sampleCount = options.sampleCount || 5;
+      const delayMs = options.delayMs ?? 300;
+      const tolerance = options.tolerance ?? 0.04;
+      const minStableSamples = options.minStableSamples || 3;
+      let lastError = null;
+
+      for (let i = 0; i < sampleCount; i++) {
+        const detected = captureRatioForRoi(roi);
+        if (!detected.error) {
+          samples.push(detected.ratio);
+        } else {
+          lastError = detected.error;
+        }
+        setScreenStatus(`${options.status || "시작 진행률 안정화 중"}... ${i + 1}/${sampleCount}`);
+        if (i < sampleCount - 1) await wait(delayMs);
+      }
+
+      if (samples.length < minStableSamples) {
+        return { error: lastError || "시작 진행률을 안정적으로 감지하지 못했습니다.", samples, roi };
+      }
+
+      const sorted = [...samples].sort((a, b) => a - b);
+      const median = sorted[Math.floor(sorted.length / 2)];
+      const stableSamples = sorted.filter(value => Math.abs(value - median) <= tolerance);
+      const spread = sorted[sorted.length - 1] - sorted[0];
+
+      if (stableSamples.length < minStableSamples) {
+        return { error: "시작 진행률이 불안정합니다.", samples, roi, spread };
+      }
+
+      const ratio = stableSamples.reduce((sum, value) => sum + value, 0) / stableSamples.length;
+      return { ratio, samples: stableSamples.length, roi, spread };
+    }
+
+    async function getStableStartRatio() {
+      const originalRoi = screenRoi;
+      const primary = await evaluateStableStartRoi(originalRoi, {
+        sampleCount: 5,
+        delayMs: 300,
+        tolerance: 0.04,
+        minStableSamples: 3,
+        status: "시작 진행률 안정화 중"
+      });
+      if (!primary.error) return primary;
+
+      const candidates = getStartRoiCandidates(originalRoi).slice(1);
+      let bestFailure = primary;
+
+      for (let i = 0; i < candidates.length; i++) {
+        const candidate = candidates[i];
+        const result = await evaluateStableStartRoi(candidate, {
+          sampleCount: 4,
+          delayMs: 120,
+          tolerance: 0.06,
+          minStableSamples: 3,
+          status: `영역 오차 보정 중 (${i + 1}/${candidates.length})`
+        });
+
+        if (!result.error) {
+          screenRoi = candidate;
+          showRoiFromVideoRoi(screenRoi);
+          saveScreenRoi();
+          return { ...result, adjustedRoi: true };
+        }
+
+        if ((result.samples?.length || 0) > (bestFailure.samples?.length || 0)) {
+          bestFailure = result;
+        }
+      }
+
+      const sampleText = (bestFailure.samples || [])
+        .map(value => `${(value * 100).toFixed(2)}%`)
+        .join(", ");
+      const suffix = sampleText ? ` 샘플: ${sampleText}` : "";
+      return { error: `시작 진행률이 불안정합니다. 빨간 영역을 경험치 바 내부에 맞춰 주세요.${suffix}` };
+    }
+
+    function addScreenMeasureSample(ratio, sampledAt = Date.now()) {
+      if (screenPrevRatio === null || screenCurrentMeasureLevel === null) return { ok: true, gainedExp: 0 };
+
+      const prevRatio = screenPrevRatio;
+      const prevSampleTime = screenLastAcceptedSampleTime;
+      const drop = screenPrevRatio - ratio;
+      const levelInfo = getAdjustedExpNeed(screenCurrentMeasureLevel);
+      if (levelInfo.error) return levelInfo;
+
+      if (!screenLevelUpArmed && screenPrevRatio >= SCREEN_LEVEL_UP_ARM_RATIO) {
+        screenLevelUpArmed = true;
+      }
+
+      if (screenPendingLevelUp) {
+        if (ratio >= screenPendingLevelUp.prevRatio - screenPendingLevelUp.cancelMargin) {
+          screenPendingLevelUp = null;
+          return { ok: true, gainedExp: 0, ignored: true, reason: "level-up-cancelled" };
+        }
+
+        const allowedPendingRatio = getPendingLevelUpAllowedRatio(screenPendingLevelUp, sampledAt);
+        if (ratio > allowedPendingRatio) {
+          screenPendingLevelUp.missCount = (screenPendingLevelUp.missCount || 0) + 1;
+          if (screenPendingLevelUp.missCount >= 2) {
+            screenPendingLevelUp = null;
+            return { ok: true, gainedExp: 0, ignored: true, reason: "level-up-cancelled-high-ratio" };
+          }
+          return { ok: true, gainedExp: 0, pendingLevelUp: true, reason: "level-up-waiting-stable-low" };
+        }
+
+        const stableConfirm = Math.abs(ratio - screenPendingLevelUp.ratio) <= SCREEN_RECHECK_CONSISTENCY_RATIO;
+        const naturalProgressConfirm = ratio >= screenPendingLevelUp.ratio && ratio <= allowedPendingRatio;
+        if (stableConfirm || naturalProgressConfirm) {
+          screenPendingLevelUp.confirmCount++;
+          screenPendingLevelUp.missCount = 0;
+          screenPendingLevelUp.ratio = Math.max(screenPendingLevelUp.ratio, ratio);
+          screenPendingLevelUp.maxPostRatio = Math.max(screenPendingLevelUp.maxPostRatio, ratio);
+          screenPendingLevelUp.lastSampledAt = sampledAt;
+        } else {
+          screenPendingLevelUp.ratio = ratio;
+          screenPendingLevelUp.confirmCount = 1;
+          screenPendingLevelUp.missCount = 0;
+          screenPendingLevelUp.lastSampledAt = sampledAt;
+        }
+
+        const requiredConfirmCount = screenPendingLevelUp.largeGain
+          ? SCREEN_LEVEL_UP_LARGE_GAIN_CONFIRM_COUNT
+          : SCREEN_LEVEL_UP_CONFIRM_COUNT;
+        const confirmElapsedMs = sampledAt - screenPendingLevelUp.startedAt;
+        const hasEnoughConfirmTime = !screenPendingLevelUp.largeGain ||
+          confirmElapsedMs >= SCREEN_LEVEL_UP_LARGE_GAIN_CONFIRM_MS;
+
+        if (screenPendingLevelUp.confirmCount >= requiredConfirmCount && hasEnoughConfirmTime) {
+          const nextLevel = screenCurrentMeasureLevel + 1;
+          const nextLevelInfo = getAdjustedExpNeed(nextLevel);
+          if (nextLevelInfo.error) return nextLevelInfo;
+
+          const confirmedRatio = screenPendingLevelUp.ratio;
+          const postLevelRatio = screenPendingLevelUp.largeGain
+            ? confirmedRatio
+            : Math.min(confirmedRatio, screenPendingLevelUp.maxPostRatio);
+          const gainedExp = (levelInfo.expNeed * Math.max(0, 1 - screenPendingLevelUp.prevRatio)) +
+            (nextLevelInfo.expNeed * Math.max(0, postLevelRatio));
+          const wrappedRatioGain = Math.max(0, 1 - screenPendingLevelUp.prevRatio) + Math.max(0, postLevelRatio);
+          screenTotalGainedExp += gainedExp;
+          screenCurrentMeasureLevel = nextLevel;
+          syncCurrentLevelInputs(nextLevel);
+          screenLevelUpCount++;
+          screenMeasurementInvalidated = true;
+          screenPrevRatio = postLevelRatio;
+          if (prevSampleTime) addRatioTrendSample(wrappedRatioGain, (sampledAt - prevSampleTime) / 1000);
+          screenLastAcceptedSampleTime = sampledAt;
+          screenAcceptedRatioSamples = [];
+          addAcceptedRatioSample(postLevelRatio, sampledAt);
+          screenLevelUpStabilizeUntil = Date.now() + SCREEN_LEVEL_UP_STABILIZE_MS;
+          screenPendingLevelUp = null;
+          screenLevelUpArmed = false;
+          return {
+            ok: true,
+            gainedExp,
+            levelUp: true,
+            reason: confirmedRatio > postLevelRatio ? "level-up-confirmed-clamped" : "level-up-confirmed"
+          };
+        }
+
+        return {
+          ok: true,
+          gainedExp: 0,
+          pendingLevelUp: true,
+          reason: screenPendingLevelUp.largeGain ? "level-up-large-gain-confirming" : "level-up-confirming"
+        };
+      }
+
+      if (isLevelUpCandidateDrop(drop, ratio, sampledAt)) {
+        const trend = getRecentRatioTrend(sampledAt);
+        const postRatioLimit = getLevelUpPostRatioLimit(screenPrevRatio, sampledAt, trend);
+        const largeGain = ratio > postRatioLimit.normal && ratio <= postRatioLimit.largeGain;
+        const maxPostRatio = largeGain ? postRatioLimit.largeGain : postRatioLimit.normal;
+        if (ratio > maxPostRatio) {
+          return { ok: true, gainedExp: 0, ignored: true, reason: "level-up-ratio-too-high" };
+        }
+
+        screenMeasurementInvalidated = true;
+        screenPendingLevelUp = {
+          prevRatio: screenPrevRatio,
+          ratio,
+          confirmCount: 1,
+          missCount: 0,
+          largeGain,
+          startedAt: sampledAt,
+          lastSampledAt: sampledAt,
+          cancelMargin: Math.max(0.03, trend.noise),
+          maxPostRatio
+        };
+        return {
+          ok: true,
+          gainedExp: 0,
+          pendingLevelUp: true,
+          reason: largeGain ? "level-up-large-gain-candidate" : "level-up-candidate"
+        };
+      }
+
+      if (drop >= 0.3) {
+        return { ok: true, gainedExp: 0, ignored: true, reason: "drop-ignored" };
+      }
+
+      if (drop > 0 && drop < 0.3) {
+        return { ok: true, gainedExp: 0, ignored: true, reason: "small-drop" };
+      }
+
+      if (ratio - screenPrevRatio > 0.8) {
+        return { ok: true, gainedExp: 0, ignored: true, reason: "large-jump" };
+      }
+
+      if (ratio > screenPrevRatio) {
+        const gainedExp = levelInfo.expNeed * (ratio - screenPrevRatio);
+        const isStabilizing = screenLevelUpStabilizeUntil > Date.now();
+        screenTotalGainedExp += gainedExp;
+        screenPrevRatio = ratio;
+        screenLastAcceptedSampleTime = sampledAt;
+        addAcceptedRatioSample(ratio, sampledAt);
+        if (prevSampleTime) addRatioTrendSample(ratio - prevRatio, (sampledAt - prevSampleTime) / 1000);
+        screenPendingLevelUp = null;
+        if (screenPrevRatio >= SCREEN_LEVEL_UP_ARM_RATIO) screenLevelUpArmed = true;
+        return { ok: true, gainedExp, reason: isStabilizing ? "level-up-stabilizing" : "normal" };
+      }
+
+      return { ok: true, gainedExp: 0 };
+    }
+
+    screenStartCaptureBtn.addEventListener("click", async () => {
+      try {
+        stopCapture(screenStream);
+        screenStream = await startCapture(screenVideo);
+        startPreviewLoop();
+        screenPlaceholder.hidden = true;
+        screenRoi = null;
+        screenPreviewRoi = null;
+        hideRoiBox();
+        if (!applyStoredScreenRoi()) {
+          setScreenStatus("화면 선택 완료. 하단 1/3 확대 미리보기에서 경험치 바 영역을 드래그하세요.");
+        }
+
+        const [track] = screenStream.getVideoTracks();
+        track.addEventListener("ended", () => {
+          stopScreenMeasure("화면 공유가 중지되었습니다.");
+          stopPreviewLoop();
+          screenStream = null;
+          screenPlaceholder.hidden = false;
+          screenRoi = null;
+          screenPreviewRoi = null;
+          hideRoiBox();
+        });
+      } catch (e) {
+        setScreenStatus(e.message || "화면 선택을 취소했습니다.");
+      }
+    });
+
+    screenRoiTopHandle.addEventListener("pointerdown", (event) => startResizeRoi("top", event));
+    screenRoiLeftHandle.addEventListener("pointerdown", (event) => startResizeRoi("left", event));
+    screenRoiRightHandle.addEventListener("pointerdown", (event) => startResizeRoi("right", event));
+    screenRoiBottomHandle.addEventListener("pointerdown", (event) => startResizeRoi("bottom", event));
+    window.addEventListener("pointermove", resizeRoi);
+    window.addEventListener("pointerup", stopResizeRoi);
+    window.addEventListener("keydown", (event) => {
+      if (event.key !== "Delete" || !screenRoi) return;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName) || event.target.isContentEditable) return;
+      clearScreenRoi();
+    });
+
+    screenPreviewWrap.addEventListener("pointerdown", (event) => {
+      if ([screenRoiTopHandle, screenRoiLeftHandle, screenRoiRightHandle, screenRoiBottomHandle].includes(event.target)) return;
+      if (!screenVideo.videoWidth) return;
+      const point = getVideoPoint(event);
+      if (screenRoi) {
+        if (isPointInsideScreenRoi(point)) {
+          screenMoveStart = {
+            point,
+            roi: { ...screenRoi }
+          };
+          screenPreviewWrap.setPointerCapture(event.pointerId);
+          setScreenStatus("영역을 이동 중입니다.");
+          return;
+        }
+
+        setScreenStatus("이미 지정된 영역이 있습니다. 경계를 조절하거나 Delete 키로 지운 뒤 다시 선택하세요.");
+        return;
+      }
+      screenDragStart = point;
+      screenPreviewWrap.setPointerCapture(event.pointerId);
+    });
+
+    screenPreviewWrap.addEventListener("pointermove", (event) => {
+      if (screenMoveStart) {
+        const point = getVideoPoint(event);
+        const nextX = Math.max(0, Math.min(
+          screenMoveStart.roi.x + point.x - screenMoveStart.point.x,
+          screenVideo.videoWidth - screenMoveStart.roi.width
+        ));
+        const nextY = Math.max(0, Math.min(
+          screenMoveStart.roi.y + point.y - screenMoveStart.point.y,
+          screenVideo.videoHeight - screenMoveStart.roi.height
+        ));
+
+        screenRoi = {
+          ...screenMoveStart.roi,
+          x: nextX,
+          y: nextY
+        };
+        showRoiFromVideoRoi(screenRoi);
+        return;
+      }
+
+      if (!screenDragStart) return;
+      const point = getVideoPoint(event);
+      updateRoiBox(screenDragStart, point);
+    });
+
+    screenPreviewWrap.addEventListener("pointerup", (event) => {
+      if (screenMoveStart) {
+        screenMoveStart = null;
+        saveScreenRoi();
+        setScreenStatus("영역 이동 완료. 측정을 시작하세요.");
+        return;
+      }
+
+      if (!screenDragStart) return;
+      const end = getVideoPoint(event);
+      screenRoi = {
+        x: Math.min(screenDragStart.x, end.x),
+        y: Math.min(screenDragStart.y, end.y),
+        width: Math.abs(end.x - screenDragStart.x),
+        height: Math.abs(end.y - screenDragStart.y)
+      };
+      if (screenRoi.width < 10 || screenRoi.height < 4) {
+        screenRoi = null;
+        screenPreviewRoi = null;
+        screenDragStart = null;
+        hideRoiBox();
+        setScreenStatus("영역이 너무 작습니다. 경험치 바 전체를 다시 드래그하세요.");
+        return;
+      }
+      updateRoiBox(screenDragStart, end);
+      screenPreviewRoi = null;
+      screenDragStart = null;
+      saveScreenRoi();
+      hideMagnifier();
+      setScreenStatus("영역 지정 완료. 측정을 시작하세요.");
+    });
+
+    screenStartMeasureBtn.addEventListener("click", async () => {
+      await unlockScreenCompleteSound();
+
+      const levelInfo = getExpNeedForLevel(document.getElementById("screenCurrentLv").value);
+      if (levelInfo.error) {
+        setScreenStatus(levelInfo.error);
+        return;
+      }
+      const hourglassInfo = getHourglassInput();
+      if (hourglassInfo.error) {
+        setScreenStatus(hourglassInfo.error);
+        return;
+      }
+      if (!screenStream || !screenRoi) {
+        setScreenStatus("화면 선택과 경험치 바 영역 지정이 필요합니다.");
+        return;
+      }
+      if (!isValidScreenRoi(screenRoi)) {
+        setScreenStatus("저장된 영역이 현재 화면과 맞지 않습니다. 경험치 바 영역을 다시 지정해 주세요.");
+        screenRoi = null;
+        screenPreviewRoi = null;
+        hideRoiBox();
+        removeStoredScreenRoi();
+        return;
+      }
+
+      saveScreenRoi();
+      hideMagnifier();
+      stopScreenMeasure();
+      let stableStart = await getStableStartRatio();
+      if (stableStart.error) {
+        setScreenStatus(stableStart.error);
+        return;
+      }
+      if (stableStart.ratio >= SCREEN_LEVEL_UP_WARNING_RATIO) {
+        const shouldContinue = window.confirm("레벨업 시 오인식 가능성이 있습니다. 그래도 측정을 하시겠습니까?");
+        if (!shouldContinue) {
+          setScreenStatus("측정 시작이 취소되었습니다.");
+          return;
+        }
+        setScreenStatus("경험치 진행률을 다시 안정화하는 중입니다...");
+        stableStart = await getStableStartRatio();
+        if (stableStart.error) {
+          setScreenStatus(stableStart.error);
+          return;
+        }
+      }
+
+      const seconds = Number(document.getElementById("screenMeasureSeconds").value);
+      const sampleIntervalMs = getScreenSampleIntervalMs();
+      screenMeasureStart = Date.now();
+      screenStartRatio = stableStart.ratio;
+      screenPrevRatio = stableStart.ratio;
+      screenStartLevel = levelInfo.level;
+      screenCurrentMeasureLevel = levelInfo.level;
+      screenMeasureHourglassLv = hourglassInfo.hourglassLv;
+      screenMeasureHourglassMultiplier = hourglassInfo.multiplier;
+      screenTotalGainedExp = 0;
+      screenLevelUpCount = 0;
+      screenPendingLevelUp = null;
+      screenLevelUpArmed = screenPrevRatio >= SCREEN_LEVEL_UP_ARM_RATIO;
+      screenMeasurementInvalidated = false;
+      screenRecentExpSamples = [];
+      screenRatioTrendSamples = [];
+      screenAcceptedRatioSamples = [];
+      screenLastAcceptedSampleTime = Date.now();
+      addAcceptedRatioSample(screenPrevRatio, screenLastAcceptedSampleTime);
+      screenLevelUpStabilizeUntil = 0;
+      screenSampleInProgress = false;
+      screenLastResult = null;
+      screenDisplayedAverageExpPerMinute = 0;
+      screenStableAverageExpPerMinute = 0;
+      setScreenStatus(`측정 중... 시작 진행률 ${(screenStartRatio * 100).toFixed(2)}% / 샘플링 ${(sampleIntervalMs / 1000).toFixed(1)}초`);
+      renderScreenLiveResult(screenStartRatio, 0, { reason: "start" });
+
+      screenMeasureInterval = setInterval(async () => {
+        if (screenSampleInProgress) return;
+        screenSampleInProgress = true;
+
+        try {
+          const sampled = await getValidatedScreenSample();
+          if (sampled.error || !screenMeasureStart) return;
+
+          const added = sampled.ignored
+            ? { ok: true, gainedExp: 0, ignored: true, reason: sampled.reason }
+            : addScreenMeasureSample(sampled.ratio, sampled.sampledAt);
+          if (added.error) {
+            stopScreenMeasure(added.error);
+            return;
+          }
+
+          addRecentExpSample(added.gainedExp, { levelUp: added.levelUp });
+
+          const elapsedSeconds = (Date.now() - screenMeasureStart) / 1000;
+          const displayRatio = added.ignored ? (screenPrevRatio ?? sampled.ratio) : sampled.ratio;
+          const pendingText = added.pendingLevelUp ? " / 레벨업 확인 중" : "";
+          const recheckText = sampled.rechecked ? " / 재검사 반영" : "";
+          setScreenStatus(
+            `측정 중... LV ${screenCurrentMeasureLevel} / 현재 인식된 경험치 퍼센트 ${(displayRatio * 100).toFixed(2)}% / ${formatMeasureElapsed(elapsedSeconds)}${pendingText}${recheckText}`
+          );
+          renderScreenLiveResult(displayRatio, elapsedSeconds, added);
+        } finally {
+          screenSampleInProgress = false;
+        }
+      }, sampleIntervalMs);
+
+      screenMeasureTimer = setTimeout(() => {
+        screenStopMeasureBtn.click();
+      }, seconds * 1000);
+    });
+
+    screenStopMeasureBtn.addEventListener("click", async () => {
+      if (screenStartRatio === null || !screenMeasureStart) {
+        setScreenStatus("진행 중인 측정이 없습니다.");
+        return;
+      }
+
+      while (screenSampleInProgress) {
+        await wait(50);
+      }
+
+      const detected = await getValidatedScreenSample();
+      const elapsedSeconds = (Date.now() - screenMeasureStart) / 1000;
+      const startRatio = screenStartRatio;
+
+      if (detected.error) {
+        stopScreenMeasure("측정 완료");
+        setScreenResult(detected.error);
+        playScreenCompleteSound();
+        screenStartRatio = null;
+        screenMeasureStart = null;
+        return;
+      }
+
+      const added = detected.ignored
+        ? { ok: true, gainedExp: 0, ignored: true, reason: detected.reason }
+        : addScreenMeasureSample(detected.ratio, detected.sampledAt);
+      stopScreenMeasure("측정 완료");
+      addRecentExpSample(added.gainedExp, { levelUp: added.levelUp });
+
+      if (added.error) {
+        setScreenResult(added.error);
+        playScreenCompleteSound();
+        screenStartRatio = null;
+        screenMeasureStart = null;
+        return;
+      }
+
+      const timingRange = getTimingRange(screenTotalGainedExp, elapsedSeconds);
+      const finalAverageExpPerMinute = screenLevelUpCount > 0 && screenDisplayedAverageExpPerMinute > 0
+        ? screenDisplayedAverageExpPerMinute
+        : timingRange.averageExpPerMinute;
+      const finalTimingRange = screenLevelUpCount > 0 && screenDisplayedAverageExpPerMinute > 0
+        ? getTimingRange(finalAverageExpPerMinute * Math.max(1, elapsedSeconds) / 60, elapsedSeconds)
+        : timingRange;
+
+      const result = {
+        gainedExp: screenTotalGainedExp,
+        expPerMinute: finalAverageExpPerMinute,
+        midpointExpPerMinute: finalTimingRange.midpointExpPerMinute,
+        minExpPerMinute: finalTimingRange.minExpPerMinute,
+        maxExpPerMinute: finalTimingRange.maxExpPerMinute,
+        timingMarginSeconds: finalTimingRange.timingMarginSeconds,
+        levelUps: screenLevelUpCount,
+        startLevel: screenStartLevel,
+        endLevel: screenCurrentMeasureLevel,
+        startRatio,
+        endRatio: screenPrevRatio ?? detected.ratio,
+        rollingExpPerMinute: getRollingExpPerMinute(),
+        hourglassLv: screenMeasureHourglassLv,
+        hourglassMultiplier: screenMeasureHourglassMultiplier,
+        invalidated: screenMeasurementInvalidated,
+        elapsedSeconds
+      };
+      screenStartRatio = null;
+      screenMeasureStart = null;
+      screenPrevRatio = null;
+      screenCurrentMeasureLevel = null;
+
+      if (!Number.isFinite(result.expPerMinute) || result.expPerMinute <= 0) {
+        playScreenCompleteSound();
+        setScreenResult("측정된 경험치 증가량이 없습니다. 영역이나 측정 시간을 확인하세요.");
+        return;
+      }
+
+      screenLastResult = result;
+      playScreenCompleteSound();
+      setScreenResult(`
+        <div class="result-section">
+          <div class="result-title">화면 인식 결과(beta)</div>
+          <p class="beta-notice screen-result-snapshot-notice">정확한 경험치 측정은 스냅샷 측정기를 이용 바랍니다.</p>
+          <div class="result-row">
+            <span class="result-label">시작 레벨/진행률</span>
+            <strong class="result-value">LV ${result.startLevel} / ${(result.startRatio * 100).toFixed(2)}%</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">종료 추정 레벨/진행률</span>
+            <strong class="result-value">LV ${result.endLevel} / ${(result.endRatio * 100).toFixed(2)}%</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">모래시계 배율</span>
+            <strong class="result-value">LV ${result.hourglassLv} / ${result.hourglassMultiplier.toFixed(1)}배</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">레벨업 감지</span>
+            <strong class="result-value">${result.levelUps.toLocaleString("ko-KR")}회</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">획득 경험치 추정</span>
+            <strong class="result-value">${Math.round(result.gainedExp).toLocaleString("ko-KR")}</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">1분당 경험치 추정</span>
+            <div class="screen-exp-result-action">
+              <strong class="result-value highlight">
+                ${Math.round(result.expPerMinute).toLocaleString("ko-KR")}
+                ${renderScreenTimingRange(result, value => Math.round(value).toLocaleString("ko-KR"))}
+              </strong>
+              ${renderScreenApplyButton(result.expPerMinute, result.elapsedSeconds, result.invalidated)}
+            </div>
+          </div>
+          <div class="result-row">
+            <span class="result-label">${renderScreenTimingHelp("오차범위 고려 중간값", "MIN~MAX 범위의 중심 기준값입니다. 일반적으로 경험치 계산기에 적용하기 가장 무난한 값입니다.")}</span>
+            <div class="screen-exp-result-action">
+              <strong class="result-value screen-exp-midpoint">${Math.round(result.midpointExpPerMinute).toLocaleString("ko-KR")}</strong>
+              ${renderScreenApplyButton(result.midpointExpPerMinute, result.elapsedSeconds, result.invalidated)}
+            </div>
+          </div>
+          <div class="result-row">
+            <span class="result-label">최근 30초 평균</span>
+            <strong class="result-value">${Math.round(result.rollingExpPerMinute).toLocaleString("ko-KR")}</strong>
+          </div>
+        </div>
+      `);
+    });
+
+    function applyExpPerMinute(value) {
+      const rounded = Math.round(Number(value));
+      if (!Number.isFinite(rounded) || rounded <= 0) {
+        setScreenStatus("적용할 1분당 경험치 값이 올바르지 않습니다.");
+        return;
+      }
+
+      const normalized = String(rounded);
+      document.getElementById("expPerMinute").value = normalized;
+      document.getElementById("cycleExpPerMinute").value = normalized;
+      saveAll();
+      setScreenStatus("1분당 경험치 값을 적용했습니다.");
+    }
+
+    screenResult.addEventListener("click", (event) => {
+      const button = event.target.closest(".screen-exp-apply-value-btn");
+      if (!button) return;
+      if (button.disabled) return;
+
+      applyExpPerMinute(button.dataset.applyExp);
+    });
+
+    // === 경험치 계산 (기존) ===
+    function formatDate(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      const h = String(date.getHours()).padStart(2, "0");
+      const min = String(date.getMinutes()).padStart(2, "0");
+      return `${y}-${m}-${d} ${h}:${min}`;
+    }
+
+    function getTargetDateTime(dateTimeValue) {
+      if (!dateTimeValue) return null;
+      const now = new Date();
+      const offsetMs = now.getTimezoneOffset() * 60000;
+      const currentMinuteValue = new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
+      if (dateTimeValue === currentMinuteValue) return now;
+
+      const target = new Date(dateTimeValue);
+      return Number.isNaN(target.getTime()) ? null : target;
+    }
+
+    function formatDuration(totalMinutes) {
+      const roundedMinutes = Math.max(0, Math.round(totalMinutes));
+      const days = Math.floor(roundedMinutes / 1440);
+      const hours = Math.floor((roundedMinutes % 1440) / 60);
+      const minutes = roundedMinutes % 60;
+      const dayText = days > 0 ? `${days}일 ` : "";
+      return `${dayText}${hours}시간 ${minutes}분`;
+    }
+
+    window.calcExpTime = function () {
+      const resultEl = document.getElementById("result");
+
+      const currentLv = Number(document.getElementById("currentLv").value);
+      const targetLv = Number(document.getElementById("targetLv").value);
+      const expPerMinute = document.getElementById("expPerMinute").value;
+      const hourglassLv = Number(document.getElementById("hourglassLv").value);
+
+      const result = calculateLevelUpTime(currentLv, targetLv, expPerMinute, hourglassLv);
+
+      if (!result || result.error) {
+        resultEl.innerText = result?.error || "오류 발생";
+        return;
+      }
+
+      const now = new Date();
+      const targetTime = new Date(now.getTime() + result.totalMinutes * 60000);
+
+      resultEl.innerHTML = `
+        <div class="result-section">
+          <div class="result-title">경험치 정보</div>
+          <div class="result-row">
+            <span class="result-label">기본 필요 총 경험치</span>
+            <strong class="result-value">${formatIntegerExp(result.baseRequiredExp)}</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">모래시계 레벨</span>
+            <strong class="result-value">${hourglassLv}</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">모래시계 배율</span>
+            <strong class="result-value">${result.multiplier.toFixed(1)}배</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">적용 후 필요 총 경험치</span>
+            <strong class="result-value">${formatScaledExp(result.requiredExpScaled, result.requiredExpScale)}</strong>
+          </div>
+        </div>
+
+        <div class="result-section">
+          <div class="result-title">예상 소요 시간</div>
+          <div class="result-grid">
+            <div class="time-card">
+              <span class="time-label">분</span>
+              <strong class="time-value">${result.totalMinutes.toFixed(2)}</strong>
+            </div>
+            <div class="time-card">
+              <span class="time-label">시간</span>
+              <strong class="time-value">${result.totalHours.toFixed(2)}</strong>
+            </div>
+            <div class="time-card">
+              <span class="time-label">일</span>
+              <strong class="time-value">${result.totalDays.toFixed(2)}</strong>
+            </div>
+          </div>
+          <div class="summary-box">
+            대략 <strong>${result.days}일 ${result.hours}시간 ${result.minutes}분</strong>
+          </div>
+        </div>
+
+        <div class="result-section">
+          <div class="result-title">시간 정보</div>
+          <div class="result-row">
+            <span class="result-label">현재 시간</span>
+            <strong class="result-value">${formatDate(now)}</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">목표 달성 시간</span>
+            <strong class="result-value highlight">${formatDate(targetTime)}</strong>
+          </div>
+        </div>
+      `;
+    };
+
+    window.calcExpForecast = function () {
+      const resultEl = document.getElementById("forecastResult");
+
+      const currentLv = Number(document.getElementById("forecastCurrentLv").value);
+      const currentExp = document.getElementById("forecastCurrentExp").value || "0";
+      const maxLvValue = document.getElementById("forecastMaxLv").value;
+      const maxLv = maxLvValue.trim() === "" ? null : Number(maxLvValue);
+      const expPerMinute = document.getElementById("forecastExpPerMinute").value;
+      const hourglassLv = Number(document.getElementById("forecastHourglassLv").value);
+      const targetDate = getTargetDateTime(document.getElementById("forecastTargetTime").value);
+
+      if (!targetDate) {
+        resultEl.innerText = "목표 날짜와 시간을 올바르게 입력하세요.";
+        return;
+      }
+
+      const now = new Date();
+      const minutesUntil = (targetDate.getTime() - now.getTime()) / 60000;
+      if (minutesUntil < 0) {
+        resultEl.innerText = "목표 날짜/시간은 현재보다 이후로 입력하세요.";
+        return;
+      }
+      const timeResult = calculateLevelAtMinutes(currentLv, currentExp, expPerMinute, hourglassLv, minutesUntil, maxLv);
+
+      if (!timeResult || timeResult.error) {
+        resultEl.innerText = timeResult?.error || "오류 발생";
+        return;
+      }
+
+      const effectiveTargetDate = timeResult.cappedByMaxLevel
+        ? new Date(now.getTime() + timeResult.minutesUntil * 60000)
+        : targetDate;
+      const targetLabel = timeResult.cappedByMaxLevel ? "만렙 달성 예상 시간" : "목표 시각";
+      const durationLabel = timeResult.cappedByMaxLevel ? "만렙까지 남은 시간" : "남은 시간";
+      const gainedLabel = timeResult.cappedByMaxLevel ? "만렙까지 획득 경험치" : "목표 시각까지 획득 경험치";
+      const expDisplay = timeResult.cappedByMaxLevel
+        ? "만렙 달성"
+        : `${formatScaledExp(timeResult.expInLevelScaled, timeResult.expInLevelScale)} / ${formatScaledExp(timeResult.nextLevelExpScaled, timeResult.nextLevelExpScale)}`;
+
+      resultEl.innerHTML = `
+        <div class="result-section">
+          <div class="result-title">특정 시각 예상</div>
+          <div class="result-row">
+            <span class="result-label">${targetLabel}</span>
+            <strong class="result-value highlight">${formatDate(effectiveTargetDate)}</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">${durationLabel}</span>
+            <strong class="result-value">${formatDuration(timeResult.minutesUntil)}</strong>
+          </div>
+          ${maxLv === null ? "" : `
+          <div class="result-row">
+            <span class="result-label">현재 나의 만렙</span>
+            <strong class="result-value">LV ${maxLv}</strong>
+          </div>
+          `}
+          <div class="result-row">
+            <span class="result-label">예상 레벨</span>
+            <strong class="result-value highlight">LV ${timeResult.level}</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">예상 현재 경험치</span>
+            <strong class="result-value">${expDisplay}</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">예상 경험치 퍼센트</span>
+            <strong class="result-value">${timeResult.expPercent.toFixed(2)}%</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">${gainedLabel}</span>
+            <strong class="result-value">${formatScaledExp(timeResult.totalGainedExpScaled, timeResult.totalGainedExpScale)}</strong>
+          </div>
+        </div>
+      `;
+    };
+
+    // === 1분당 경험치 계산 ===
+    window.expMinuteTime = function () {
+      const resultEl = document.getElementById("expMinuteResult");
+
+      const firstExp = parseIntegerBigInt(document.getElementById("firstExp").value, { allowZero: false });     // 앞경험치
+      const encyExp = Number(document.getElementById("encyExp").value);     // 도감 경험치
+      const holySymbol = Number(document.getElementById("holySymbol").value);     // 홀리심볼 경험치
+      const numAnimal = Number(document.getElementById("numAnimal").value);   // 마릿수
+      const animalTime = Number(document.getElementById("animalTime").value); // 걸리는 시간
+
+      if (firstExp === null) {
+        resultEl.innerText = "앞 경험치는 0보다 큰 정수로 입력하세요.";
+        return;
+      }
+      if (!Number.isFinite(encyExp) || encyExp < 0 || !Number.isFinite(holySymbol) || holySymbol < 0) {
+        resultEl.innerText = "경험치 보너스는 0 이상으로 입력하세요.";
+        return;
+      }
+      if (!Number.isInteger(numAnimal) || numAnimal <= 0 || !Number.isInteger(animalTime) || animalTime <= 0) {
+        resultEl.innerText = "마릿수와 걸리는 시간은 1 이상의 정수로 입력하세요.";
+        return;
+      }
+
+      const expRatioNumerator = BigInt(Math.round(3 * (100 + encyExp + holySymbol)));
+      const realExp = roundDivBigInt(firstExp * expRatioNumerator, 100n); // 실경험치
+      const animalExp = realExp * BigInt(numAnimal); // 마릿수 경험치
+      const oneMinExp = roundDivBigInt(animalExp * 60n, BigInt(animalTime)); // 1분당 경험치
+
+      resultEl.innerHTML = `
+        <div class="result-section">
+          <div class="result-title">1분당 경험치 정보</div>
+          <div class="result-row">
+            <span class="result-label">실경험치</span>
+            <strong class="result-value">` + realExp.toLocaleString("ko-KR") + `</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">` + numAnimal +`마리 경험치</span>
+            <strong class="result-value">` + animalExp.toLocaleString("ko-KR") + `</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">1분당 경험치</span>
+            <strong class="result-value">` + oneMinExp.toLocaleString("ko-KR") + `</strong>
+          </div>
+        </div>
+      `;
+    }
+    
+    // === 사이클 최적화 ===
+    window.calcCycleOpt = function () {
+      const resultEl = document.getElementById("cycleResult");
+
+      const sweepExp = document.getElementById("sweepExp").value;
+      const sweepCount = Number(document.getElementById("sweepCount").value);
+      const totalHours = Number(document.getElementById("totalHours").value);
+      const expPerMinute = document.getElementById("cycleExpPerMinute").value;
+      const hourglassLv = Number(document.getElementById("cycleHourglassLv").value);
+
+      const result = calculateCycleLevel(expPerMinute, hourglassLv, sweepExp, sweepCount, totalHours);
+
+      if (result.error) {
+        resultEl.innerText = result.error;
+        return;
+      }
+
+      resultEl.innerHTML = `
+        <div class="result-section">
+          <div class="result-title">사이클 정보</div>
+          <div class="result-row">
+            <span class="result-label">모래시계 배율</span>
+            <strong class="result-value">${result.multiplier.toFixed(1)}배</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">소탕 적용 세트</span>
+            <strong class="result-value">${result.sweepSets}세트</strong>
+          </div>
+        </div>
+        <div class="result-section">
+          <div class="result-title">경험치 합산</div>
+          <div class="result-row">
+            <span class="result-label">총 사냥 경험치</span>
+            <strong class="result-value">${formatIntegerExp(result.totalHuntingExp)}</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">총 소탕 경험치</span>
+            <strong class="result-value">${formatIntegerExp(result.totalSweepExp)}</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">총 획득 경험치</span>
+            <strong class="result-value">${formatIntegerExp(result.grandTotalExp)}</strong>
+          </div>
+        </div>
+        <div class="result-section">
+          <div class="result-title">결과</div>
+          <div class="summary-box">
+            도달 레벨: <strong>LV ${result.cycleLevel}</strong>
+          </div>
+        </div>
+      `;
+    };
+
+    // === 소탕 레벨 계산 ===
+    window.calcSweepLevel = function () {
+      const resultEl = document.getElementById("sweepLevelResult");
+      const sweepExp = parseIntegerBigInt(document.getElementById("sweepLevelExp").value);
+      const sweepCount = Number(document.getElementById("sweepLevelCount").value);
+      const hourglassLv = Number(document.getElementById("sweepLevelHourglassLv").value);
+
+      if (sweepExp === null) {
+        resultEl.innerText = "소탕 시 획득 경험치는 0 이상으로 입력하세요.";
+        return;
+      }
+      if (!Number.isInteger(sweepCount) || sweepCount < 1 || sweepCount > 3) {
+        resultEl.innerText = "소탕 횟수는 1~3 사이의 정수로 선택하세요.";
+        return;
+      }
+      if (!Number.isInteger(hourglassLv) || hourglassLv < 0 || hourglassLv > 50) {
+        resultEl.innerText = "모래시계 레벨은 0~50 사이의 정수로 입력하세요.";
+        return;
+      }
+
+      const multiplier = 1 + (hourglassLv * 0.1);
+      const multiplierNumerator = BigInt(10 + hourglassLv);
+      const multiplierScale = 10n;
+      const totalExp = sweepExp * BigInt(sweepCount);
+      let level = 1;
+      let expInLevelScaled = totalExp * multiplierScale;
+      let nextLevelExpScaled = 0n;
+      let reachedMaxLevel = false;
+
+      while (true) {
+        const levelInfo = getExpNeedForLevel(level);
+        if (levelInfo.error) {
+          reachedMaxLevel = true;
+          expInLevelScaled = 0n;
+          nextLevelExpScaled = 0n;
+          break;
+        }
+
+        nextLevelExpScaled = levelInfo.expNeedBigInt * multiplierNumerator;
+        if (expInLevelScaled < nextLevelExpScaled) break;
+        expInLevelScaled -= nextLevelExpScaled;
+        level += 1;
+      }
+
+      const expPercent = nextLevelExpScaled > 0n ? Number(expInLevelScaled * 1000000n / nextLevelExpScaled) / 10000 : 100;
+      const usedExpScaled = (totalExp * multiplierScale) - expInLevelScaled;
+
+      resultEl.innerHTML = `
+        <div class="result-section">
+          <div class="result-title">소탕 정보</div>
+          <div class="result-row">
+            <span class="result-label">총 소탕 경험치</span>
+            <strong class="result-value">${formatIntegerExp(totalExp)}</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">소탕 횟수</span>
+            <strong class="result-value">${sweepCount.toLocaleString("ko-KR")}회</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">모래시계 배율</span>
+            <strong class="result-value">${multiplier.toFixed(1)}배</strong>
+          </div>
+        </div>
+        <div class="result-section">
+          <div class="result-title">결과</div>
+          <div class="summary-box">
+            도달 레벨: <strong>LV ${level}</strong>${reachedMaxLevel ? " 이상" : ""}
+          </div>
+          <div class="result-row">
+            <span class="result-label">현재 레벨 경험치</span>
+            <strong class="result-value">${formatScaledExp(expInLevelScaled, multiplierScale)}</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">현재 레벨 진행률</span>
+            <strong class="result-value">${expPercent.toFixed(2)}%</strong>
+          </div>
+          <div class="result-row">
+            <span class="result-label">레벨업에 사용된 경험치</span>
+            <strong class="result-value">${formatScaledExp(usedExpScaled, multiplierScale)}</strong>
+          </div>
+        </div>
+      `;
+    };
+  </script>
+
+</body>
+</html>

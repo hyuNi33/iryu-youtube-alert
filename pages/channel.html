@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>채널 창 테스트 - 이류월드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/common.js"></script>
+  <link rel="icon" href="../assets/mainImg.png">
+  <style>
+    body.channel-alert-flash {
+      animation: channel-alert-flash 0.44s linear 3;
+    }
+
+    @keyframes channel-alert-flash {
+      0%, 72.7% {
+        background: rgba(220, 24, 24, 0.58);
+      }
+      72.8%, 100% {
+        background: transparent;
+      }
+    }
+
+    #channelPreviewWrap {
+      display: block;
+      min-height: 0;
+      padding: 0;
+    }
+
+    #channelPreviewCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      max-height: none;
+      cursor: crosshair;
+    }
+
+    #channelPreviewWrap.has-picked-point::after {
+      content: "";
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      left: var(--pick-x, 0px);
+      top: var(--pick-y, 0px);
+      transform: translate(-50%, -50%);
+      border: 2px solid #ff4d4f;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.28);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="container">
+    <aside class="sidebar"></aside>
+
+    <main class="content">
+      <div class="top-banner">
+        <h1>채널 알리미</h1>
+        <p>막혀 있는 채널이 뚫렸을 때 감지해서 알림음을 보내주는 도구입니다.</p>
+      </div>
+
+      <section class="calc-card">
+        <div class="result-section">
+          <div class="result-title">창 선택</div>
+          <div class="result-box">
+            <p style="margin-bottom: 14px;">`창 선택 시작`을 누른 뒤 확인할 크롬 창을 선택하세요.</p>
+            <div class="screen-exp-actions">
+              <button type="button" class="btn btn-green" id="channelStartCaptureBtn">창 선택 시작</button>
+              <button type="button" class="btn btn-gray" id="channelStopCaptureBtn">선택 해제</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="calc-card">
+        <div class="result-section">
+          <div class="result-title">실시간 미리보기</div>
+          <div class="screen-exp-preview" id="channelPreviewWrap">
+            <canvas id="channelPreviewCanvas" class="screen-exp-preview-canvas"></canvas>
+            <video id="channelVideo" muted playsinline></video>
+            <div class="screen-exp-placeholder" id="channelPreviewPlaceholder">
+              <span>아직 선택한 창이 없습니다. `창 선택 시작`을 눌러 주세요.</span>
+            </div>
+          </div>
+          <div class="result-box" style="margin-top: 14px;">
+            <div id="channelColorInfo" style="display:none; margin-top: 12px; align-items:center; gap:14px; flex-wrap:wrap;">
+              <div id="channelColorSwatch" style="width:48px; height:48px; border-radius:14px; border:1px solid var(--result-border); box-shadow: 0 8px 20px var(--shadow-card);"></div>
+              <button type="button" class="btn btn-gray" id="clearChannelColorBtn">좌표 해제</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script type="module">
+  import { startCapture, stopCapture } from "../js/calc/screen-exp.js";
+
+  const startBtn = document.getElementById("channelStartCaptureBtn");
+  const stopBtn = document.getElementById("channelStopCaptureBtn");
+  const previewWrap = document.getElementById("channelPreviewWrap");
+  const previewCanvas = document.getElementById("channelPreviewCanvas");
+  const previewPlaceholder = document.getElementById("channelPreviewPlaceholder");
+  const videoEl = document.getElementById("channelVideo");
+  const colorInfoEl = document.getElementById("channelColorInfo");
+  const colorSwatchEl = document.getElementById("channelColorSwatch");
+  const clearColorBtn = document.getElementById("clearChannelColorBtn");
+
+  let captureStream = null;
+  let previewAnimation = null;
+  let colorSampleInterval = null;
+  let pickedPoint = null;
+  let colorAlertAudioContext = null;
+  let colorMatchActive = false;
+  let flashResetTimer = null;
+  const PICKED_PREVIEW_SIZE = 100;
+  const sampleCanvas = document.createElement("canvas");
+  sampleCanvas.width = 1;
+  sampleCanvas.height = 1;
+  const CHANNEL_COLOR_RANGES = [
+    {
+      name: "target",
+      rMin: 158,
+      rMax: 197,
+      gMin: 214,
+      gMax: 241,
+      bMin: 33,
+      bMax: 49
+    }
+  ];
+
+  function getColorAlertAudioContext() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+    if (!colorAlertAudioContext) {
+      colorAlertAudioContext = new AudioContextClass();
+    }
+    return colorAlertAudioContext;
+  }
+
+  async function unlockColorAlertSound() {
+    const audioContext = getColorAlertAudioContext();
+    if (!audioContext) return;
+
+    try {
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
+
+      const startedAt = audioContext.currentTime;
+      const gain = audioContext.createGain();
+      const oscillator = audioContext.createOscillator();
+      gain.gain.setValueAtTime(0.0001, startedAt);
+      oscillator.frequency.setValueAtTime(440, startedAt);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start(startedAt);
+      oscillator.stop(startedAt + 0.03);
+      window.setTimeout(() => gain.disconnect(), 100);
+    } catch (error) {
+      console.warn("Failed to unlock color alert sound.", error);
+    }
+  }
+
+  async function playColorAlertSound() {
+    const audioContext = getColorAlertAudioContext();
+    if (!audioContext) return;
+
+    try {
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
+    } catch (error) {
+      console.warn("Failed to resume color alert sound.", error);
+      return;
+    }
+
+    const startedAt = audioContext.currentTime;
+    const frequency = 1046.5;
+    const toneDuration = 0.32;
+    const gapDuration = 0.12;
+    const repeatCount = 3;
+
+    for (let i = 0; i < repeatCount; i++) {
+      const noteStart = startedAt + i * (toneDuration + gapDuration);
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(0.0001, noteStart);
+      gain.gain.exponentialRampToValueAtTime(0.34, noteStart + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + toneDuration);
+      gain.connect(audioContext.destination);
+
+      const oscillator = audioContext.createOscillator();
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(frequency, noteStart);
+      oscillator.connect(gain);
+      oscillator.start(noteStart);
+      oscillator.stop(noteStart + toneDuration);
+
+      window.setTimeout(() => gain.disconnect(), Math.round((i * (toneDuration + gapDuration) + toneDuration + 0.08) * 1000));
+    }
+  }
+
+  function isTargetColor(r, g, b) {
+    return CHANNEL_COLOR_RANGES.some((range) =>
+      r >= range.rMin && r <= range.rMax &&
+      g >= range.gMin && g <= range.gMax &&
+      b >= range.bMin && b <= range.bMax
+    );
+  }
+
+  function stopColorSampling() {
+    if (!colorSampleInterval) return;
+    clearInterval(colorSampleInterval);
+    colorSampleInterval = null;
+  }
+
+  function setPickedMarker(clientX, clientY) {
+    const rect = previewCanvas.getBoundingClientRect();
+    previewWrap.style.setProperty("--pick-x", (clientX - rect.left) + "px");
+    previewWrap.style.setProperty("--pick-y", (clientY - rect.top) + "px");
+    previewWrap.classList.add("has-picked-point");
+  }
+
+  function clearPickedMarker() {
+    previewWrap.classList.remove("has-picked-point");
+  }
+
+  function flashAlertBackground() {
+    document.body.classList.remove("channel-alert-flash");
+    void document.body.offsetWidth;
+    document.body.classList.add("channel-alert-flash");
+
+    if (flashResetTimer) {
+      clearTimeout(flashResetTimer);
+    }
+    flashResetTimer = window.setTimeout(() => {
+      document.body.classList.remove("channel-alert-flash");
+      flashResetTimer = null;
+    }, 1500);
+  }
+
+  function clearPickedPoint() {
+    stopColorSampling();
+    pickedPoint = null;
+    colorMatchActive = false;
+    clearPickedMarker();
+    colorInfoEl.style.display = "none";
+  }
+
+  function updatePickedColorInfo() {
+    if (!pickedPoint || !videoEl.videoWidth || !videoEl.videoHeight) {
+      return;
+    }
+
+    const ctx = sampleCanvas.getContext("2d", { willReadFrequently: true });
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.drawImage(videoEl, pickedPoint.videoX, pickedPoint.videoY, 1, 1, 0, 0, 1, 1);
+    const image = ctx.getImageData(0, 0, 1, 1).data;
+    const [r, g, b, a] = image;
+    const alpha = Number((a / 255).toFixed(3));
+    const matched = isTargetColor(r, g, b);
+
+    colorInfoEl.style.display = "flex";
+    colorSwatchEl.style.backgroundColor = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    colorSwatchEl.style.outline = matched ? "3px solid #ff4d4f" : "none";
+
+    if (matched && !colorMatchActive) {
+      colorMatchActive = true;
+      flashAlertBackground();
+      playColorAlertSound();
+      return;
+    }
+
+    if (!matched) {
+      colorMatchActive = false;
+    }
+  }
+
+  function startColorSampling() {
+    stopColorSampling();
+    if (!pickedPoint) return;
+    updatePickedColorInfo();
+    colorSampleInterval = setInterval(() => {
+      updatePickedColorInfo();
+    }, 100);
+  }
+
+  function stopPreviewLoop() {
+    if (!previewAnimation) return;
+    cancelAnimationFrame(previewAnimation);
+    previewAnimation = null;
+  }
+
+  function drawPreviewFrame() {
+    if (!captureStream || !videoEl.videoWidth || !videoEl.videoHeight) {
+      stopPreviewLoop();
+      return;
+    }
+
+    const ctx = previewCanvas.getContext("2d");
+    if (pickedPoint) {
+      const half = PICKED_PREVIEW_SIZE / 2;
+      const sourceX = Math.max(0, Math.min(videoEl.videoWidth - PICKED_PREVIEW_SIZE, pickedPoint.videoX - half));
+      const sourceY = Math.max(0, Math.min(videoEl.videoHeight - PICKED_PREVIEW_SIZE, pickedPoint.videoY - half));
+      const sourceWidth = Math.min(PICKED_PREVIEW_SIZE, videoEl.videoWidth);
+      const sourceHeight = Math.min(PICKED_PREVIEW_SIZE, videoEl.videoHeight);
+      const dpr = window.devicePixelRatio || 1;
+      const canvasWidth = Math.max(1, Math.round(sourceWidth * dpr));
+      const canvasHeight = Math.max(1, Math.round(sourceHeight * dpr));
+
+      previewWrap.style.height = sourceHeight + "px";
+      previewCanvas.style.margin = "0 auto";
+
+      if (previewCanvas.width !== canvasWidth || previewCanvas.height !== canvasHeight) {
+        previewCanvas.width = canvasWidth;
+        previewCanvas.height = canvasHeight;
+        previewCanvas.style.width = sourceWidth + "px";
+        previewCanvas.style.height = sourceHeight + "px";
+      }
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+      ctx.drawImage(
+        videoEl,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        canvasWidth,
+        canvasHeight
+      );
+      previewWrap.style.setProperty("--pick-x", (previewWrap.clientWidth / 2) + "px");
+      previewWrap.style.setProperty("--pick-y", (sourceHeight / 2) + "px");
+    } else {
+      const cssWidth = Math.max(1, previewWrap.clientWidth);
+      const ratio = videoEl.videoHeight / videoEl.videoWidth;
+      const cssHeight = Math.max(1, Math.round(cssWidth * ratio));
+      const dpr = window.devicePixelRatio || 1;
+      const canvasWidth = Math.max(1, Math.round(cssWidth * dpr));
+      const canvasHeight = Math.max(1, Math.round(cssHeight * dpr));
+
+      previewWrap.style.height = cssHeight + "px";
+      previewCanvas.style.margin = "0";
+
+      if (previewCanvas.width !== canvasWidth || previewCanvas.height !== canvasHeight) {
+        previewCanvas.width = canvasWidth;
+        previewCanvas.height = canvasHeight;
+        previewCanvas.style.width = cssWidth + "px";
+        previewCanvas.style.height = cssHeight + "px";
+      }
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      ctx.drawImage(videoEl, 0, 0, previewCanvas.width, previewCanvas.height);
+    }
+
+    previewAnimation = requestAnimationFrame(drawPreviewFrame);
+  }
+
+  function startPreviewLoop() {
+    stopPreviewLoop();
+    previewAnimation = requestAnimationFrame(drawPreviewFrame);
+  }
+
+  function clearCaptureState() {
+    stopPreviewLoop();
+    stopColorSampling();
+    stopCapture(captureStream);
+    captureStream = null;
+    videoEl.srcObject = null;
+    previewWrap.style.height = "";
+    previewPlaceholder.style.display = "";
+    clearPickedPoint();
+  }
+
+  startBtn.addEventListener("click", async () => {
+    try {
+      clearCaptureState();
+      await unlockColorAlertSound();
+      captureStream = await startCapture(videoEl);
+      previewPlaceholder.style.display = "none";
+      startPreviewLoop();
+
+      const [track] = captureStream.getVideoTracks();
+      if (track) {
+        track.addEventListener("ended", () => {
+          clearCaptureState();
+        });
+      }
+    } catch (error) {
+      clearCaptureState();
+      setStatus(error.message || "창 선택을 시작하지 못했습니다.");
+    }
+  });
+
+  stopBtn.addEventListener("click", () => {
+    clearCaptureState();
+  });
+
+  previewCanvas.addEventListener("click", (event) => {
+    if (!captureStream || !videoEl.videoWidth || !videoEl.videoHeight || !previewCanvas.width || !previewCanvas.height) {
+      return;
+    }
+
+    if (pickedPoint) {
+      return;
+    }
+
+    const rect = previewCanvas.getBoundingClientRect();
+    const cssX = Math.max(0, Math.min(event.clientX - rect.left, rect.width - 1));
+    const cssY = Math.max(0, Math.min(event.clientY - rect.top, rect.height - 1));
+    const scaleX = previewCanvas.width / rect.width;
+    const scaleY = previewCanvas.height / rect.height;
+    const canvasX = Math.max(0, Math.min(previewCanvas.width - 1, Math.round(cssX * scaleX)));
+    const canvasY = Math.max(0, Math.min(previewCanvas.height - 1, Math.round(cssY * scaleY)));
+    const videoX = Math.max(0, Math.min(videoEl.videoWidth - 1, Math.round((canvasX / previewCanvas.width) * videoEl.videoWidth)));
+    const videoY = Math.max(0, Math.min(videoEl.videoHeight - 1, Math.round((canvasY / previewCanvas.height) * videoEl.videoHeight)));
+
+    pickedPoint = { canvasX, canvasY, videoX, videoY };
+    setPickedMarker(event.clientX, event.clientY);
+    unlockColorAlertSound();
+    startColorSampling();
+  });
+
+  clearColorBtn.addEventListener("click", () => {
+    clearPickedPoint();
+  });
+</script>
+</body>
+</html>

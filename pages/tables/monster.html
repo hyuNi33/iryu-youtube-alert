@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>몬스터DB - 이류월드</title>
+
+  <script>
+    (function(){
+      var p = localStorage.getItem('iryu_theme') || 'system';
+      var t = p;
+      if (p === 'system') {
+        t = matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+</head>
+
+<body>
+<div class="wrapper">
+  <div class="container">
+
+    <aside class="sidebar"></aside>
+
+    <main class="content monster-page">
+      <div class="top-banner">
+        <h1>몬스터DB</h1>
+        <p>몬스터DB 데이터 테이블</p>
+      </div>
+
+      <div class="calc-card">
+        <div class="section-title">데이터 목록</div>
+
+        <div class="table-container">
+          <input
+            type="text"
+            id="searchInput"
+            class="table-search"
+            placeholder="몬스터 이름 검색..."
+          >
+
+          <div class="filter-row" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+            <select id="mapFilter" class="table-dropdown" style="max-width:220px; margin-bottom:0;">
+              <option value="">맵 유형 전체</option>
+            </select>
+
+            <select id="rpFilter" class="table-dropdown" style="max-width:220px; margin-bottom:0;">
+              <option value="">입장 제한 RP 전체</option>
+            </select>
+          </div>
+
+          <div id="rowCount" class="table-info">총 0개</div>
+
+          <div class="table-scroll" style="overflow-x:auto; margin-top:10px;">
+            <table class="data-table">
+              <thead id="tableHead"></thead>
+              <tbody id="tableBody">
+                <tr>
+                  <td style="padding:32px; text-align:center; font-weight:700;" colspan="8">
+                    데이터 로딩 중...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<script>
+  const CSV_FILE = "../../datas/monster.csv";
+
+  const tableHead = document.getElementById("tableHead");
+  const tableBody = document.getElementById("tableBody");
+  const searchInput = document.getElementById("searchInput");
+  const mapFilter = document.getElementById("mapFilter");
+  const rpFilter = document.getElementById("rpFilter");
+  const rowCount = document.getElementById("rowCount");
+
+  let headers = [];
+  let rows = [];
+  let sortState = { index: null, direction: 1 };
+
+  function parseCSV(text) {
+    const result = [];
+    let row = [];
+    let value = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const next = text[i + 1];
+
+      if (char === '"' && inQuotes && next === '"') {
+        value += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === "," && !inQuotes) {
+        row.push(value);
+        value = "";
+      } else if ((char === "\n" || char === "\r") && !inQuotes) {
+        if (char === "\r" && next === "\n") i++;
+        row.push(value);
+        if (row.some(cell => cell !== "")) result.push(row);
+        row = [];
+        value = "";
+      } else {
+        value += char;
+      }
+    }
+
+    row.push(value);
+    if (row.some(cell => cell !== "")) result.push(row);
+    return result;
+  }
+
+  function normalize(value) {
+    return String(value ?? "").trim();
+  }
+
+  function compact(value) {
+    return normalize(value).replaceAll(" ", "").replaceAll("\n", "");
+  }
+
+  function findColumnIndex(names, fallbackIndex) {
+    const index = headers.findIndex(header => {
+      const text = compact(header);
+      return names.some(name => text.includes(name.replaceAll(" ", "")));
+    });
+    return index >= 0 ? index : fallbackIndex;
+  }
+
+  function getColumnIndexes() {
+    return {
+      level: findColumnIndex(["레벨"], 0),
+      name: findColumnIndex(["몬스터이름", "몬스터명", "이름"], 1),
+      hp: findColumnIndex(["체력"], 2),
+      exp: findColumnIndex(["경험치"], 3),
+      rp: findColumnIndex(["입장제한RP", "제한RP", "RP"], 5),
+      map: findColumnIndex(["맵유형", "맵 타입", "맵"], 6),
+      memo: findColumnIndex(["비고", "설명", "메모"], 7)
+    };
+  }
+
+  function parseUnitValue(value) {
+    const text = compact(value).replace("RP", "");
+
+    if (!text) return 0;
+
+    if (text.includes("초월")) {
+      const level = Number(text.replace(/[^0-9]/g, ""));
+      return 1000000000000000000 + (Number.isFinite(level) ? level : 0);
+    }
+
+    let total = 0;
+    let matched = false;
+
+    const gyeong = text.match(/([0-9.]+)경/);
+    const jo = text.match(/([0-9.]+)조/);
+    const eok = text.match(/([0-9.]+)억/);
+    const man = text.match(/([0-9.]+)만/);
+
+    if (gyeong) {
+      total += Number(gyeong[1]) * 10000000000000000;
+      matched = true;
+    }
+
+    if (jo) {
+      total += Number(jo[1]) * 1000000000000;
+      matched = true;
+    }
+
+    if (eok) {
+      total += Number(eok[1]) * 100000000;
+      matched = true;
+    }
+
+    if (man) {
+      total += Number(man[1]) * 10000;
+      matched = true;
+    }
+
+    if (matched) return total;
+
+    const num = Number(text.replaceAll(",", ""));
+    return Number.isFinite(num) ? num : 999999999999999999;
+  }
+
+  function formatKoreanUnit(value) {
+    const num = Number(String(value).replaceAll(",", "").trim());
+    if (!Number.isFinite(num)) return normalize(value);
+
+    const units = [
+      { label: "경", value: 10000000000000000 },
+      { label: "조", value: 1000000000000 },
+      { label: "억", value: 100000000 },
+      { label: "만", value: 10000 }
+    ];
+
+    for (const unit of units) {
+      if (num >= unit.value) {
+        const scaled = num / unit.value;
+        const formatted = Number.isInteger(scaled)
+          ? String(scaled)
+          : scaled.toFixed(1).replace(/\.0$/, "");
+        return `${formatted}${unit.label}`;
+      }
+    }
+
+    return num.toLocaleString("ko-KR");
+  }
+
+  function getHeaderTitle(header) {
+    const title = normalize(header).replaceAll("\n", " ");
+
+    if (title === "경험치/체력 비율 (낮을수록 좋음)") {
+      return "경험치/체력 비율<br>(낮을수록 좋음)";
+    }
+
+    return title;
+  }
+
+  function renderHeader() {
+    tableHead.innerHTML = "";
+    const tr = document.createElement("tr");
+
+    headers.forEach((header, index) => {
+      const th = document.createElement("th");
+      const isSorted = sortState.index === index;
+      const icon = isSorted ? (sortState.direction === 1 ? " ▲" : " ▼") : "";
+
+      th.innerHTML = getHeaderTitle(header) + icon;
+
+      th.addEventListener("click", () => {
+        if (sortState.index === index) {
+          sortState.direction *= -1;
+        } else {
+          sortState = { index, direction: 1 };
+        }
+        renderHeader();
+        renderTable();
+      });
+
+      tr.appendChild(th);
+    });
+
+    tableHead.appendChild(tr);
+  }
+
+  function renderFilters() {
+    const cols = getColumnIndexes();
+
+    mapFilter.innerHTML = '<option value="">맵 유형 전체</option>';
+    rpFilter.innerHTML = '<option value="">입장 제한 RP 전체</option>';
+
+    const mapTypes = [...new Set(rows.map(row => normalize(row[cols.map])).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, "ko"));
+
+    const rps = [...new Set(rows.map(row => normalize(row[cols.rp])).filter(Boolean))]
+      .sort((a, b) => parseUnitValue(a) - parseUnitValue(b));
+
+    mapTypes.forEach(type => {
+      const option = document.createElement("option");
+      option.value = type;
+      option.textContent = type;
+      mapFilter.appendChild(option);
+    });
+
+    rps.forEach(rp => {
+      const option = document.createElement("option");
+      option.value = rp;
+      option.textContent = rp;
+      rpFilter.appendChild(option);
+    });
+  }
+
+  function getFilteredRows() {
+    const cols = getColumnIndexes();
+    const keyword = searchInput.value.trim().toLowerCase();
+    const selectedMap = mapFilter.value;
+    const selectedRp = rpFilter.value;
+
+    let filtered = rows.filter(row => {
+      const matchKeyword = !keyword || row.some(cell => normalize(cell).toLowerCase().includes(keyword));
+      const matchMap = !selectedMap || normalize(row[cols.map]) === selectedMap;
+      const matchRp = !selectedRp || normalize(row[cols.rp]) === selectedRp;
+      return matchKeyword && matchMap && matchRp;
+    });
+
+    if (sortState.index !== null) {
+      const cols = getColumnIndexes();
+      const index = sortState.index;
+      const direction = sortState.direction;
+
+      filtered = [...filtered].sort((a, b) => {
+        const aValue = normalize(a[index]);
+        const bValue = normalize(b[index]);
+
+        if ([cols.level, cols.hp, cols.exp, cols.rp].includes(index)) {
+          return (parseUnitValue(aValue) - parseUnitValue(bValue)) * direction;
+        }
+
+        return aValue.localeCompare(bValue, "ko") * direction;
+      });
+    }
+
+    return filtered;
+  }
+
+  function renderTable() {
+    const cols = getColumnIndexes();
+    const filtered = getFilteredRows();
+    tableBody.innerHTML = "";
+    rowCount.textContent = `총 ${filtered.length.toLocaleString()}개`;
+
+    if (filtered.length === 0) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = headers.length || 1;
+      td.textContent = "검색 결과가 없습니다.";
+      td.style.padding = "32px";
+      td.style.textAlign = "center";
+      td.style.fontWeight = "700";
+      tr.appendChild(td);
+      tableBody.appendChild(tr);
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    filtered.forEach(row => {
+      const tr = document.createElement("tr");
+
+      headers.forEach((_, index) => {
+        const td = document.createElement("td");
+        const rawValue = normalize(row[index]);
+
+        if (index === cols.hp || index === cols.exp || index === cols.rp) {
+          td.textContent = formatKoreanUnit(rawValue);
+        } else {
+          td.textContent = rawValue;
+        }
+
+        if (index === cols.name || index === cols.memo) {
+          td.style.textAlign = "left";
+        }
+
+        if (index === cols.memo) {
+          td.style.whiteSpace = "pre-line";
+        }
+
+        tr.appendChild(td);
+      });
+
+      fragment.appendChild(tr);
+    });
+
+    tableBody.appendChild(fragment);
+  }
+
+  async function init() {
+    try {
+      const response = await fetch(CSV_FILE);
+      if (!response.ok) throw new Error("CSV 파일을 불러오지 못했습니다.");
+
+      const text = await response.text();
+      const parsed = parseCSV(text.replace(/^\uFEFF/, ""));
+
+      if (parsed.length === 0) throw new Error("CSV 데이터가 비어 있습니다.");
+
+      headers = parsed[0];
+      rows = parsed.slice(1);
+
+      renderHeader();
+      renderFilters();
+      renderTable();
+    } catch (error) {
+      rowCount.textContent = "불러오기 실패";
+      tableHead.innerHTML = "";
+      tableBody.innerHTML = `
+        <tr>
+          <td style="padding:32px; text-align:center; font-weight:700;" colspan="8">
+            ${error.message}<br>
+            HTML 파일 기준 CSV 경로가 <strong>${CSV_FILE}</strong> 인지 확인하세요.
+          </td>
+        </tr>
+      `;
+    }
+  }
+
+  searchInput.addEventListener("input", renderTable);
+  mapFilter.addEventListener("change", renderTable);
+  rpFilter.addEventListener("change", renderTable);
+
+  init();
+</script>
+</body>
+</html>

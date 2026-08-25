@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RP 스킬 - 이류월드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+</head>
+<body>
+<div class="wrapper">
+  <div class="container">
+
+    <aside class="sidebar"></aside>
+
+    <main class="content">
+      <div class="top-banner">
+        <h1>RP 스킬</h1>
+        <p>RP 스킬 데이터 테이블</p>
+      </div>
+
+      <div class="card">
+        <div id="tableContainer">데이터 로딩 중...</div>
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<script type="module">
+  import { renderMultiTable } from "../../js/multi-table-viewer.js";
+  renderMultiTable("../../datas/rpskill-perf", "tableContainer", {
+    compactNumberColumns: [
+      "소모 RP",
+      "누적 RP",
+      "필요 RP",
+      "샤프 소모값",
+      "버서크 소모값",
+      "비용",
+      "누적 비용",
+      "누적 환포",
+      "소모 포인트",
+      "누적 포인트"
+    ]
+  });
+</script>
+</body>
+</html>

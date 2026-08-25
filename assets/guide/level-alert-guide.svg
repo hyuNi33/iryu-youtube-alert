@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 260" role="img" aria-labelledby="title desc">
+  <title id="title">레벨업 알림 영역 선택 예시</title>
+  <desc id="desc">이류월드를 절전모드로 만든 뒤 현재 레벨 숫자 영역만 선택하는 예시 이미지</desc>
+  <defs>
+    <linearGradient id="bubble" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#27364a"/>
+      <stop offset="1" stop-color="#182536"/>
+    </linearGradient>
+    <filter id="blueGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.12 0 0 0 0 0.57 0 0 0 0 1 0 0 0 0.8 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect width="820" height="260" fill="#020407"/>
+  <g opacity="0.8" filter="url(#blueGlow)">
+    <path d="M410 58 487 132H333Z" fill="none" stroke="#1ea7ff" stroke-width="3"/>
+    <path d="M410 42 516 144H304Z" fill="none" stroke="#0b5cc8" stroke-width="2" opacity="0.65"/>
+  </g>
+
+  <rect x="197" y="70" width="428" height="64" rx="14" fill="url(#bubble)" stroke="#34475f" filter="url(#softShadow)"/>
+  <text x="411" y="110" fill="#e8f0f8" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="800">화면 선택 후 레벨 숫자가 보이는 영역만 드래그하세요.</text>
+
+  <text x="410" y="151" fill="#48e6c9" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="800">절전모드로 만들어 레벨 표시를 또렷하게 고정해주세요</text>
+
+  <g transform="translate(276 174)">
+    <text x="39" y="-7" fill="#9daabd" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="700">현재 LV.</text>
+    <rect x="0" y="0" width="78" height="31" fill="none" stroke="#ff3131" stroke-width="3"/>
+    <text x="39" y="25" fill="#f0f3f7" text-anchor="middle" font-family="Arial, sans-serif" font-size="33" font-weight="900">469</text>
+    <text x="39" y="48" fill="#c9d4e0" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700">00:27 경과</text>
+  </g>
+
+  <g transform="translate(382 181)" font-family="Arial, sans-serif" font-weight="800" font-size="13">
+    <polygon points="0,8 11,0 22,8 11,16" fill="#4ee4ff" opacity="0.9"/>
+    <text x="36" y="13" fill="#bdd3e8">0</text>
+    <path d="M86 2h15l-4 16H82z" fill="#7b84aa"/>
+    <text x="128" y="13" fill="#bdd3e8">0</text>
+    <circle cx="184" cy="8" r="9" fill="#51d6d2" opacity="0.85"/>
+    <text x="210" y="13" fill="#bdd3e8">3310</text>
+    <path d="M84 37h18l-3 13H80z" fill="#9d508e"/>
+    <text x="128" y="49" fill="#bdd3e8">0</text>
+    <circle cx="184" cy="44" r="9" fill="#7fd7ff" opacity="0.85"/>
+    <text x="210" y="49" fill="#bdd3e8">170</text>
+  </g>
+</svg>

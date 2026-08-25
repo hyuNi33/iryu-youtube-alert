@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>경험치 측정 테스트</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: #1f2937;
+      background: #eef4fb;
+      font-family: Arial, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    }
+
+    .control-bar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr)) auto;
+      gap: 10px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #cbd5e1;
+      background: rgba(248, 250, 252, 0.94);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+      backdrop-filter: blur(10px);
+    }
+
+    .field {
+      display: grid;
+      gap: 4px;
+    }
+
+    .field label {
+      color: #334155;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    input,
+    button {
+      min-height: 34px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      font: inherit;
+    }
+
+    input {
+      width: 100%;
+      padding: 7px 9px;
+      background: #fff;
+    }
+
+    .actions {
+      display: flex;
+      gap: 7px;
+      align-items: end;
+    }
+
+    button {
+      padding: 7px 12px;
+      color: #0f172a;
+      background: #e2e8f0;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button.primary {
+      color: #fff;
+      border-color: #16a34a;
+      background: #16a34a;
+    }
+
+    .game-wrap {
+      padding: 0 28px 28px;
+    }
+
+    .capture-guide {
+      margin: 14px 28px 0;
+      padding: 11px 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 13px;
+    }
+
+    .game-frame {
+      position: relative;
+      height: calc(100vh - 180px);
+      min-height: 560px;
+      overflow: hidden;
+      border: 1px solid #c9d9ea;
+      border-radius: 15px;
+      background:
+        linear-gradient(180deg, rgba(159, 194, 230, 0.38), rgba(255, 255, 255, 0.04)),
+        linear-gradient(135deg, #8fb6de 0%, #b8d1eb 42%, #d7e7f5 100%);
+    }
+
+    .game-frame::before {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 100%;
+      background:
+        radial-gradient(180px 110px at 7% 28%, #365a82 0 58%, transparent 59%),
+        radial-gradient(260px 150px at 18% 32%, #42688f 0 58%, transparent 59%),
+        radial-gradient(210px 130px at 30% 35%, #2e5278 0 58%, transparent 59%),
+        radial-gradient(240px 150px at 88% 34%, #466d94 0 58%, transparent 59%),
+        linear-gradient(180deg, transparent 60%, rgba(36, 59, 85, 0.46) 61% 100%);
+      opacity: 0.7;
+    }
+
+    .stone-wall {
+      position: absolute;
+      left: 28%;
+      top: -34px;
+      width: 42%;
+      height: 150px;
+      background-color: #8f8982;
+      background-image:
+        linear-gradient(90deg, rgba(0,0,0,0.28) 1px, transparent 1px),
+        linear-gradient(rgba(0,0,0,0.25) 1px, transparent 1px),
+        linear-gradient(135deg, #b7b0aa, #7d7771);
+      background-size: 44px 28px, 100% 28px, 100% 100%;
+      clip-path: polygon(0 6%, 100% 0, 96% 100%, 3% 100%);
+      box-shadow: inset 0 -18px 28px rgba(0,0,0,0.2);
+      opacity: 0.95;
+    }
+
+    .player-info {
+      position: absolute;
+      left: 9%;
+      top: 28px;
+      z-index: 4;
+      color: #f8fafc;
+      line-height: 1.1;
+      text-shadow: 0 2px 2px #111827, 0 0 3px #111827;
+    }
+
+    .player-level {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .player-name {
+      margin-top: 5px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .top-icons {
+      position: absolute;
+      left: 40%;
+      top: 8px;
+      z-index: 5;
+      display: flex;
+      align-items: flex-start;
+      gap: 26px;
+      transform: translateX(-50%);
+    }
+
+    .hud-icon {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 900;
+      text-shadow: 0 2px 2px #000, 0 0 3px #000;
+    }
+
+    .hud-icon .gem {
+      width: 34px;
+      height: 34px;
+      border: 2px solid rgba(255,255,255,0.72);
+      border-radius: 9px;
+      background: radial-gradient(circle at 35% 24%, #ffffff, #6ee7f9 21%, #2563eb 62%, #0f172a 100%);
+      box-shadow: 0 2px 3px rgba(0,0,0,0.5);
+      transform: rotate(45deg) scale(0.82);
+    }
+
+    .hud-icon:nth-child(2) .gem {
+      background: radial-gradient(circle at 35% 24%, #fff7ed, #f59e0b 28%, #92400e 72%, #431407 100%);
+    }
+
+    .hud-icon:nth-child(3) .gem {
+      background: radial-gradient(circle at 35% 24%, #fefce8, #a16207 28%, #422006 72%, #1c1917 100%);
+    }
+
+    .exp-toast {
+      position: absolute;
+      right: 14%;
+      top: 8px;
+      z-index: 6;
+      color: #f8fafc;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.15;
+      text-align: left;
+      text-shadow: 0 2px 2px #000, 0 0 4px #000;
+    }
+
+    .mob {
+      position: absolute;
+      z-index: 2;
+      width: 86px;
+      height: 64px;
+      border-radius: 45% 55% 48% 52%;
+      background: linear-gradient(160deg, #d9f99d, #22c55e 58%, #166534);
+      box-shadow: 0 18px 34px rgba(22, 101, 52, 0.24);
+      opacity: 0.88;
+      animation: mobFloat 2.8s ease-in-out infinite;
+    }
+
+    .mob::before,
+    .mob::after {
+      content: "";
+      position: absolute;
+      top: 21px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #0f172a;
+    }
+
+    .mob::before { left: 25px; }
+    .mob::after { right: 25px; }
+    .mob.one { left: 28%; top: 42%; }
+    .mob.two { right: 25%; top: 48%; animation-delay: -1s; }
+    .mob.three { left: 50%; top: 60%; animation-delay: -1.8s; transform: scale(1.15); }
+
+    @keyframes mobFloat {
+      0%, 100% { translate: 0 0; }
+      50% { translate: 0 -10px; }
+    }
+
+    .exp-pop {
+      position: absolute;
+      z-index: 7;
+      right: 28%;
+      top: 34%;
+      color: #fef08a;
+      font-size: 28px;
+      font-weight: 900;
+      text-shadow: 0 3px 0 rgba(0, 0, 0, 0.42), 0 0 14px rgba(253, 224, 71, 0.5);
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .exp-pop.show {
+      animation: popExp 720ms ease-out;
+    }
+
+    @keyframes popExp {
+      0% { opacity: 0; transform: translateY(10px) scale(0.92); }
+      20% { opacity: 1; transform: translateY(0) scale(1.06); }
+      100% { opacity: 0; transform: translateY(-32px) scale(1); }
+    }
+
+    .exp-bar-shell {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      bottom: 38px;
+      z-index: 8;
+      height: 13px;
+      padding: 1px;
+      border: 1px solid #ededed;
+      border-radius: 2px;
+      background: #ededed;
+      box-shadow: none;
+    }
+
+    .exp-bar {
+      position: relative;
+      height: 100%;
+      overflow: visible;
+      border-radius: 1px;
+      background: linear-gradient(180deg, #aaa8aa 0%, #9a989a 52%, #868486 100%);
+    }
+
+    .exp-fill {
+      width: calc(var(--exp-ratio, 0) * 100%);
+      height: 100%;
+      overflow: hidden;
+      background: linear-gradient(180deg, #bcff38 0%, #a9ee33 38%, #8bd62d 72%, #74c529 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.28),
+        inset 0 -1px 0 rgba(74, 128, 38, 0.28);
+    }
+
+    .exp-fill::after {
+      content: "";
+      display: block;
+      width: 100%;
+      height: 30%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0));
+    }
+
+    .exp-percent-overlay {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: -7px;
+      z-index: 3;
+      color: rgba(244, 244, 244, 0.92);
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 20px;
+      text-align: center;
+      -webkit-text-stroke: 0.28px rgba(82, 82, 82, 0.62);
+      text-shadow:
+        -1px -1px 0 rgba(86, 86, 86, 0.54),
+        1px -1px 0 rgba(86, 86, 86, 0.54),
+        -1px 1px 0 rgba(86, 86, 86, 0.54),
+        1px 1px 0 rgba(86, 86, 86, 0.54),
+        0 1px 1px rgba(60, 60, 60, 0.58),
+        0 0 2px rgba(120, 120, 120, 0.38);
+      pointer-events: none;
+    }
+
+    .status-box {
+      margin: 10px 28px 12px;
+      padding: 13px 14px;
+      border: 1px solid #d4e0ef;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 14px;
+    }
+
+    .roi-hint {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      bottom: 11px;
+      z-index: 8;
+      color: rgba(248, 250, 252, 0.86);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+      text-shadow: 0 2px 2px rgba(0, 0, 0, 0.75), 0 0 4px rgba(0, 0, 0, 0.75);
+    }
+
+    @media (max-width: 980px) {
+      .control-bar {
+        grid-template-columns: repeat(2, minmax(130px, 1fr));
+      }
+
+      .actions {
+        grid-column: 1 / -1;
+      }
+
+      .game-wrap {
+        overflow-x: auto;
+        padding: 0 12px 24px;
+      }
+
+      .game-frame {
+        width: 980px;
+        height: 560px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="control-bar">
+    <div class="field">
+      <label for="levelInput">현재 레벨</label>
+      <input type="number" id="levelInput" value="140" min="1">
+    </div>
+    <div class="field">
+      <label for="startRatioInput">시작 퍼센트</label>
+      <input type="number" id="startRatioInput" value="95" min="0" max="99.99" step="0.01">
+    </div>
+    <div class="field">
+      <label for="gainRatioInput">먹는 경험치 퍼센트</label>
+      <input type="number" id="gainRatioInput" value="1.2" min="0" step="0.01">
+    </div>
+    <div class="field">
+      <label for="varianceRatioInput">경험치 오차범위 퍼센트</label>
+      <input type="number" id="varianceRatioInput" value="0.2" min="0" step="0.01">
+    </div>
+    <div class="field">
+      <label for="gainSecondsInput">경험치 먹는 데 걸리는 시간(초)</label>
+      <input type="number" id="gainSecondsInput" value="3" min="0.1" step="0.1">
+    </div>
+    <div class="actions">
+      <button type="button" class="primary" id="startBtn">시작</button>
+      <button type="button" id="stopBtn">정지</button>
+      <button type="button" id="resetBtn">초기화</button>
+    </div>
+  </div>
+
+  <div class="capture-guide">아래 게임 화면을 별도 창에 띄운 뒤, 경험치 측정기에서 이 창의 경험치 바 영역만 직접 선택해서 트래킹하세요.</div>
+  <div class="status-box" id="statusBox">대기 중... LV 140 / 현재 경험치 950,000,000 / 1,000,000,000 (95.00%)</div>
+
+  <div class="game-wrap">
+    <div class="game-frame" id="gameFrame">
+      <div class="stone-wall"></div>
+      <div class="mob one"></div>
+      <div class="mob two"></div>
+      <div class="mob three"></div>
+
+      <div class="player-info">
+        <div class="player-level" id="levelText">LV 140</div>
+        <div class="player-name">아크라시엘</div>
+      </div>
+
+      <div class="top-icons" aria-hidden="true">
+        <div class="hud-icon"><div class="gem"></div><span>능력치</span></div>
+        <div class="hud-icon"><div class="gem"></div><span>장비</span></div>
+        <div class="hud-icon"><div class="gem"></div><span>스킬</span></div>
+      </div>
+
+      <div class="exp-toast" id="toastText">경험치 3,549 + 2,059 + 1,121 을 획득했습니다.<br>경험치 3,140 + 1,821 + 9,922 을 획득했습니다.</div>
+      <div class="exp-pop" id="expPop">+1.20%</div>
+
+      <div class="exp-bar-shell">
+        <div class="exp-bar" id="expBar">
+          <div class="exp-fill"></div>
+          <div class="exp-percent-overlay" id="percentOverlay">95.00% (950,000,000 / 1,000,000,000)</div>
+        </div>
+      </div>
+      <div class="roi-hint">하단 크롭 미리보기에서 이 경험치 바를 선택</div>
+    </div>
+  </div>
+
+  <script>
+    const levelInput = document.getElementById("levelInput");
+    const startRatioInput = document.getElementById("startRatioInput");
+    const gainRatioInput = document.getElementById("gainRatioInput");
+    const varianceRatioInput = document.getElementById("varianceRatioInput");
+    const gainSecondsInput = document.getElementById("gainSecondsInput");
+    const expBar = document.getElementById("expBar");
+    const levelText = document.getElementById("levelText");
+    const percentOverlay = document.getElementById("percentOverlay");
+    const statusBox = document.getElementById("statusBox");
+    const toastText = document.getElementById("toastText");
+    const expPop = document.getElementById("expPop");
+
+    const totalExp = 1000000000;
+
+    let animationId = null;
+    let level = 140;
+    let ratio = 0.95;
+    let startedAt = 0;
+    let lastGainAt = 0;
+    let currentGainPercent = 0;
+
+    document.getElementById("startBtn").addEventListener("click", start);
+    document.getElementById("stopBtn").addEventListener("click", stop);
+    document.getElementById("resetBtn").addEventListener("click", resetState);
+    [levelInput, startRatioInput].forEach(input => input.addEventListener("change", resetState));
+
+    resetState();
+
+    function start() {
+      if (animationId) return;
+      startedAt = performance.now();
+      lastGainAt = startedAt;
+      animationId = requestAnimationFrame(tick);
+      render("측정 중");
+    }
+
+    function stop() {
+      if (!animationId) return;
+      cancelAnimationFrame(animationId);
+      animationId = null;
+      render("정지");
+    }
+
+    function resetState() {
+      if (animationId) stop();
+      level = Math.max(1, Math.floor(Number(levelInput.value) || 1));
+      ratio = clamp((Number(startRatioInput.value) || 0) / 100, 0, 0.9999);
+      startedAt = 0;
+      lastGainAt = 0;
+      currentGainPercent = 0;
+      render("대기 중");
+    }
+
+    function tick(now) {
+      const gainIntervalMs = Math.max(100, (Number(gainSecondsInput.value) || 1) * 1000);
+      if (now - lastGainAt >= gainIntervalMs) {
+        lastGainAt = now;
+        setNextGain();
+        ratio += currentGainPercent / 100;
+        while (ratio >= 1) {
+          ratio -= 1;
+          level += 1;
+          levelInput.value = level;
+        }
+        showGain(currentGainPercent);
+      }
+
+      render("측정 중");
+      animationId = requestAnimationFrame(tick);
+    }
+
+    function setNextGain() {
+      const baseGain = Math.max(0, Number(gainRatioInput.value) || 0);
+      const variance = Math.max(0, Number(varianceRatioInput.value) || 0);
+      currentGainPercent = Math.max(0, baseGain + ((Math.random() * 2 - 1) * variance));
+    }
+
+    function showGain(gainPercent) {
+      expPop.textContent = `+${gainPercent.toFixed(2)}%`;
+      expPop.classList.remove("show");
+      void expPop.offsetWidth;
+      expPop.classList.add("show");
+      toastText.innerHTML = `경험치 ${randomExp().toLocaleString("ko-KR")} + ${randomExp().toLocaleString("ko-KR")} + ${randomExp().toLocaleString("ko-KR")} 을 획득했습니다.<br>경험치 ${randomExp().toLocaleString("ko-KR")} + ${randomExp().toLocaleString("ko-KR")} + ${randomExp().toLocaleString("ko-KR")} 을 획득했습니다.`;
+    }
+
+    function render(state) {
+      const currentExp = Math.round(totalExp * ratio);
+      const percentText = `${(ratio * 100).toFixed(2)}%`;
+      const expText = `${percentText} (${currentExp.toLocaleString("ko-KR")} / ${totalExp.toLocaleString("ko-KR")})`;
+      const gainIntervalSeconds = Math.max(0.1, Number(gainSecondsInput.value) || 1);
+      const perSecondPercent = currentGainPercent > 0 ? currentGainPercent / gainIntervalSeconds : 0;
+
+      expBar.style.setProperty("--exp-ratio", ratio.toFixed(5));
+      levelText.textContent = `LV ${level}`;
+      percentOverlay.textContent = expText;
+
+      const elapsed = startedAt ? Math.floor((performance.now() - startedAt) / 1000) : 0;
+      statusBox.textContent = `${state}... LV ${level} / 현재 경험치 ${expText} / 최근 기준 초당 ${perSecondPercent.toFixed(3)}% / ${elapsed}초`;
+    }
+
+    function randomExp() {
+      return Math.floor(900 + Math.random() * 9500);
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, Number(value) || 0));
+    }
+  </script>
+</body>
+</html>

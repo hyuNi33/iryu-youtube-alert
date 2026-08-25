@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>경험치 시작/종료 비교 측정기 - 이류월드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <script src="../../js/vendor/tesseract/tesseract.min.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+  <style>
+    body.measure-embed .sidebar,
+    body.measure-embed .top-banner {
+      display: none;
+    }
+
+    body.measure-embed {
+      background: transparent;
+      overflow: hidden;
+    }
+
+    body.measure-embed .wrapper {
+      padding: 0;
+    }
+
+    body.measure-embed .container {
+      display: block;
+    }
+
+    body.measure-embed .content {
+      width: 100%;
+      max-width: none;
+      padding: 0;
+    }
+
+    body.measure-embed .screen-exp-guide {
+      margin-top: 0;
+    }
+
+    body.measure-embed .calc-card {
+      margin: 0;
+      border: 0;
+      box-shadow: none;
+      background: transparent;
+    }
+
+    .screen-tool { display: grid; gap: 16px; }
+    .screen-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .screen-preview { position: relative; overflow: auto; border: 1px solid var(--border-color); border-radius: 8px; background: #111; min-height: 360px; max-height: 520px; user-select: none; }
+    .screen-preview canvas { display: block; width: 180%; max-width: none; height: auto; background: #111; image-rendering: auto; }
+    .screen-preview video { display: none; }
+    .screen-placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: #ddd; pointer-events: none; text-align: center; padding: 24px; }
+    .roi-box { position: absolute; border: 3px solid #ff3b30; background: rgba(255, 59, 48, 0.16); display: none; cursor: move; z-index: 2; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.28), 0 0 0 2px #fff inset; }
+    .roi-box.show { display: block; }
+    body.measure-embed .screen-preview { min-height: 420px; max-height: 560px; }
+    .status-line { padding: 10px 12px; border-radius: 8px; background: var(--bg-secondary); color: var(--text-color); font-weight: 600; }
+    .screen-result-snapshot-notice { margin: 0; font-size: 18px; font-weight: 900; line-height: 1.5; }
+    .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+    .metric { min-width: 0; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background: var(--card-bg); }
+    .metric span { display: block; color: var(--text-muted); font-size: 13px; margin-bottom: 6px; }
+    .metric strong { display: block; min-width: 0; font-size: clamp(15px, 1.6vw, 18px); line-height: 1.45; overflow-wrap: anywhere; word-break: break-word; }
+    .shot-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    .shot-panel { border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; background: var(--card-bg); }
+    .shot-panel h3 { margin: 0; padding: 10px 12px; font-size: 15px; border-bottom: 1px solid var(--border-color); }
+    .shot-panel canvas { display: block; width: 100%; height: auto; max-height: 220px; background: #111; object-fit: contain; }
+    .shot-panel.shot-empty canvas { display: none; }
+    .shot-panel.shot-empty::after { content: "측정 시작 후 캡처 이미지가 표시됩니다."; display: block; padding: 34px 18px; color: var(--text-muted); text-align: center; background: var(--bg-secondary); }
+    .ocr-debug { display: none; grid-template-columns: 1fr; gap: 10px; }
+    .ocr-debug canvas { display: block; width: 100%; height: auto; max-height: 180px; background: #fff; border: 1px solid var(--border-color); border-radius: 8px; object-fit: contain; }
+    .ocr-debug-text { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <script>if(new URLSearchParams(location.search).get("embed")==="1")document.body.classList.add("measure-embed")</script>
+  <div class="wrapper">
+    <div class="container">
+      <aside class="sidebar"></aside>
+      <main class="content">
+        <div class="top-banner">
+          <h1>경험치 시작/종료 비교 측정기</h1>
+          <p>시작/종료 캡처의 현재 경험치 숫자를 OCR로 읽어 차이를 비교합니다.</p>
+        </div>
+
+        <div class="screen-exp-guide" id="screenGuide">
+          <div class="screen-exp-guide-header">
+            <div class="screen-exp-guide-title">사용법</div>
+            <button type="button" class="screen-exp-guide-toggle" id="screenGuideToggleBtn" aria-expanded="true" aria-controls="screenGuideBody">접기</button>
+          </div>
+          <div class="screen-exp-guide-body" id="screenGuideBody">
+            <ol>
+              <li>`화면 선택`으로 게임 화면을 선택합니다.</li>
+              <li>하단 미리보기에서 <strong class="screen-exp-emphasis">괄호 안의 현재 경험치 / 필요 경험치 숫자 한 줄만</strong> 드래그해서 지정합니다.</li>
+              <li>빨간 박스 안에는 <strong class="screen-exp-emphasis">숫자, 쉼표, 슬래시(/)</strong>만 들어가게 잡아 주세요.</li>
+              <li><strong class="screen-exp-emphasis">2,472,784,529,706,477,056 / 3,899...</strong> 같은 숫자 줄을 중앙에 두고, 퍼센트(%), 초록색 바, 위쪽 능력치/장비/스킬 글자는 제외해 주세요.</li>
+              <li>영역을 다시 잡으려면 `영역 지우기`를 누른 뒤 다시 드래그합니다.</li>
+              <li>시작 레벨, 종료 레벨, 모래시계 레벨, 시작/종료 현재 경험치, 자동 측정 시간을 확인한 뒤 `측정 시작`을 누릅니다.</li>
+              <li>`측정 시작`을 누르면 시작 캡처가 즉시 저장되고, 설정 시간이 지나면 종료 캡처와 계산이 자동으로 진행됩니다.</li>
+              <li><strong class="screen-exp-warning">측정 중에는 경험치 숫자 위에 마우스 포인터를 두지 마세요.</strong> 포인터가 캡처 영역에 겹치면 OCR이 흔들릴 수 있습니다.</li>
+              <li><strong class="screen-exp-warning">레벨업이 있었다면 종료 레벨을 직접 입력해 주세요.</strong> 이 페이지는 LV 영역을 따로 인식하지 않습니다.</li>
+              <li>측정 결과를 맹신하지 말고 <u>2~3번 반복 측정</u>해서 비교해 주세요.</li>
+              <li><strong class="screen-exp-warning">OCR 값이 이상하면 자동 입력값을 지우고 직접 입력해 주세요.</strong> 캡처 방식이므로 계산은 항상 <strong>입력된 종료 현재 경험치 - 입력된 시작 현재 경험치</strong>를 기준으로 합니다.</li>
+            </ol>
+            <div class="screen-exp-guide-example">
+              <div class="screen-exp-guide-example-title">영역 지정 기준</div>
+              <img src="../../assets/guide/screen-exp-snapshot-roi-guide.svg" alt="경험치 숫자 OCR 영역 지정 예시">
+              <p class="screen-exp-guide-caption">
+                OCR 모드에서는 색 띠가 아니라 <strong>괄호 안 숫자 텍스트 한 줄</strong>만 좁게 선택해야 합니다. 박스 안에 아이콘, 레벨, 퍼센트, 초록색 바가 섞이면 숫자를 잘못 읽을 수 있습니다.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <section class="calc-card screen-tool">
+          <div class="form-list">
+            <div class="form-row">
+              <label for="startLevel">시작 레벨</label>
+              <input type="number" id="startLevel" min="1" placeholder="시작 레벨">
+            </div>
+            <div class="form-row">
+              <label for="startExpValue">시작 현재 경험치</label>
+              <input type="text" id="startExpValue" inputmode="numeric" placeholder="예) 123,123,123">
+            </div>
+            <div class="form-row">
+              <label for="endLevel">종료 레벨</label>
+              <input type="number" id="endLevel" min="1" placeholder="비우면 시작 레벨과 동일">
+            </div>
+            <div class="form-row">
+              <label for="endExpValue">종료 현재 경험치</label>
+              <input type="text" id="endExpValue" inputmode="numeric" placeholder="예) 128,123,123">
+            </div>
+            <div class="form-row">
+              <label for="hourglassLevel">모래시계 레벨</label>
+              <input type="number" id="hourglassLevel" min="0" max="50" value="0">
+            </div>
+            <div class="form-row">
+              <label for="elapsedMinutes">측정 시간(분)</label>
+              <input type="number" id="elapsedMinutes" min="0" step="0.01" placeholder="비우면 캡처 시각 차이 사용">
+            </div>
+            <div class="form-row">
+              <label for="measureSeconds">자동 측정 시간</label>
+              <select id="measureSeconds" class="styled-select">
+                <option value="60" selected>1분</option>
+                <option value="180">3분</option>
+                <option value="300">5분</option>
+                <option value="600">10분</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="screen-actions">
+            <button type="button" class="btn btn-green" id="captureBtn">화면 선택</button>
+            <button type="button" class="btn btn-green" id="measureBtn">측정 시작</button>
+            <button type="button" class="btn btn-green" id="calcBtn">계산하기</button>
+            <button type="button" class="btn btn-gray" id="stopMeasureBtn">측정 중지</button>
+            <button type="button" class="btn btn-gray" id="clearBtn">영역 지우기</button>
+          </div>
+
+          <div class="screen-preview" id="preview">
+            <canvas id="previewCanvas"></canvas>
+            <video id="video" muted playsinline></video>
+            <div class="roi-box" id="roiBox"></div>
+            <div class="screen-placeholder" id="placeholder">화면 선택 후 경험치 숫자 텍스트만 드래그하세요.</div>
+          </div>
+
+          <div class="status-line" id="status">대기 중</div>
+          <p class="beta-notice screen-result-snapshot-notice">레벨업 시 측정이 정확하지 않을 수 있습니다.</p>
+
+          <div class="metric-grid">
+            <div class="metric"><span>시작 경험치</span><strong id="startRatioMetric">-</strong></div>
+            <div class="metric"><span>종료 경험치</span><strong id="endRatioMetric">-</strong></div>
+            <div class="metric"><span>측정 시간</span><strong id="elapsedMetric">-</strong></div>
+            <div class="metric"><span>획득 경험치</span><strong id="gainedMetric">-</strong></div>
+            <div class="metric"><span>1분당 경험치</span><strong id="averageMetric">-</strong></div>
+          </div>
+
+          <div class="shot-grid">
+            <div class="shot-panel shot-empty" id="startShotPanel">
+              <h3>시작 캡처</h3>
+              <canvas id="startCanvas"></canvas>
+            </div>
+            <div class="shot-panel shot-empty" id="endShotPanel">
+              <h3>종료 캡처</h3>
+              <canvas id="endCanvas"></canvas>
+            </div>
+          </div>
+
+          <div class="ocr-debug">
+            <canvas id="ocrDebugCanvas"></canvas>
+            <div id="ocrDebugText" class="ocr-debug-text">OCR 원문이 여기에 표시됩니다.</div>
+          </div>
+
+          <div id="result" class="result-box">시작/종료 캡처 후 비교 결과가 여기에 표시됩니다.</div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="../../js/calc/screen-exp-snapshot.js"></script>
+</body>
+</html>

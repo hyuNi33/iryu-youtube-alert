@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>레벨업 알림 - 이류월드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+</head>
+<body>
+<div class="wrapper">
+  <div class="container">
+
+    <aside class="sidebar"></aside>
+
+    <main class="content">
+      <div class="top-banner">
+        <h1>레벨업 알림</h1>
+        <p>게임 화면의 레벨 영역을 OCR로 감시하고, 목표 레벨에 도달하면 알림음 또는 Discord DM으로 알려줍니다.</p>
+      </div>
+
+      <section class="calc-card level-alert-card">
+        <p class="beta-notice">
+          화면 캡처와 OCR은 브라우저 안에서만 처리됩니다. Discord 인증 없이도 감시할 수 있으며, 이 경우 목표 도달 시 Chrome 브라우저에서 알림음만 울립니다.
+        </p>
+
+        <div class="level-alert-guide-card">
+          <div class="level-alert-guide-copy">
+            <div class="level-alert-guide-eyebrow">사용법</div>
+            <h2>이류월드를 절전모드로 만들고 레벨 영역을 선택하세요.</h2>
+            <p>절전모드 화면에서 <strong>현재 LV 숫자만 보이는 영역</strong>을 드래그하면 OCR 인식이 가장 안정적입니다. 빨간 예시처럼 숫자 주변만 타이트하게 잡아주세요.</p>
+          </div>
+          <img src="../../assets/guide/level-alert-guide.svg" alt="레벨업 알림 영역 선택 예시">
+        </div>
+
+        <div class="level-alert-grid">
+          <div class="result-section level-alert-panel">
+            <div class="result-title">Discord 인증</div>
+            <div id="levelAuthBox" class="result-box level-alert-auth">로그인 상태를 확인하는 중입니다.</div>
+          </div>
+
+          <div class="result-section level-alert-panel">
+            <div class="result-title">알림 설정</div>
+            <div class="form-list">
+              <div class="form-row">
+                <label for="targetLevel">알림받을 레벨</label>
+                <input type="number" id="targetLevel" placeholder="예) 200" min="1">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen-exp-actions level-alert-actions">
+          <button type="button" class="btn btn-green" id="levelStartCaptureBtn">화면 선택 시작</button>
+          <button type="button" class="btn btn-gray" id="levelStartWatchBtn">감시 시작</button>
+          <button type="button" class="btn btn-gray" id="levelStopWatchBtn">감시 중지</button>
+          <button type="button" class="btn btn-gray" id="levelClearRoiBtn">영역 삭제</button>
+        </div>
+
+        <div class="screen-exp-preview level-alert-preview" id="levelPreviewWrap">
+          <canvas id="levelPreviewCanvas" class="screen-exp-preview-canvas"></canvas>
+          <video id="levelVideo" muted playsinline></video>
+          <div class="screen-exp-placeholder" id="levelPlaceholder"><span>화면 선택 후 레벨 숫자가 보이는 영역만 드래그하세요.</span></div>
+        </div>
+
+        <div class="level-alert-ocr-row">
+          <div class="result-section level-alert-crop-panel">
+            <div class="result-title">OCR 영역 미리보기</div>
+            <canvas id="levelCropCanvas" class="level-alert-crop-canvas"></canvas>
+          </div>
+          <div class="result-section level-alert-read-panel">
+            <div class="result-title">감시 상태</div>
+            <div id="levelStatus" class="screen-exp-status">대기 중</div>
+            <div id="levelResult" class="result-box">현재 인식 결과가 여기에 표시됩니다.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+  </div>
+</div>
+
+<div class="level-alert-overlay" id="levelAlertOverlay" aria-hidden="true">
+  <div class="level-alert-burst"></div>
+  <div class="level-alert-modal" role="alertdialog" aria-labelledby="levelAlertTitle" aria-describedby="levelAlertDesc">
+    <div class="level-alert-badge">LEVEL UP</div>
+    <h2 id="levelAlertTitle">목표 레벨 도달!</h2>
+    <p id="levelAlertDesc">알림음은 약 3초간 한 번 울립니다.</p>
+    <div class="level-alert-modal-levels">
+      <div>
+        <span>목표 레벨</span>
+        <strong id="levelAlertOverlayTarget">-</strong>
+      </div>
+      <div>
+        <span>현재 인식</span>
+        <strong id="levelAlertOverlayCurrent">-</strong>
+      </div>
+    </div>
+    <button type="button" class="level-alert-stop-btn" id="levelStopAlertBtn">확인</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js"></script>
+<script type="module" src="../../js/level-alert.js"></script>
+</body>
+</html>
