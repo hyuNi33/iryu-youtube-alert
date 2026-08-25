@@ -1,0 +1,15 @@
+name: Check YouTube Live
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check-live:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call live polling endpoint
+        run: |
+          curl --fail --silent --show-error \
+            "https://iryu-youtube-alert.vercel.app/api/cron/check-youtube-live?token=${{ secrets.CRON_SECRET }}"
