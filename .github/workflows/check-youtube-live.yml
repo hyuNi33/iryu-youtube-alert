@@ -12,4 +12,5 @@ jobs:
       - name: Call live polling endpoint
         run: |
           curl --fail --silent --show-error \
-            "https://iryu-youtube-alert.vercel.app/api/cron/check-youtube-live?token=${{ secrets.CRON_SECRET }}"
+            --header "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://iryu-youtube-alert.vercel.app/api/cron/check-youtube-live"
