@@ -23,6 +23,8 @@
 | `YOUTUBE_LIVE_LOOKBACK_MINUTES` | 선택. 폴링 보조 기능이 최근 몇 분 내 시작한 라이브만 알릴지 설정. 기본값 `10` |
 | `YOUTUBE_HANDLE` | 기본값은 `@2ryoo-world`라 생략 가능 |
 | `YOUTUBE_CHANNEL_ID` | 선택. 채널 ID를 직접 넣으면 핸들 조회를 건너뜁니다 |
+| `CHZZK_CHANNEL_ID` | 선택. 치지직 방송 알림에 사용할 채널 ID |
+| `CHZZK_LIVE_LOOKBACK_MINUTES` | 선택. 치지직 폴링이 최근 몇 분 내 시작한 라이브만 알릴지 설정. 기본값 `15` |
 
 ## 구독 등록
 
@@ -64,6 +66,18 @@ https://YOUR_VERCEL_URL/api/cron/check-youtube-live?token=CRON_SECRET값
 `.github/workflows/check-youtube-live.yml`에는 5분마다 위 URL을 호출하는 GitHub Actions 워크플로가 들어 있습니다. GitHub 저장소 `Settings > Secrets and variables > Actions`에 `CRON_SECRET`을 Vercel의 `CRON_SECRET`과 같은 값으로 등록하세요.
 
 Vercel Pro를 쓰는 경우에는 `vercel.json`에 `/api/cron/check-youtube-live`를 5분 Cron으로 추가해도 됩니다. Vercel Hobby 플랜은 하루 1회 Cron만 허용되므로 기본 `vercel.json`에는 넣지 않았습니다.
+
+## 치지직 라이브 폴링
+
+치지직 방송 알림은 `CHZZK_CHANNEL_ID` 환경변수를 설정한 뒤 아래 URL로 확인할 수 있습니다.
+
+```txt
+https://YOUR_VERCEL_URL/api/cron/check-chzzk-live?token=CRON_SECRET값
+```
+
+정상이면 현재 라이브가 없을 때 `live: false`, 최근 시작한 라이브를 발견해 Discord 전송에 성공하면 `notified: true`가 표시됩니다.
+
+`.github/workflows/check-chzzk-live.yml`에는 5분마다 위 URL을 호출하는 GitHub Actions 워크플로가 들어 있습니다. GitHub 저장소의 `CRON_SECRET` secret은 유튜브 폴링과 같은 값을 사용합니다.
 
 ## Discord 웹훅 테스트
 

@@ -4,6 +4,6 @@
   "private": true,
   "description": "YouTube live WebSub receiver that sends Discord webhook alerts.",
   "scripts": {
-    "check": "node --check api/youtube/webhook.js && node --check api/youtube/subscribe.js && node --check api/test-discord.js && node --check api/cron/subscribe-youtube.js && node --check api/cron/check-youtube-live.js"
+    "check": "node --check api/youtube/webhook.js && node --check api/youtube/subscribe.js && node --check api/test-discord.js && node --check api/cron/subscribe-youtube.js && node --check api/cron/check-youtube-live.js && node --check api/cron/check-chzzk-live.js"
   }
 }

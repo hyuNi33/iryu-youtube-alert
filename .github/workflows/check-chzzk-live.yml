@@ -1,0 +1,16 @@
+name: Check CHZZK Live
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check-live:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call CHZZK live polling endpoint
+        run: |
+          curl --fail --silent --show-error \
+            --header "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://iryu-youtube-alert.vercel.app/api/cron/check-chzzk-live"
