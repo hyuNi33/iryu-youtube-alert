@@ -43,14 +43,36 @@ async function getChzzkLiveInfo() {
   };
 }
 
+function parseChzzkOpenDate(openDate) {
+  if (!openDate) return { timestamp: NaN, iso: "" };
+
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(openDate)) {
+    const iso = `${openDate.replace(" ", "T")}+09:00`;
+    return { timestamp: new Date(iso).getTime(), iso };
+  }
+
+  const timestamp = new Date(openDate).getTime();
+  return { timestamp, iso: openDate };
+}
+
+function getLiveAgeMinutes(openDate) {
+  const parsed = parseChzzkOpenDate(openDate);
+  if (!Number.isFinite(parsed.timestamp)) return { ok: false, ageMinutes: null, parsedOpenDate: parsed.iso };
+
+  return {
+    ok: true,
+    ageMinutes: Math.floor((Date.now() - parsed.timestamp) / 60000),
+    parsedOpenDate: parsed.iso,
+  };
+}
+
 function isRecentlyStarted(openDate) {
   if (!openDate) return true;
 
-  const startedAt = new Date(openDate).getTime();
-  if (!Number.isFinite(startedAt)) return true;
+  const age = getLiveAgeMinutes(openDate);
+  if (!age.ok || age.ageMinutes === null) return true;
 
-  const ageMs = Date.now() - startedAt;
-  return ageMs >= 0 && ageMs <= LOOKBACK_MINUTES * 60 * 1000;
+  return age.ageMinutes >= 0 && age.ageMinutes <= LOOKBACK_MINUTES;
 }
 
 async function sendDiscordNotification(live) {
@@ -109,6 +131,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
+  const liveAge = getLiveAgeMinutes(liveInfo.openDate);
   if (!isRecentlyStarted(liveInfo.openDate)) {
     res.status(200).json({
       ok: true,
@@ -117,6 +140,8 @@ module.exports = async function handler(req, res) {
       skipped: "live_started_before_lookback_window",
       liveId: liveInfo.liveId,
       openDate: liveInfo.openDate,
+      parsedOpenDate: liveAge.parsedOpenDate,
+      ageMinutes: liveAge.ageMinutes,
       lookbackMinutes: LOOKBACK_MINUTES,
     });
     return;
@@ -131,6 +156,8 @@ module.exports = async function handler(req, res) {
     notified: notification.ok,
     liveId: liveInfo.liveId,
     openDate: liveInfo.openDate,
+    parsedOpenDate: liveAge.parsedOpenDate,
+    ageMinutes: liveAge.ageMinutes,
     detail: notification,
   });
 };
