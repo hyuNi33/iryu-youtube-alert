@@ -4,8 +4,11 @@ const HUB_VERIFY_TOKEN = process.env.YOUTUBE_WEBHOOK_VERIFY_TOKEN || "";
 const WEBHOOK_SECRET = process.env.YOUTUBE_WEBHOOK_SECRET || "";
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "";
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || "";
+const CHZZK_CHANNEL_ID = process.env.CHZZK_CHANNEL_ID || "99531be476128737ccd1a1438934ebfd";
+const CHECK_CHZZK_ON_YOUTUBE_LIVE = process.env.CHECK_CHZZK_ON_YOUTUBE_LIVE !== "0";
 
 const notifiedVideos = new Set();
+const notifiedChzzkLives = new Set();
 
 function getQueryValue(req, key) {
   const url = new URL(req.url, "https://local.invalid");
@@ -69,7 +72,40 @@ async function getVideoLiveInfo(videoId) {
   };
 }
 
-async function sendDiscordNotification(video) {
+async function getChzzkLiveInfo() {
+  const response = await fetch(`https://api.chzzk.naver.com/service/v2/channels/${CHZZK_CHANNEL_ID}/live-detail`, {
+    headers: {
+      accept: "application/json",
+      "user-agent": "Mozilla/5.0 iryu-live-alert/1.0",
+    },
+  });
+
+  if (!response.ok) {
+    return { ok: false, reason: "chzzk_api_failed", status: response.status, detail: await response.text() };
+  }
+
+  const data = await response.json();
+  if (data.code && data.code !== 200) {
+    return { ok: false, reason: "chzzk_api_error", code: data.code, message: data.message, detail: data };
+  }
+
+  const live = data.content;
+  if (!live || live.status !== "OPEN") {
+    return { ok: true, isLive: false, status: live?.status || "CLOSE" };
+  }
+
+  return {
+    ok: true,
+    isLive: true,
+    liveId: String(live.liveId || live.liveNo || ""),
+    title: live.liveTitle || "이류 치지직 방송",
+    channelName: live.channel?.channelName || live.channelName || "이류",
+    category: live.liveCategoryValue || live.liveCategory || "",
+    url: `https://chzzk.naver.com/${CHZZK_CHANNEL_ID}`,
+  };
+}
+
+async function sendDiscordMessage(content) {
   if (!DISCORD_WEBHOOK_URL) {
     return { ok: false, reason: "missing_discord_webhook_url" };
   }
@@ -79,7 +115,7 @@ async function sendDiscordNotification(video) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       username: "이류월드 알림",
-      content: `🔴 **${video.channelTitle} 유튜브 방송 시작!**\n${video.title}\n${video.url}`,
+      content,
       allowed_mentions: { parse: [] },
     }),
   });
@@ -89,6 +125,40 @@ async function sendDiscordNotification(video) {
   }
 
   return { ok: true };
+}
+
+async function notifyYoutubeLive(video) {
+  return sendDiscordMessage(`🔴 **${video.channelTitle} 유튜브 방송 시작!**\n${video.title}\n${video.url}`);
+}
+
+async function notifyChzzkIfLive() {
+  if (!CHECK_CHZZK_ON_YOUTUBE_LIVE) {
+    return { ok: true, skipped: "disabled" };
+  }
+
+  const liveInfo = await getChzzkLiveInfo();
+  if (!liveInfo.ok) return liveInfo;
+  if (!liveInfo.isLive) return { ok: true, live: false, status: liveInfo.status };
+
+  if (liveInfo.liveId && notifiedChzzkLives.has(liveInfo.liveId)) {
+    return { ok: true, live: true, notified: false, skipped: "already_notified_in_this_runtime", liveId: liveInfo.liveId };
+  }
+
+  const lines = [`🟢 **${liveInfo.channelName} 치지직 방송 시작!**`, liveInfo.title];
+  if (liveInfo.category) lines.push(`카테고리: ${liveInfo.category}`);
+  lines.push(liveInfo.url);
+
+  const notification = await sendDiscordMessage(lines.join("\n"));
+  if (notification.ok && liveInfo.liveId) notifiedChzzkLives.add(liveInfo.liveId);
+
+  return {
+    ok: notification.ok,
+    live: true,
+    notified: notification.ok,
+    liveId: liveInfo.liveId,
+    title: liveInfo.title,
+    detail: notification,
+  };
 }
 
 module.exports = async function handler(req, res) {
@@ -133,9 +203,10 @@ module.exports = async function handler(req, res) {
       continue;
     }
 
-    const notification = await sendDiscordNotification(liveInfo);
+    const notification = await notifyYoutubeLive(liveInfo);
+    const chzzk = notification.ok ? await notifyChzzkIfLive() : { skipped: "youtube_notification_failed" };
     if (notification.ok) notifiedVideos.add(videoId);
-    results.push({ videoId, notified: notification.ok, detail: notification });
+    results.push({ videoId, notified: notification.ok, detail: notification, chzzk });
   }
 
   res.status(200).json({ ok: true, received: videoIds.length, results });

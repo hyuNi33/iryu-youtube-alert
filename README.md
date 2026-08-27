@@ -24,6 +24,7 @@
 | `YOUTUBE_HANDLE` | 기본값은 `@2ryoo-world`라 생략 가능 |
 | `YOUTUBE_CHANNEL_ID` | 선택. 채널 ID를 직접 넣으면 핸들 조회를 건너뜁니다 |
 | `CHZZK_CHANNEL_ID` | 선택. 치지직 방송 알림에 사용할 채널 ID |
+| `CHECK_CHZZK_ON_YOUTUBE_LIVE` | 선택. 기본값은 활성화. `0`으로 설정하면 유튜브 라이브 감지 시 치지직 확인을 끕니다 |
 | `CHZZK_LIVE_LOOKBACK_MINUTES` | 선택. 치지직 폴링이 최근 몇 분 내 시작한 라이브만 알릴지 설정. 기본값 `15` |
 
 ## 구독 등록
@@ -68,6 +69,8 @@ https://YOUR_VERCEL_URL/api/cron/check-youtube-live?token=CRON_SECRET값
 Vercel Pro를 쓰는 경우에는 `vercel.json`에 `/api/cron/check-youtube-live`를 5분 Cron으로 추가해도 됩니다. Vercel Hobby 플랜은 하루 1회 Cron만 허용되므로 기본 `vercel.json`에는 넣지 않았습니다.
 
 ## 치지직 라이브 폴링
+
+유튜브 라이브 알림이 들어왔을 때 치지직도 같이 방송 중인지 확인하는 기능은 기본으로 켜져 있습니다. 즉, `@2ryoo-world` 유튜브 방송 시작 이벤트가 오면 치지직 상태를 한 번 조회하고, 치지직도 방송 중이면 Discord에 치지직 알림도 보냅니다.
 
 치지직 방송 알림은 `CHZZK_CHANNEL_ID` 환경변수를 설정한 뒤 아래 URL로 확인할 수 있습니다.
 
