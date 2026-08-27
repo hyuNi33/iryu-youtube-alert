@@ -26,6 +26,9 @@
 | `CHZZK_CHANNEL_ID` | 선택. 치지직 방송 알림에 사용할 채널 ID |
 | `CHECK_CHZZK_ON_YOUTUBE_LIVE` | 선택. 기본값은 활성화. `0`으로 설정하면 유튜브 라이브 감지 시 치지직 확인을 끕니다 |
 | `CHZZK_LIVE_LOOKBACK_MINUTES` | 선택. 치지직 폴링이 최근 몇 분 내 시작한 라이브만 알릴지 설정. 기본값 `15` |
+| `CHZZK_CHECK_TOKEN` | 선택. `/api/chzzk/check` 전용 토큰. 없으면 `CRON_SECRET`을 같이 사용합니다 |
+| `KV_REST_API_URL` | 선택. Vercel KV 사용 시 치지직 중복 알림 방지용 URL |
+| `KV_REST_API_TOKEN` | 선택. Vercel KV 사용 시 치지직 중복 알림 방지용 토큰 |
 
 ## 구독 등록
 
@@ -81,6 +84,18 @@ https://YOUR_VERCEL_URL/api/cron/check-chzzk-live?token=CRON_SECRET값
 정상이면 현재 라이브가 없을 때 `live: false`, 최근 시작한 라이브를 발견해 Discord 전송에 성공하면 `notified: true`가 표시됩니다.
 
 `.github/workflows/check-chzzk-live.yml`에는 5분마다 위 URL을 호출하는 GitHub Actions 워크플로가 들어 있습니다. GitHub 저장소의 `CRON_SECRET` secret은 유튜브 폴링과 같은 값을 사용합니다.
+
+수동으로 치지직 상태를 확인하거나 테스트 알림을 보낼 때는 아래 URL도 사용할 수 있습니다.
+
+```txt
+https://YOUR_VERCEL_URL/api/chzzk/check?token=CRON_SECRET값
+```
+
+강제로 Discord 테스트 알림을 보내려면 `force=1`을 붙입니다. 단, 치지직이 현재 라이브 중일 때만 전송됩니다.
+
+```txt
+https://YOUR_VERCEL_URL/api/chzzk/check?token=CRON_SECRET값&force=1
+```
 
 ## Discord 웹훅 테스트
 
