@@ -37,10 +37,33 @@ const REBIRTH_MULTIPLIER = {
   10: 4.3
 };
 
-// 모래시계 배율
-function getHourglassMultiplier(level) {
-  if (level <= 0) return 1;
-  return 1 + level * 0.1;
+// 입력 문자열을 정수 분자/분모로 변환한다. Number를 거치지 않는다.
+// 빈 값, 음수, 잘못된 값은 기존 빈 입력과 같이 0으로 처리한다.
+function decimalRatio(value) {
+  const text = String(value ?? "").trim();
+  const match = /^(?:\+)?(\d+(?:\.\d*)?|\.\d+)(?:e([+-]?\d+))?$/i.exec(text);
+  if (!match) return { n: 0n, d: 1n };
+  const exponent = Number(match[2] || 0);
+  if (!Number.isInteger(exponent) || Math.abs(exponent) > 1000 || text.length > 1000) return { n: 0n, d: 1n };
+  const [integer, fraction = ""] = match[1].split(".");
+  const n = BigInt((integer || "0") + fraction);
+  const scale = fraction.length - exponent;
+  return scale >= 0
+    ? { n, d: 10n ** BigInt(scale) }
+    : { n: n * 10n ** BigInt(-scale), d: 1n };
+}
+
+function addRatio(a, b) {
+  return { n: a.n * b.d + b.n * a.d, d: a.d * b.d };
+}
+
+function multiplyRatio(a, b) {
+  return { n: a.n * b.n, d: a.d * b.d };
+}
+
+// Number 변환은 화면에 표시하는 참고용 배율에만 사용한다.
+function displayRatio(ratio) {
+  return Number(ratio.n) / Number(ratio.d);
 }
 
 export async function initHanpoData(basePath) {
@@ -51,9 +74,8 @@ export async function initHanpoData(basePath) {
   for (const row of rows) {
     const level = Number(row["레벨"]);
     const rawHanpo = String(row["환포"] || "").replace(/,/g, "").trim();
-    const hanpo = Number(rawHanpo);
-    if (Number.isFinite(level) && Number.isFinite(hanpo)) {
-      hanpoData.push({ level, hanpo });
+    if (Number.isFinite(level) && /^\d+$/.test(rawHanpo)) {
+      hanpoData.push({ level, hanpo: BigInt(rawHanpo) });
     }
   }
 
@@ -74,74 +96,77 @@ export function getRebirthMultiplier(level) {
  */
 function getHanpoAtLevel(level) {
   const entry = hanpoData.find(e => e.level === level);
-  return entry ? entry.hanpo : 0;
+  return entry ? entry.hanpo : 0n;
 }
 
 function applyFinalMultiplier(baseHanpo, finalMultiplier) {
-  return Math.round(baseHanpo * finalMultiplier);
-}
-
-function applyRebirthMultiplier(finalAppliedHanpo, rebirthMult) {
-  return Math.round(finalAppliedHanpo * rebirthMult);
-}
-
-function applyAllMultipliers(baseHanpo, finalMultiplier, rebirthMult) {
-  return applyRebirthMultiplier(applyFinalMultiplier(baseHanpo, finalMultiplier), rebirthMult);
+  // 모든 배율을 적용한 뒤 마지막에 한 번만 반올림한다.
+  const numerator = baseHanpo * finalMultiplier.n;
+  const denominator = finalMultiplier.d;
+  return (2n * numerator + denominator) / (2n * denominator);
 }
 
 /**
- * 환포 계산
+ * 환포 계산 (반환되는 환포 값은 모두 BigInt)
  * @param {Object} params
- * @param {number} params.targetHanpo - 원하는 환포 수치
- * @param {number} params.rpShopPercent - RP상점 환포 수치 (%)
- * @param {number} params.encyclopediaPercent - 도감 수치 (%)
- * @param {number} params.artifactRingPercent - 유물(반지) 수치 (%)
- * @param {number} params.vipPercent - VIP 수치 (%)
+ * @param {string|bigint|number} params.targetHanpo - 원하는 환포 수치
+ * @param {string|number} params.rpShopPercent - RP상점 환포 수치 (%)
+ * @param {string|number} params.encyclopediaPercent - 도감 수치 (%)
+ * @param {string|number} params.artifactRingPercent - 유물(반지) 수치 (%)
+ * @param {string|number} params.vipPercent - VIP 수치 (%)
  * @param {number} params.transcendLevel - 초월 레벨 (0~10)
  * @param {boolean} params.rebirthBlessingEnabled - 윤회의 축복 적용 여부
- * @param {number} params.hourglassLevel - 모래시계 레벨 (0~50)
+ * @param {string|number} params.hourglassLevel - 모래시계 레벨 (0~50)
+ * @param {string|number} params.timeResonanceLevel - 시간의 공명 레벨 (레벨당 1%)
  * @param {number} params.currentLevel - 내 현재 레벨
  */
 export function calculateHanpo(params) {
   const {
     targetHanpo, rpShopPercent, encyclopediaPercent,
     artifactRingPercent, vipPercent,
-    transcendLevel, rebirthBlessingEnabled = true, hourglassLevel, currentLevel
+    transcendLevel, rebirthBlessingEnabled = true, hourglassLevel, currentLevel,
+    timeResonanceLevel = 0
   } = params;
 
-  // 환포 배율 (D) = (100 + RP상점 + 도감 + 유물 + VIP) / 100
-  const hanpoMultiplier = (100 + rpShopPercent + encyclopediaPercent + artifactRingPercent + vipPercent) / 100;
+  // A~E를 정확하게 합산한 뒤 100으로 나눈다.
+  const sum = [rpShopPercent, encyclopediaPercent, artifactRingPercent, vipPercent]
+    .reduce((total, value) => addRatio(total, decimalRatio(value)), { n: 100n, d: 1n });
+  const hanpoRatio = multiplyRatio(sum, { n: 1n, d: 100n });
+  const hourglassRatio = addRatio({ n: 1n, d: 1n }, multiplyRatio(decimalRatio(hourglassLevel), { n: 1n, d: 10n }));
+  const transcendRatio = decimalRatio(getTranscendMultiplier(transcendLevel));
+  const rebirthRatio = decimalRatio(rebirthBlessingEnabled ? getRebirthMultiplier(transcendLevel) : 1);
+  const resonanceInput = decimalRatio(timeResonanceLevel);
+  const resonanceLevel = resonanceInput.n / resonanceInput.d;
+  // 윤회의 축복이 없으면 공명도 1배로 처리한다.
+  const resonanceRatio = rebirthBlessingEnabled ? { n: 100n + resonanceLevel, d: 100n } : { n: 1n, d: 1n };
+  const combinedRatio = multiplyRatio(hanpoRatio, transcendRatio);
+  const finalRatio = [hourglassRatio, transcendRatio, rebirthRatio, resonanceRatio]
+    .reduce(multiplyRatio, hanpoRatio);
+  const targetRatio = decimalRatio(targetHanpo);
 
-  // 초월 배율 (D1)
-  const transcendMult = getTranscendMultiplier(transcendLevel);
-
-  // 초월 환포 배율 (D2 = D * D1)
-  const combinedMult = hanpoMultiplier * transcendMult;
-
-  // 모래시계 배율 (X)
-  const hourglassMult = getHourglassMultiplier(hourglassLevel);
-
-  // 최종 배율 (R = D2 * X)
-  const finalMultiplier = combinedMult * hourglassMult;
-
-  // 윤회 축복 배율
-  const rebirthMult = rebirthBlessingEnabled ? getRebirthMultiplier(transcendLevel) : 1;
-  const appliedMultiplier = finalMultiplier * rebirthMult;
+  const hanpoMultiplier = displayRatio(hanpoRatio);
+  const hourglassMult = displayRatio(hourglassRatio);
+  const transcendMult = displayRatio(transcendRatio);
+  const combinedMult = displayRatio(combinedRatio);
+  const rebirthMult = displayRatio(rebirthRatio);
+  const timeResonanceMult = displayRatio(resonanceRatio);
+  const finalMultiplier = displayRatio(finalRatio);
+  const appliedMultiplier = finalMultiplier;
 
   // 획득 레벨 찾기
-  const found = hanpoData.find(entry => applyAllMultipliers(entry.hanpo, finalMultiplier, rebirthMult) >= targetHanpo) || null;
+  const found = hanpoData.find(entry => applyFinalMultiplier(entry.hanpo, finalRatio) * targetRatio.d >= targetRatio.n) || null;
   const acquiredLevel = found ? found.level : null;
-  const acquiredBaseHanpo = found ? found.hanpo : 0;
-  const acquiredFinalHanpo = applyFinalMultiplier(acquiredBaseHanpo, finalMultiplier);
+  const acquiredBaseHanpo = found ? found.hanpo : 0n;
+  const acquiredFinalHanpo = applyFinalMultiplier(acquiredBaseHanpo, finalRatio);
 
   // 실제 획득 환포
-  const actualHanpo = applyRebirthMultiplier(acquiredFinalHanpo, rebirthMult);
+  const actualHanpo = acquiredFinalHanpo;
 
   // 현재 레벨 기본 환포
   const currentBaseHanpo = getHanpoAtLevel(currentLevel);
 
-  const currentFinalHanpo = applyFinalMultiplier(currentBaseHanpo, finalMultiplier);
-  const currentHanpoWithMult = applyRebirthMultiplier(currentFinalHanpo, rebirthMult);
+  const currentFinalHanpo = applyFinalMultiplier(currentBaseHanpo, finalRatio);
+  const currentHanpoWithMult = currentFinalHanpo;
 
   return {
     hanpoMultiplier,
@@ -160,5 +185,6 @@ export function calculateHanpo(params) {
     currentHanpoWithMult,
     rebirthBlessingEnabled,
     rebirthMult,
+    timeResonanceMult,
   };
 }

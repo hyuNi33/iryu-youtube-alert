@@ -24,7 +24,7 @@
       <section class="calc-card">
         <div class="form-list">
           <div class="form-row">
-            <label for="targetHanpo">원하는 환포 (A)</label>
+            <label for="targetHanpo">원하는 환포</label>
             <input type="number" id="targetHanpo" placeholder="원하는 환포를 입력하세요 예)30000000" min="0">
           </div>
 
@@ -69,6 +69,11 @@
               <span>적용</span>
             </div>
           </div>
+          <div class="form-row">
+            <label for="timeResonanceLevel">시간의 공명 레벨</label>
+            <input type="number" id="timeResonanceLevel" value="0" min="0" step="1" aria-describedby="timeResonanceHelp">
+          </div>
+          <p id="timeResonanceHelp">레벨당 1% 증가합니다. (30레벨 = 1.3배) 윤회의 축복이 없으면 적용되지 않습니다.</p>
         </div>
 
         <div class="action-area">
@@ -88,7 +93,7 @@
 
   await initHanpoData("../..");
 
-  const INPUT_IDS = ["targetHanpo", "rpShop", "encyclopedia", "artifactRing", "vip", "transcendLevel", "hourglassLevel", "currentLevel"];
+  const INPUT_IDS = ["targetHanpo", "rpShop", "encyclopedia", "artifactRing", "vip", "transcendLevel", "hourglassLevel", "currentLevel", "timeResonanceLevel"];
   const CHECKBOX_IDS = ["rebirthBlessingEnabled"];
 
   // 저장된 값 복원
@@ -114,15 +119,21 @@
     document.getElementById(id).addEventListener("change", saveAll);
   }
 
+  function syncTimeResonance() {
+    document.getElementById("timeResonanceLevel").disabled = !document.getElementById("rebirthBlessingEnabled").checked;
+  }
+  document.getElementById("rebirthBlessingEnabled").addEventListener("change", syncTimeResonance);
+  syncTimeResonance();
+
   function fmt(n) {
     if (n === null || n === undefined) return "-";
-    return Math.floor(n).toLocaleString("ko-KR");
+    return n.toLocaleString("ko-KR");
   }
 
   function compactFmt(n) {
     if (n === null || n === undefined) return "-";
-    const number = Math.floor(Number(n) || 0);
-    if (!Number.isFinite(number) || number <= 0) return "0";
+    const number = n;
+    if (number <= 0n) return "0";
 
     let text = String(number);
     const units = ["", "만", "억", "조", "경", "해", "자", "양", "구", "간", "정", "재", "극", "항하사", "아승기", "나유타", "불가사의", "무량대수"];
@@ -204,14 +215,15 @@
     const resultEl = document.getElementById("result");
 
     const params = {
-      targetHanpo: Number(document.getElementById("targetHanpo").value) || 0,
-      rpShopPercent: Number(document.getElementById("rpShop").value) || 0,
-      encyclopediaPercent: Number(document.getElementById("encyclopedia").value) || 0,
-      artifactRingPercent: Number(document.getElementById("artifactRing").value) || 0,
-      vipPercent: Number(document.getElementById("vip").value) || 0,
+      targetHanpo: document.getElementById("targetHanpo").value || "0",
+      rpShopPercent: document.getElementById("rpShop").value || "0",
+      encyclopediaPercent: document.getElementById("encyclopedia").value || "0",
+      artifactRingPercent: document.getElementById("artifactRing").value || "0",
+      vipPercent: document.getElementById("vip").value || "0",
       transcendLevel: Number(document.getElementById("transcendLevel").value) || 0,
       rebirthBlessingEnabled: document.getElementById("rebirthBlessingEnabled").checked,
-      hourglassLevel: Number(document.getElementById("hourglassLevel").value) || 0,
+      hourglassLevel: document.getElementById("hourglassLevel").value || "0",
+      timeResonanceLevel: document.getElementById("timeResonanceLevel").value || "0",
       currentLevel: Number(document.getElementById("currentLevel").value) || 500,
     };
 
@@ -242,27 +254,31 @@
       <div class="result-section">
         <div class="result-title">배율 정보</div>
         <div class="result-row">
-          <span class="result-label">환포 배율 (D)</span>
+          <span class="result-label">합산 환포 배율 (A+B+C+D+E)</span>
           <strong class="result-value">${r.hanpoMultiplier.toFixed(4)}</strong>
         </div>
         <div class="result-row">
-          <span class="result-label">초월 배율 (D1)</span>
+          <span class="result-label">초월 배율 (G)</span>
           <strong class="result-value">${r.transcendMult.toFixed(2)}</strong>
         </div>
         <div class="result-row">
-          <span class="result-label">초월 환포 배율 (D×D1)</span>
+          <span class="result-label">합산 환포 × 초월 배율</span>
           <strong class="result-value">${r.combinedMult.toFixed(4)}</strong>
         </div>
         <div class="result-row">
-          <span class="result-label">모래시계 배율 (X)</span>
+          <span class="result-label">모래시계 배율 (F)</span>
           <strong class="result-value">${r.hourglassMult.toFixed(2)}</strong>
         </div>
         <div class="result-row">
-          <span class="result-label">윤회 축복 배율</span>
+          <span class="result-label">윤회 축복 배율 (H)</span>
           <strong class="result-value">${r.rebirthMult.toFixed(2)}</strong>
         </div>
         <div class="result-row">
-          <span class="result-label">최종 배율 (R)</span>
+          <span class="result-label">시간의 공명 배율 (I)</span>
+          <strong class="result-value">${r.timeResonanceMult.toFixed(2)}</strong>
+        </div>
+        <div class="result-row">
+          <span class="result-label">최종 배율 (합산 × F × G × H × I)</span>
           <strong class="result-value highlight">${r.finalMultiplier.toFixed(4)}</strong>
         </div>
       </div>
