@@ -132,42 +132,42 @@
       font-weight: 900;
     }
 
-    .guide-section:nth-of-type(1) .guide-step {
+    .guide-section:nth-of-type(10n + 1) .guide-step {
       background: #e5484d;
     }
 
-    .guide-section:nth-of-type(2) .guide-step {
+    .guide-section:nth-of-type(10n + 2) .guide-step {
       background: #2f9e44;
     }
 
-    .guide-section:nth-of-type(3) .guide-step {
+    .guide-section:nth-of-type(10n + 3) .guide-step {
       background: #2f6feb;
     }
 
-    .guide-section:nth-of-type(4) .guide-step {
+    .guide-section:nth-of-type(10n + 4) .guide-step {
       background: #9c36b5;
     }
-    .guide-section:nth-of-type(5) .guide-step {
+    .guide-section:nth-of-type(10n + 5) .guide-step {
       background: #495057;
     }
 
-    .guide-section:nth-of-type(6) .guide-step {
+    .guide-section:nth-of-type(10n + 6) .guide-step {
       background: #0ca678;
     }
 
-    .guide-section:nth-of-type(7) .guide-step {
+    .guide-section:nth-of-type(10n + 7) .guide-step {
       background: #c92a2a;
     }
 
-    .guide-section:nth-of-type(8) .guide-step {
+    .guide-section:nth-of-type(10n + 8) .guide-step {
       background: #7048e8;
     }
 
-    .guide-section:nth-of-type(9) .guide-step {
+    .guide-section:nth-of-type(10n + 9) .guide-step {
       background: #f08c00;
     }
 
-    .guide-section:nth-of-type(10) .guide-step {
+    .guide-section:nth-of-type(10n + 10) .guide-step {
       background: #d6336c;
     }
 
@@ -548,7 +548,7 @@
                 <li><strong>초반 0~2초월:</strong> 처형자의 일격</li>
                 <li><strong>장비 레이드 기록 갱신:</strong> 처형자의 일격 or 성스러운 힘</li>
                 <li><strong>재화 파밍:</strong> 풍요의 축복</li>
-                <li><strong>몬스터 디펜스 최고 기록 갱신:</strong> 성스러운 힘</li>
+                <li><strong>몬스터 디펜스 최고 기록 갱신:</strong> 성스러운 힘 (9초월부터)</li>
                 <li><strong>몬스터 디펜스 경험치 갱신:</strong> 지혜의 빛</li>
               </ul>
             </div>
@@ -608,17 +608,17 @@
             </div>
             <div class="guide-section-body">
               <ul class="guide-route-list">
-                <li><strong>매직클로</strong><span>INT / 마력</span></li>
-                <li><strong>썬더볼트</strong><span>INT / 마력 / 공속</span></li>
-                <li><strong>아이언 애로우</strong><span>DEX / 공격력 / 공속</span></li>
-                <li><strong>생츄어리</strong><span>STR / 공격력</span></li>
-                <li><strong>피어싱</strong><span>DEX / 공격력</span></li>
-                <li><strong>스크류 펀치</strong><span>STR / 공격력 / 공속</span></li>
-                <li><strong>아이스데몬</strong><span>INT / 마력</span></li>
-                <li><strong>제네시스</strong><span>INT / 마력</span></li>
-                <li><strong>부메랑 스텝</strong><span>LUK / 공격력</span></li>
-                <li><strong>폭풍의 시</strong><span>DEX / 공격력</span></li>
-                <li><strong>기가 슬레셔</strong><span>STR / 공격력</span></li>
+                <li><strong>매직클로</strong><span>INT / 마력<br>추천 무기: 스태프</span></li>
+                <li><strong>썬더볼트</strong><span>INT / 마력 / 공속<br>추천 무기: 돼지도감 / 이블윙즈(부스터 2렙)</span></li>
+                <li><strong>아이언 애로우</strong><span>DEX / 공격력 / 공속<br>추천 무기: 메이플 니샤다</span></li>
+                <li><strong>생츄어리</strong><span>STR / 공격력<br>추천 무기: 두손검</span></li>
+                <li><strong>피어싱</strong><span>DEX / 공격력<br>추천 무기: 메이플 니샤다</span></li>
+                <li><strong>스크류 펀치</strong><span>STR / 공격력 / 공속<br>추천 무기: 너클 / 창(사정거리)</span></li>
+                <li><strong>아이스데몬</strong><span>INT / 마력<br>추천 무기: 스태프</span></li>
+                <li><strong>제네시스</strong><span>INT / 마력<br>추천 무기: 스태프</span></li>
+                <li><strong>부메랑 스텝</strong><span>LUK / 공격력<br>추천 무기: 단검</span></li>
+                <li><strong>폭풍의 시</strong><span>DEX / 공격력<br>추천 무기: 석궁</span></li>
+                <li><strong>기가 슬레셔</strong><span>STR / 공격력<br>추천 무기: 두손검 (한손검 X)</span></li>
               </ul>
 
               <div class="guide-priority">스탯 구분</div>
@@ -629,6 +629,15 @@
                 <li><strong>LUK:</strong> 부메랑 스텝</li>
                 <li><strong>공격속도 적용:</strong> 썬더볼트 / 아이언 애로우 / 스크류 펀치</li>
               </ul>
+
+              <div class="guide-priority">이세계 무기 가이드</div>
+              <ul class="guide-list" style="margin-top: 14px;">
+                <li><span><strong>★ 핵심 ★</strong> 기본 무기 상수 때문에 한손무기보다 두손무기가 무조건 좋습니다.</span></li>
+                <li><span><strong>사용하지 않는 이세계 장비:</strong> 분해하여 현재 사용하는 스킬에 맞는 무기를 구매해서 사용하는 것을 추천합니다.</span></li>
+              </ul>
+              <div class="guide-note">
+                <strong>핵심:</strong> 사용하는 스킬에 맞춰 스탯 + 무기 선택
+              </div>
             </div>
           </article>
         </div>
@@ -791,12 +800,13 @@
               </ul>
               <ul class="guide-route-list" style="margin-top: 14px;">
                 <li><strong>리프레 용의둥지</strong><span>썬더볼트</span></li>
+                <li><strong>시간의신전 망각의길</strong><span>썬더볼트</span></li>
                 <li><strong>헤네/리스 엘던</strong><span>썬더볼트</span></li>
                 <li><strong>오르비스탑 엘던</strong><span>썬더볼트</span></li>
                 <li><strong>하늘테라스 엘던</strong><span>썬더볼트</span></li>
                 <li><strong>시간의길 엘던</strong><span>썬더볼트</span></li>
                 <li><strong>시계탑최하층 중앙</strong><span>썬더볼트</span></li>
-                <li><strong>슈퍼 엘리자</strong><span>매직클로 2층(1층은 마법딜X)</span></li>
+                <li><strong>슈퍼 엘리자</strong><span>매직클로</span></li>
                 <li><strong>슈퍼 롬바드</strong><span>매직클로</span></li>
                 <li><strong>슈퍼 파풀라투스</strong><span>매직클로</span></li>
               </ul>
@@ -826,7 +836,6 @@
               <ul class="guide-list">
                 <li>고룡의 비늘</li>
                 <li>결의의 증표</li>
-                <li>잊혀진 기억 로켓 10LV</li>
               </ul>
             </div>
           </article>
@@ -913,17 +922,17 @@
             </div>
             <div class="guide-section-body">
               <ul class="guide-list">
-                <li>이세계 썬더볼트 1~11</li>
                 <li>이세계 매직클로 20</li>
               </ul>
               <ul class="guide-route-list" style="margin-top: 14px;">
                 <li><strong>리프레 용의둥지</strong><span>썬더볼트</span></li>
+                <li><strong>시간의신전 망각의길</strong><span>썬더볼트</span></li>
                 <li><strong>슈퍼 달팽이</strong><span>도감작</span></li>
                 <li><strong>슈퍼 골렘</strong><span>도감작</span></li>
-                <li><strong>슈퍼 엘리자</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 롬바드</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 파풀라투스</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 디트와 로이</strong><span>이세계 스킬</span></li>
+                <li><strong>슈퍼 엘리자</strong></li>
+                <li><strong>슈퍼 롬바드</strong></li>
+                <li><strong>슈퍼 파풀라투스</strong></li>
+                <li><strong>슈퍼 디트와 로이</strong></li>
               </ul>
             </div>
           </article>
@@ -937,7 +946,6 @@
               <ul class="guide-list">
                 <li>고룡의 비늘</li>
                 <li>결의의 증표</li>
-                <li>잊혀진 기억 로켓 10LV</li>
               </ul>
             </div>
           </article>
@@ -961,7 +969,7 @@
             </div>
             <div class="guide-section-body">
               <ul class="guide-route-list">
-                <li><strong>58,807 RP</strong><span>최종경험치 200 / 환포 40</span></li>
+                <li><strong>58,807 RP</strong><span>환포 40</span></li>
                 <li><strong>100,037 RP</strong><span>샤프 3 / 버서크 3 / 비홀더 4 / SP +18</span></li>
                 <li><strong>302,916 RP</strong><span>샤프 19 / SP +21 / 장비제한감소 24</span></li>
                 <li><strong>800,956 RP</strong><span>버서크 30 / SP +27</span></li>
@@ -1010,17 +1018,16 @@
             </div>
             <div class="guide-section-body">
               <ul class="guide-list">
-                <li>이세계 썬더볼트 1~11</li>
                 <li>이세계 매직클로 20</li>
                 <li>이세계 피어싱 0~30</li>
               </ul>
               <ul class="guide-route-list" style="margin-top: 14px;">
                 <li><strong>리프레 용의둥지</strong><span>썬더볼트</span></li>
-                <li><strong>슈퍼 엘리자</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 롬바드</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 파풀라투스</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 디트와 로이</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 키메라</strong><span>이세계 스킬</span></li>
+                <li><strong>슈퍼 엘리자</strong></li>
+                <li><strong>슈퍼 롬바드</strong></li>
+                <li><strong>슈퍼 파풀라투스</strong></li>
+                <li><strong>슈퍼 디트와 로이</strong></li>
+                <li><strong>슈퍼 키메라</strong></li>
               </ul>
             </div>
           </article>
@@ -1034,9 +1041,6 @@
               <ul class="guide-list">
                 <li>고룡의 비늘</li>
                 <li>결의의 증표</li>
-                <li>잊혀진 기억 로켓 10LV</li>
-                <li>아누비스의 가면 10LV</li>
-                <li>전설의 뿔피리 5LV</li>
               </ul>
             </div>
           </article>
@@ -1066,7 +1070,7 @@
                 <li><strong>300만 RP</strong><span>쉐도우파트너 7 / SP +40</span></li>
                 <li><strong>1500만 RP</strong><span>쉐도우파트너 22</span></li>
                 <li><strong>4,000만 RP</strong><span>쉐도우파트너 30 / 메이플용사 9 / 타겟+1</span></li>
-                <li><strong>2억 RP</strong><span>메이플용사 15 / SP +48 / 원거리마스터리 20 / 전생의 기억 5</span></li>
+                <li><strong>2억 RP</strong><span>메이플용사 15 / SP +48 / 전생의 기억 5</span></li>
                 <li><strong>10억 RP 달성</strong><span>3초월</span></li>
               </ul>
             </div>
@@ -1078,25 +1082,10 @@
               <h2>2초월 후반 운영</h2>
             </div>
             <div class="guide-section-body">
-              <ul class="guide-list">
-                <li><strong>2억 RP까지:</strong> 슈퍼 디트와 로이 사냥</li>
-                <li><strong>2억 RP 이후:</strong> 슈퍼 키메라 이동 후 매직클로 사용</li>
-                <li>피어싱 기생보다는 솔플 또는 파티 매직클로 추천</li>
-                <li>피어싱 11 이상 파티 참여 후 드랍 체크</li>
-              </ul>
-            </div>
-          </article>
-
-          <article class="guide-section">
-            <div class="guide-section-head">
-              <span class="guide-step">7</span>
-              <h2>직업 전환</h2>
-            </div>
-            <div class="guide-section-body">
-              <ul class="guide-list">
-                <li><strong>이세계 피어싱 전환 이후:</strong> 궁수로 전환</li>
-                <li>아누비스의 가면 구매</li>
-                <li>전설의 뿔피리 구매</li>
+              <ul class="guide-route-list">
+                <li><strong>선택지 1</strong><span>디트와 로이에서 매직클로로 3초월하기<br>→ 3초월 이후 슈퍼 루루모에서 피어싱 사용</span></li>
+                <li><strong>선택지 2</strong><span>디트와 로이에서 매직클로 사용<br>→ 2초월 2억 RP 달성 후 키메라에서 피어싱 사용</span></li>
+                <li><strong>선택지 3</strong><span>디트와 로이에서 매직클로 사용<br>→ 1억 RP 엘리트 던전에서 아이언에로우 M<br>→ 이후 생츄어리 습득 후 디트와 로이에서 생츄어리 사용<br>→ 3초월 이후 슈퍼 루루모에서 피어싱 사용</span></li>
               </ul>
             </div>
           </article>
@@ -1113,7 +1102,7 @@
             </div>
             <div class="guide-chip">
               <span>초월 시 획득</span>
-              <strong>1,000,000 RP</strong>
+              <strong>100만 RP</strong>
             </div>
           </div>
 
@@ -1144,14 +1133,14 @@
                 <li>이세계 스크류 펀치 1~3</li>
               </ul>
               <ul class="guide-route-list" style="margin-top: 14px;">
-                <li><strong>슈퍼 엘리자</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 롬바드</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 파풀라투스</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 디트와 로이</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 키메라</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 루루모</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 자동경비로봇</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 쿨리좀비</strong><span>이세계 스킬</span></li>
+                <li><strong>슈퍼 엘리자</strong></li>
+                <li><strong>슈퍼 롬바드</strong></li>
+                <li><strong>슈퍼 파풀라투스</strong></li>
+                <li><strong>슈퍼 디트와 로이</strong></li>
+                <li><strong>슈퍼 키메라</strong></li>
+                <li><strong>슈퍼 루루모</strong></li>
+                <li><strong>슈퍼 자동경비로봇</strong></li>
+                <li><strong>슈퍼 쿨리좀비</strong></li>
               </ul>
             </div>
           </article>
@@ -1165,9 +1154,6 @@
               <ul class="guide-list">
                 <li>고룡의 비늘</li>
                 <li>결의의 증표</li>
-                <li>잊혀진 기억 로켓 10LV</li>
-                <li>아누비스의 가면 10LV</li>
-                <li>전설의 뿔피리 10LV</li>
               </ul>
             </div>
           </article>
@@ -1179,7 +1165,7 @@
             </div>
             <div class="guide-section-body">
               <ul class="guide-route-list">
-                <li><strong>999,876 RP</strong><span>경험치 200 / 환포 40 / SP +13 / 장비제한감소 24 / 샤프 19 / 버서크 19 / 비홀더 4 / 쉐도우파트너 1 / 원거리마스터리 19 / 부스트 2</span></li>
+                <li><strong>999,876 RP</strong><span>경험치 200 / 환포 40 / SP +13 / 장비제한감소 24 / 샤프 19 / 버서크 19 / 비홀더 4 / 쉐도우파트너 1 / 부스트 2</span></li>
               </ul>
             </div>
           </article>
@@ -1194,9 +1180,9 @@
                 <li><strong>300만 RP</strong><span>SP +40 / 버서크 30 / 샤프 30 / 쉐도우파트너 6</span></li>
                 <li><strong>1,500만 RP</strong><span>버서크 31 / 메이플용사 2</span></li>
                 <li><strong>4,000만 RP</strong><span>버서크 32 / 메이플용사 4 / 쉐도우파트너 11</span></li>
-                <li><strong>2억 RP</strong><span>원거리마스터리 21 / 쉐도우파트너 32 / 메이플용사 17 / 버서크 33 / 샤프 31</span></li>
-                <li><strong>10억 100만 RP</strong><span>전생의기억 3 / SP +45 / 원거리마스터리 25 / 샤프 35 / 버서크 35 / 쉐도우파트너 35 / 메이플용사 20 / 어드밴스드콤보 5</span></li>
-                <li><strong>25억 RP</strong><span>SP +49 / 전생의기억 10 / 어드밴스드콤보 16</span></li>
+                <li><strong>2억 RP</strong><span>전생의기억 1 / 쉐도우파트너 32 / 메이플용사 17 / 버서크 33 / 샤프 31</span></li>
+                <li><strong>10억 RP</strong><span>전생의기억 9 / SP +45 / 샤프 35 / 버서크 35 / 쉐도우파트너 35 / 메이플용사 20 / 어드밴스드콤보 5</span></li>
+                <li><strong>25억 RP</strong><span>SP +50 / 전생의기억 11 / 어드밴스드콤보 16</span></li>
                 <li><strong>50억 RP</strong><span>SP +50 / 어드밴스드콤보 27</span></li>
               </ul>
             </div>
@@ -1241,7 +1227,7 @@
             </div>
             <div class="guide-chip">
               <span>초월 시 획득</span>
-              <strong>10,000,000 RP</strong>
+              <strong>1,000만 RP</strong>
             </div>
           </div>
 
@@ -1268,15 +1254,15 @@
                 <li>이세계 스크류 펀치 3~30</li>
               </ul>
               <ul class="guide-route-list" style="margin-top: 14px;">
-                <li><strong>슈퍼 롬바드</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 파풀라투스</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 디트와 로이</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 키메라</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 루루모</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 자동경비로봇</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 쿨리좀비</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 마이너좀비</strong><span>이세계 스킬</span></li>
-                <li><strong>슈퍼 리치</strong><span>이세계 스킬</span></li>
+                <li><strong>슈퍼 롬바드</strong></li>
+                <li><strong>슈퍼 파풀라투스</strong></li>
+                <li><strong>슈퍼 디트와 로이</strong></li>
+                <li><strong>슈퍼 키메라</strong></li>
+                <li><strong>슈퍼 루루모</strong></li>
+                <li><strong>슈퍼 자동경비로봇</strong></li>
+                <li><strong>슈퍼 쿨리좀비</strong></li>
+                <li><strong>슈퍼 마이너좀비</strong></li>
+                <li><strong>슈퍼 리치</strong></li>
               </ul>
             </div>
           </article>
@@ -1290,10 +1276,6 @@
               <ul class="guide-list">
                 <li>고룡의 비늘</li>
                 <li>결의의 증표</li>
-                <li>잊혀진 기억 로켓 10LV</li>
-                <li>아누비스의 가면 10LV</li>
-                <li>전설의 뿔피리 20LV</li>
-                <li><strong>화염 부적:</strong> 0~최대한</li>
               </ul>
             </div>
           </article>
@@ -1305,7 +1287,7 @@
             </div>
             <div class="guide-section-body">
               <ul class="guide-route-list">
-                <li><strong>9,340,336 RP</strong><span>경험치 200 / 환포 40 / SP +40 / 장비제한감소 24 / 샤프 30 / 버서크 30 / 비홀더 4 / 쉐도우파트너 15 / 너클마스터리 20 / 부스트 2 / 타겟 +1 / 메이플용사 1</span></li>
+                <li><strong>9,137,936 RP</strong><span>경험치 200 / 환포 40 / SP +40 / 장비제한감소 24 / 샤프 30 / 버서크 30 / 비홀더 4 / 쉐도우파트너 15 / 부스트 2 / 타겟 +1 / 메이플용사 1</span></li>
               </ul>
             </div>
           </article>
@@ -1319,11 +1301,11 @@
               <ul class="guide-route-list">
                 <li><strong>1,500만 RP</strong><span>메이플용사 5 / 쉐도우파트너 16</span></li>
                 <li><strong>4,000만 RP</strong><span>버서크 31 / 메이플용사 9 / 쉐도우파트너 23</span></li>
-                <li><strong>2억 RP</strong><span>너클마스터리 21 / 쉐도우파트너 32 / 메이플용사 17 / 버서크 33 / 샤프 31</span></li>
-                <li><strong>10억 RP</strong><span>SP +41 / 전생의 기억 4 / 너클마스터리 25 / 샤프 35 / 버서크 35 / 쉐도우파트너 35 / 메이플용사 20 / 어드밴스드콤보 5</span></li>
-                <li><strong>25억 RP</strong><span>SP +45 / 전생의 기억 11 / 어드밴스드콤보 16</span></li>
-                <li><strong>50억 RP</strong><span>SP +48 / 어드밴스드콤보 27</span></li>
-                <li><strong>250억 RP</strong><span>SP +50 / 샤프 40 / 버서크 40 / 쉐도우파트너 40 / 메이플용사 25 / 어드밴스드콤보 35 / 파이널어택 10</span></li>
+                <li><strong>2억 RP</strong><span>전생의 기억 1 / 쉐도우파트너 32 / 메이플용사 17 / 버서크 33 / 샤프 31</span></li>
+                <li><strong>10억 RP</strong><span>SP +41 / 전생의 기억 9 / 샤프 35 / 버서크 35 / 쉐도우파트너 35 / 메이플용사 20 / 어드밴스드콤보 5</span></li>
+                <li><strong>25억 RP</strong><span>SP +45 / 전생의 기억 12 / 어드밴스드콤보 16</span></li>
+                <li><strong>50억 RP</strong><span>SP +49 / 어드밴스드콤보 27</span></li>
+                <li><strong>250억 RP</strong><span>SP +50 / 전생의 기억 13 / 샤프 40 / 버서크 40 / 쉐도우파트너 40 / 메이플용사 25 / 어드밴스드콤보 35 / 파이널어택 10</span></li>
                 <li><strong>500억 RP</strong><span>SP +51 / 전생의 기억 22 / 크리티컬 리인포스 20</span></li>
               </ul>
             </div>
@@ -1390,10 +1372,7 @@
             <div class="guide-section-body">
               <div class="guide-priority">초월 시 RP 사용 / 98,997,936 RP</div>
               <ul class="guide-list" style="margin-top: 14px;">
-                <li><strong>투자 내용:</strong> 경험치 200 / 환포 40 / SP +42 / 장비제한감소 24 / 샤프 30 / 버서크 32 / 비홀더 4 / 쉐도우파트너 30 / 너클마스터리 20 / 부스트 2 / 타겟 +1 / 메이플용사 15 / 어드밴스드 콤보어택 1</li>
-                <li><strong>너클마스터리:</strong> 아이스데몬 습득 이후 투자 X</li>
-                <li><strong>부메랑 스텝 습득 시:</strong> 단검 마스터리로 전환</li>
-                <li><strong>폭풍의 시 습득 시:</strong> 원거리 마스터리로 전환</li>
+                <li><strong>투자 내용:</strong> 경험치 200 / 환포 40 / SP +42 / 장비제한감소 24 / 샤프 30 / 버서크 32 / 비홀더 4 / 쉐도우파트너 30 / 부스트 2 / 타겟 +1 / 메이플용사 15 / 어드밴스드 콤보어택 1</li>
               </ul>
             </div>
           </article>
@@ -1406,8 +1385,6 @@
             <div class="guide-section-body">
               <ul class="guide-list">
                 <li><strong>투자 기준:</strong> 사용 스킬에 따라 주스텟 / 최종데미지 / 크리티컬데미지 유물 투자 가이드를 참고합니다.</li>
-                <li><strong>전설의 뿔피리:</strong> 핵심 유물로 사용합니다.</li>
-                <li><strong>검은구슬:</strong> 10LV 사용</li>
               </ul>
             </div>
           </article>
@@ -1580,7 +1557,7 @@
             </div>
             <div class="guide-section-body">
               <ul class="guide-route-list">
-                <li><strong>슈퍼 던전 마북</strong><span>0.1%</span></li>
+                <li><strong>슈퍼 던전 마북</strong><span>0.3%</span></li>
                 <li><strong>엘리트 던전 마북</strong><span>0.0002%</span></li>
               </ul>
             </div>
@@ -1606,11 +1583,24 @@
             <div class="guide-section-body">
               <ul class="guide-route-list">
                 <li><strong>엘리트 던전</strong><span>드랍 확률(%) = 해당 던전의 누적 RP 제한 ÷ 10억 × 100</span></li>
-                <li><strong>1초월 던전</strong><span>10%</span></li>
-                <li><strong>2초월 던전</strong><span>12%</span></li>
-                <li><strong>3초월 던전</strong><span>15%</span></li>
-                <li><strong>4초월 던전</strong><span>20%</span></li>
-                <li><strong>5초월 던전</strong><span>25% (추가 예정)</span></li>
+                <li><strong>초월 던전1</strong><span>10%</span></li>
+                <li><strong>초월 던전2</strong><span>12%</span></li>
+                <li><strong>초월 던전3</strong><span>15%</span></li>
+                <li><strong>초월 던전4</strong><span>20%</span></li>
+                <li><strong>초월 던전5</strong><span>25%</span></li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="guide-section">
+            <div class="guide-section-head">
+              <span class="guide-step">6</span>
+              <h2>몬스터 도감 확률</h2>
+            </div>
+            <div class="guide-section-body">
+              <ul class="guide-list">
+                <li>지역별, 엘리트, 슈퍼, 초월 몹마다 확률이 다릅니다.</li>
+                <li>고생좀 하십쇼</li>
               </ul>
             </div>
           </article>
@@ -1619,12 +1609,12 @@
         <div class="early-guide guide-panel" role="tabpanel" data-guide-panel="artifactInvest">
           <div class="guide-summary">
             <div class="guide-chip">
-              <span>8초월 핵심 루트</span>
+              <span>유물 효율표</span>
               <strong>뿔피리 / 모래시계</strong>
             </div>
             <div class="guide-chip">
               <span>딜 세팅 기준</span>
-              <strong>스탯 유물 +100개 유지</strong>
+              <strong>수호자의 돌 투자량 균형</strong>
             </div>
             <div class="guide-chip">
               <span>환생 세팅 목표</span>
@@ -1635,7 +1625,7 @@
           <article class="guide-section">
             <div class="guide-section-head">
               <span class="guide-step">1</span>
-              <h2>8초월 기준 뿔피리 / 모래시계 루트</h2>
+              <h2>전설의 뿔피리 / 시간의 모래시계 효율표</h2>
             </div>
             <div class="guide-section-body">
               <div class="equip-book-table-wrap">
@@ -1678,29 +1668,28 @@
           <article class="guide-section">
             <div class="guide-section-head">
               <span class="guide-step">2</span>
-              <h2>딜 세팅</h2>
+              <h2>1번 프리셋. 사냥 세팅</h2>
             </div>
             <div class="guide-section-body">
               <ul class="guide-list">
-                <li><strong>전설의 뿔피리:</strong> 20~30LV 우선 투자</li>
-                <li><strong>스탯 유물:</strong> 데미지 / 크리티컬 데미지 유물보다 수호자의 돌 +100개 높게 유지</li>
-                <li><strong>데미지 / 크리티컬 데미지 유물:</strong> 보유 수호자의 돌 기준 두 유물 균등 투자</li>
+                <li><strong>전설의 뿔피리:</strong> 80LV까지 투자</li>
+                <li><strong>시간의 모래시계:</strong> 50LV까지 투자</li>
+                <li><strong>어둠에 물든 구슬:</strong> 100LV까지 투자</li>
+                <li><strong>딜 유물:</strong> 원젠 가능한 최소 수준까지만 투자</li>
               </ul>
-              <div class="guide-priority">투자 예시: 스탯 유물 다음 레벨 408개 / 데미지 유물 308개 / 크리티컬 데미지 유물 308개처럼 항상 약 100개 차이를 유지합니다.</div>
             </div>
           </article>
 
           <article class="guide-section">
             <div class="guide-section-head">
               <span class="guide-step">3</span>
-              <h2>환생 세팅</h2>
+              <h2>2번 프리셋. 환생 세팅</h2>
             </div>
             <div class="guide-section-body">
               <ul class="guide-list">
                 <li><strong>전설의 뿔피리:</strong> 80LV까지 투자</li>
                 <li><strong>시간의 모래시계:</strong> 50LV까지 투자</li>
-                <li><strong>딜 유물:</strong> 원젠 가능한 최소 수준까지만 투자</li>
-                <li><strong>조절 기준:</strong> 본인 스펙에 맞게 직접 테스트하며 조절</li>
+                <li><strong>황금 인장 반지:</strong> 300LV까지 투자</li>
               </ul>
             </div>
           </article>
@@ -1708,16 +1697,26 @@
           <article class="guide-section">
             <div class="guide-section-head">
               <span class="guide-step">4</span>
-              <h2>남은 재화 투자</h2>
+              <h2>3번 프리셋. 딜 세팅</h2>
             </div>
             <div class="guide-section-body">
               <ul class="guide-list">
-                <li><strong>어둠에 물든 구슬:</strong> 재료 파밍 효율 증가</li>
-                <li><strong>황금 인장 반지:</strong> 환생 포인트 획득량 증가</li>
-                <li><strong>선택 투자:</strong> 자신의 목적에 맞게 선택 투자</li>
+                <li><strong>전설의 뿔피리:</strong> 20~30LV 우선 투자</li>
+                <li><strong>스탯% / 결의 / 고룡:</strong> 필요 수호자의 돌 기준</li>
+              </ul>
+              <div class="guide-priority">각 유물의 LV을 동일하게 맞추는 것이 아닌, 수호자의 돌 투자량을 비슷하게 맞춰서 투자</div>
+              <ul class="guide-route-list" style="margin-top: 14px;" aria-label="투자 예시">
+                <li><strong>스탯 유물</strong><span>최종 DEX 88% 증가 / 필요 수호자의돌 225개</span></li>
+                <li><strong>결의</strong><span>최종 공격력 67% 증가 / 필요 수호자의돌 223개</span></li>
+                <li><strong>고룡</strong><span>최종 크리티컬 데미지 55% 증가 / 필요 수호자의돌 225개</span></li>
               </ul>
             </div>
           </article>
+
+          <div class="guide-note">
+            <strong>반박시 님말이 맞음</strong><br>
+            <strong>주의:</strong> 환생 / 소탕 시 프리셋을 확인해 주세요
+          </div>
         </div>
 
         <div class="early-guide guide-panel" role="tabpanel" data-guide-panel="equipBook">
@@ -2005,7 +2004,7 @@
             </div>
             <div class="guide-chip">
               <span>총 지역</span>
-              <strong>9개</strong>
+              <strong data-monster-region-count>11개</strong>
             </div>
             <div class="guide-chip">
               <span>핵심 보너스</span>
@@ -2116,11 +2115,35 @@
           <article class="guide-section">
             <div class="guide-section-head">
               <span class="guide-step">9</span>
-              <h2>초월 (4)</h2>
+              <h2>시간의 신전 (15)</h2>
+            </div>
+            <div class="guide-section-body">
+              <ul class="guide-list">
+                <li>미정</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="guide-section">
+            <div class="guide-section-head">
+              <span class="guide-step">10</span>
+              <h2>초월1 (4)</h2>
             </div>
             <div class="guide-section-body">
               <ul class="guide-list">
                 <li>보스데미지 +10%</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="guide-section">
+            <div class="guide-section-head">
+              <span class="guide-step">11</span>
+              <h2>초월2 (4)</h2>
+            </div>
+            <div class="guide-section-body">
+              <ul class="guide-list">
+                <li>미정</li>
               </ul>
             </div>
           </article>
@@ -2133,6 +2156,10 @@
   <img id="guideOverlayImg" src="" alt="">
 </div>
 <script>
+  const monsterBookPanel = document.querySelector('[data-guide-panel="monsterBook"]');
+  const monsterRegionCount = monsterBookPanel.querySelector("[data-monster-region-count]");
+  monsterRegionCount.textContent = monsterBookPanel.querySelectorAll(":scope > .guide-section").length + "개";
+
   const guideImgOverlay = document.getElementById("guideImgOverlay");
   const guideOverlayImg = document.getElementById("guideOverlayImg");
 
