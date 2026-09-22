@@ -151,8 +151,28 @@
     };
   }
 
+  const KOREAN_UNITS = [
+    { label: "무량대수", value: 1e68 },
+    { label: "불가사의", value: 1e64 },
+    { label: "나유타", value: 1e60 },
+    { label: "아승기", value: 1e56 },
+    { label: "항하사", value: 1e52 },
+    { label: "극", value: 1e48 },
+    { label: "재", value: 1e44 },
+    { label: "정", value: 1e40 },
+    { label: "간", value: 1e36 },
+    { label: "구", value: 1e32 },
+    { label: "양", value: 1e28 },
+    { label: "자", value: 1e24 },
+    { label: "해", value: 1e20 },
+    { label: "경", value: 1e16 },
+    { label: "조", value: 1e12 },
+    { label: "억", value: 1e8 },
+    { label: "만", value: 1e4 }
+  ];
+
   function parseUnitValue(value) {
-    const text = compact(value).replace("RP", "");
+    const text = compact(value).replace("RP", "").replaceAll(",", "");
 
     if (!text) return 0;
 
@@ -164,29 +184,12 @@
     let total = 0;
     let matched = false;
 
-    const gyeong = text.match(/([0-9.]+)경/);
-    const jo = text.match(/([0-9.]+)조/);
-    const eok = text.match(/([0-9.]+)억/);
-    const man = text.match(/([0-9.]+)만/);
-
-    if (gyeong) {
-      total += Number(gyeong[1]) * 10000000000000000;
-      matched = true;
-    }
-
-    if (jo) {
-      total += Number(jo[1]) * 1000000000000;
-      matched = true;
-    }
-
-    if (eok) {
-      total += Number(eok[1]) * 100000000;
-      matched = true;
-    }
-
-    if (man) {
-      total += Number(man[1]) * 10000;
-      matched = true;
+    for (const unit of KOREAN_UNITS) {
+      const match = text.match(new RegExp(`([0-9.]+)${unit.label}`));
+      if (match) {
+        total += Number(match[1]) * unit.value;
+        matched = true;
+      }
     }
 
     if (matched) return total;
@@ -199,14 +202,7 @@
     const num = Number(String(value).replaceAll(",", "").trim());
     if (!Number.isFinite(num)) return normalize(value);
 
-    const units = [
-      { label: "경", value: 10000000000000000 },
-      { label: "조", value: 1000000000000 },
-      { label: "억", value: 100000000 },
-      { label: "만", value: 10000 }
-    ];
-
-    for (const unit of units) {
+    for (const unit of KOREAN_UNITS) {
       if (num >= unit.value) {
         const scaled = num / unit.value;
         const formatted = Number.isInteger(scaled)
