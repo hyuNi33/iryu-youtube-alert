@@ -24,6 +24,7 @@ const MENU = [
 
   { section: "테이블" },
   { label: "초월정보", href: "/pages/tables/transcend.html" },
+  { label: "승천정보", href: "/pages/tables/ascension-info.html" },
   { label: "몬스터DB", href: "/pages/tables/monster.html" },
   /*{ label: "몬스터체경비", href: "/pages/tables/monster-stat.html" },*/
   { label: "잡팁", href: "/pages/tables/tips.html" },

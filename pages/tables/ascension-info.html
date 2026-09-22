@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>승천정보 - 이류월드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+  <style>
+    .ascension-section { margin-top: 24px; }
+    .ascension-description { color: var(--text-sub); line-height: 1.8; margin: 12px 0 20px; }
+    .ascension-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .ascension-summary .time-value { font-size: 24px; }
+    .ascension-table { width: 100%; }
+    .ascension-table th, .ascension-table td { white-space: normal; line-height: 1.7; }
+    .ascension-note { color: var(--text-sub); font-size: 14px; line-height: 1.8; margin-top: 16px; }
+    @media (max-width: 640px) { .ascension-summary { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <aside class="sidebar"></aside>
+      <main class="content">
+        <div class="top-banner">
+          <h1>승천정보</h1>
+          <p>단계별 달성 조건과 승천 스킬의 효과를 확인하세요.</p>
+        </div>
+        <section class="calc-card" aria-label="승천 단계 선택">
+          <div class="form-list">
+            <div class="form-row">
+              <label for="ascensionSelect">승천 단계</label>
+              <select id="ascensionSelect" class="styled-select" aria-controls="ascensionDetails"></select>
+            </div>
+          </div>
+        </section>
+        <div id="ascensionDetails" aria-live="polite" aria-atomic="true">
+          <section class="calc-card ascension-section" aria-labelledby="requirement-title">
+            <h2 class="result-title" id="requirement-title"></h2>
+            <p class="ascension-description" id="requirement-description"></p>
+            <div class="ascension-summary">
+              <div class="time-card"><span class="time-label">승천 단계</span><strong class="time-value" id="stage-value"></strong></div>
+              <div class="time-card"><span class="time-label">처치 대상</span><strong class="time-value" id="boss-value"></strong></div>
+              <div class="time-card"><span class="time-label">보스 체력</span><strong class="time-value" id="hp-value"></strong></div>
+            </div>
+          </section>
+          <section class="calc-card ascension-section" aria-labelledby="effect-title">
+            <h2 class="result-title" id="effect-title"></h2>
+            <p class="ascension-description" id="effect-description"></p>
+            <div class="table-wrap">
+              <table class="ascension-table">
+                <thead><tr><th scope="col">항목</th><th scope="col">효과 / 기준</th></tr></thead>
+                <tbody id="effect-rows"></tbody>
+              </table>
+            </div>
+            <p class="ascension-note" id="stage-note"></p>
+          </section>
+        </div>
+        <noscript><p class="ascension-note">승천 정보를 보려면 JavaScript를 활성화해 주세요.</p></noscript>
+      </main>
+    </div>
+  </div>
+  <script>
+    // 새 승천이 공개되면 아래 배열에 같은 형식의 객체를 추가합니다.
+    // 단계 수에 제한이 없으며 선택 메뉴는 단계 번호순으로 자동 생성됩니다.
+    // 조건, 보스, 체력, 설명, 효과, 비고는 각 단계별로 독립적으로 관리합니다.
+    const ascensionData = [
+      {
+        stage: 1,
+        requirement: "10초월을 달성해야 도전할 수 있습니다. 검은마법사를 처치하면 승천 1을 달성할 수 있습니다.",
+        boss: "검은마법사",
+        hp: "2.8자",
+        description: "승천 1에 도달한 자에게 항상 적용되는 힘입니다. 승천 후 다시 쌓는 누적 RP에 비례해 최종 데미지가 증가하며, 누적 RP는 4해까지 쌓을 수 있습니다.",
+        effects: [
+          ["최종 데미지 증가", "승천 후 누적 RP 1,000경당 +5.00%"],
+          ["최대 최종 데미지 증가", "누적 RP 4해 도달 시 최대 +200%"],
+          ["누적 RP 상한", "4해"],
+          ["하드 디펜스", "몬스터 이동 속도 -10%"]
+        ],
+        note: "이미지의 ‘현재 누적 RP 1억’과 ‘최종 데미지 +0.00%’는 촬영 당시 캐릭터의 상태입니다. 실제 효과는 승천 후 쌓은 누적 RP에 따라 달라집니다."
+      }
+    ];
+
+    const ascensionSelect = document.getElementById("ascensionSelect");
+    const stages = [...ascensionData].sort((a, b) => a.stage - b.stage);
+    stages.forEach((data) => {
+      const option = document.createElement("option");
+      option.value = String(data.stage);
+      option.textContent = `승천 ${data.stage.toLocaleString("ko-KR")}`;
+      ascensionSelect.appendChild(option);
+    });
+
+    function renderAscension(stage) {
+      const data = stages.find((entry) => entry.stage === Number(stage));
+      if (!data) return;
+      const name = `승천 ${data.stage.toLocaleString("ko-KR")}`;
+      const values = {
+        "requirement-title": `${name} 달성 조건`,
+        "requirement-description": data.requirement,
+        "stage-value": name,
+        "boss-value": data.boss,
+        "hp-value": data.hp,
+        "effect-title": `${name} 스킬 효과`,
+        "effect-description": data.description,
+        "stage-note": data.note || ""
+      };
+      Object.entries(values).forEach(([id, value]) => {
+        document.getElementById(id).textContent = value;
+      });
+      document.getElementById("stage-note").hidden = !data.note;
+      const rows = document.getElementById("effect-rows");
+      rows.replaceChildren();
+      data.effects.forEach(([label, value]) => {
+        const row = document.createElement("tr");
+        const heading = document.createElement("th");
+        heading.scope = "row";
+        heading.textContent = label;
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.append(heading, cell);
+        rows.appendChild(row);
+      });
+    }
+
+    ascensionSelect.addEventListener("change", () => renderAscension(ascensionSelect.value));
+    renderAscension(ascensionSelect.value);
+  </script>
+</body>
+</html>
