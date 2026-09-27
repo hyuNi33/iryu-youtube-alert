@@ -10,7 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Call live polling endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          curl --fail --silent --show-error \
-            --header "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+          curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 30 \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
             "https://iryu-youtube-alert.vercel.app/api/cron/check-youtube-live"
