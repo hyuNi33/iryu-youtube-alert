@@ -1,6 +1,6 @@
 # iryu-youtube-alert
 
-`https://www.youtube.com/@2ryoo-world` 채널의 YouTube 라이브 시작을 감지해서 Discord 채널 웹훅으로 알림을 보내는 Vercel API 프로젝트입니다.
+`https://www.youtube.com/@이류인생` 채널의 YouTube 라이브 시작을 감지해서 Discord 채널 웹훅으로 알림을 보내는 Vercel API 프로젝트입니다.
 
 ## 배포
 
@@ -21,7 +21,7 @@
 | `YOUTUBE_WEBHOOK_SECRET` | YouTube WebSub HMAC 서명 검증용 임의 문자열 |
 | `CRON_SECRET` | Vercel Cron 호출 보호용 임의 문자열 |
 | `YOUTUBE_LIVE_LOOKBACK_MINUTES` | 선택. 폴링 보조 기능이 최근 몇 분 내 시작한 라이브만 알릴지 설정. 기본값 `10` |
-| `YOUTUBE_HANDLE` | 기본값은 `@2ryoo-world`라 생략 가능 |
+| `YOUTUBE_HANDLE` | 기본값은 `@이류인생`라 생략 가능 |
 | `YOUTUBE_CHANNEL_ID` | 선택. 채널 ID를 직접 넣으면 핸들 조회를 건너뜁니다 |
 | `CHZZK_CHANNEL_ID` | 선택. 치지직 방송 알림에 사용할 채널 ID |
 | `CHECK_CHZZK_ON_YOUTUBE_LIVE` | 선택. 기본값은 활성화. `0`으로 설정하면 유튜브 라이브 감지 시 치지직 확인을 끕니다 |
@@ -38,7 +38,7 @@
 https://YOUR_VERCEL_URL/api/youtube/subscribe?token=YOUTUBE_SUBSCRIBE_TOKEN값
 ```
 
-정상이면 `ok: true`, `status: 202`, `handle: "@2ryoo-world"`가 포함된 JSON이 나옵니다.
+정상이면 `ok: true`, `status: 202`, `handle: "@이류인생"`가 포함된 JSON이 나옵니다.
 
 YouTube WebSub 구독은 만료되므로 3~4일마다 다시 호출하는 것을 권장합니다.
 
@@ -73,7 +73,7 @@ Vercel Pro를 쓰는 경우에는 `vercel.json`에 `/api/cron/check-youtube-live
 
 ## 치지직 라이브 폴링
 
-유튜브 라이브 알림이 들어왔을 때 치지직도 같이 방송 중인지 확인하는 기능은 기본으로 켜져 있습니다. 즉, `@2ryoo-world` 유튜브 방송 시작 이벤트가 오면 치지직 상태를 한 번 조회하고, 치지직도 방송 중이면 Discord에 치지직 알림도 보냅니다.
+유튜브 라이브 알림이 들어왔을 때 치지직도 같이 방송 중인지 확인하는 기능은 기본으로 켜져 있습니다. 즉, `@이류인생` 유튜브 방송 시작 이벤트가 오면 치지직 상태를 한 번 조회하고, 치지직도 방송 중이면 Discord에 치지직 알림도 보냅니다.
 
 치지직 방송 알림은 `CHZZK_CHANNEL_ID` 환경변수를 설정한 뒤 아래 URL로 확인할 수 있습니다.
 
@@ -118,3 +118,9 @@ npm run check
 - API 키와 토큰은 코드에 직접 넣지 말고 Vercel 환경변수에 넣으세요.
 - 별도 DB가 없어서 서버리스 런타임이 바뀌면 중복 알림을 100% 막지는 못합니다.
 - 완전한 중복 방지가 필요하면 Vercel KV, Supabase, Neon 같은 저장소를 추가하세요.
+
+## 유튜브 채널 설정 복구
+
+기본 알림 채널은 이류(@이류인생), 채널 ID는 UCBoJBW0Akc4QrfsEJCtgSGA입니다. 기본 채널은 핸들 조회 대신 고유 ID를 사용합니다. 기존 YOUTUBE_HANDLE 값이 @2ryoo-world인 배포도 같은 채널로 자동 보정합니다. 다른 채널을 사용하려면 YOUTUBE_CHANNEL_ID 또는 YOUTUBE_HANDLE을 지정하세요. 명시적인 채널 ID가 가장 우선합니다.
+
+GitHub Actions는 HTTP 오류 응답 본문을 출력하므로 실패 시 실제 원인을 확인할 수 있습니다.

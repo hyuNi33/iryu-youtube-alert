@@ -1,5 +1,5 @@
-const YOUTUBE_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || "";
-const YOUTUBE_HANDLE = process.env.YOUTUBE_HANDLE || "@2ryoo-world";
+const { getYoutubeChannelConfig } = require("../../lib/youtube-channel");
+const { YOUTUBE_CHANNEL_ID, YOUTUBE_HANDLE } = getYoutubeChannelConfig();
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "";
 const YOUTUBE_CALLBACK_URL = process.env.YOUTUBE_CALLBACK_URL || "";
 const SITE_URL = process.env.SITE_URL || "";
