@@ -1563,8 +1563,72 @@
       return minutes > 0 ? `${minutes}분 ${restSeconds}초` : `${restSeconds}초`;
     }
 
+    // 큰 경험치는 두 개의 한글 단위로 줄이고, 원래 정수는 팝업에 보관한다.
+    function renderExpNumber(value) {
+      const integer = typeof value === "bigint" ? value : BigInt(Math.round(Number(value) || 0));
+      const full = integer.toLocaleString("ko-KR");
+      if (integer < 10000n) return full;
+      const units = ["", "만", "억", "조", "경", "해", "자", "양", "구", "간", "정", "재", "극", "항하사", "아승기", "나유타", "불가사의", "무량대수"];
+      const groups = [];
+      let rest = integer;
+      let index = 0;
+      while (rest > 0n) {
+        const group = rest % 10000n;
+        if (group) groups.unshift(`${group}${units[index] ?? `×10^${index * 4}`}`);
+        rest /= 10000n;
+        index += 1;
+      }
+      return `<button type="button" class="table-tip-trigger exp-number-tip" data-exp-value="${full}" aria-expanded="false" aria-controls="exp-number-popover" aria-label="경험치 ${full}, 상세 값 보기">${groups.slice(0, 2).join(" ")}</button>`;
+    }
+
+    let expNumberAnchor = null;
+    function closeExpNumberTip() {
+      document.getElementById("exp-number-popover")?.remove();
+      expNumberAnchor?.setAttribute("aria-expanded", "false");
+      expNumberAnchor = null;
+    }
+
+    document.addEventListener("click", event => {
+      const anchor = event.target.closest(".exp-number-tip");
+      if (!anchor) {
+        if (!event.target.closest("#exp-number-popover")) closeExpNumberTip();
+        return;
+      }
+      const wasOpen = expNumberAnchor === anchor;
+      closeExpNumberTip();
+      if (wasOpen) return;
+
+      expNumberAnchor = anchor;
+      anchor.setAttribute("aria-expanded", "true");
+      const popover = document.createElement("div");
+      popover.id = "exp-number-popover";
+      popover.className = "table-tip-popover";
+      popover.setAttribute("role", "status");
+      const title = document.createElement("div");
+      title.className = "table-tip-title";
+      title.textContent = anchor.closest(".result-row")?.querySelector(".result-label")?.textContent.trim() || "경험치 상세 값";
+      const value = document.createElement("div");
+      value.className = "table-tip-value";
+      value.textContent = anchor.dataset.expValue;
+      popover.append(title, value);
+      document.body.append(popover);
+
+      const rect = anchor.getBoundingClientRect();
+      const left = Math.max(12, Math.min(rect.left, document.documentElement.clientWidth - popover.offsetWidth - 12));
+      const top = rect.bottom + 8 + popover.offsetHeight <= window.innerHeight
+        ? rect.bottom + 8 : Math.max(12, rect.top - popover.offsetHeight - 8);
+      popover.style.left = `${window.scrollX + left}px`;
+      popover.style.top = `${window.scrollY + top}px`;
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") closeExpNumberTip();
+    });
+    window.addEventListener("resize", closeExpNumberTip);
+    window.addEventListener("scroll", closeExpNumberTip, true);
+
+
     function formatExp(value) {
-      return Math.round(value || 0).toLocaleString("ko-KR");
+      return renderExpNumber(value);
     }
 
     function parseIntegerBigInt(value, { allowZero = true } = {}) {
@@ -1580,14 +1644,13 @@
     }
 
     function formatIntegerExp(value) {
-      if (typeof value === "bigint") return value.toLocaleString("ko-KR");
-      return Math.round(Number(value) || 0).toLocaleString("ko-KR");
+      return renderExpNumber(value);
     }
 
     function formatScaledExp(value, scale) {
       const scaledValue = typeof value === "bigint" ? value : BigInt(Math.round(Number(value) || 0));
       const scaledBy = typeof scale === "bigint" ? scale : BigInt(scale);
-      return roundDivBigInt(scaledValue, scaledBy).toLocaleString("ko-KR");
+      return renderExpNumber(roundDivBigInt(scaledValue, scaledBy));
     }
 
     function addRecentExpSample(gainedExp, options = {}) {
@@ -2373,14 +2436,14 @@
           </div>
           <div class="result-row">
             <span class="result-label">획득 경험치 추정</span>
-            <strong class="result-value">${Math.round(result.gainedExp).toLocaleString("ko-KR")}</strong>
+            <strong class="result-value">${formatExp(result.gainedExp)}</strong>
           </div>
           <div class="result-row">
             <span class="result-label">1분당 경험치 추정</span>
             <div class="screen-exp-result-action">
               <strong class="result-value highlight">
-                ${Math.round(result.expPerMinute).toLocaleString("ko-KR")}
-                ${renderScreenTimingRange(result, value => Math.round(value).toLocaleString("ko-KR"))}
+                ${formatExp(result.expPerMinute)}
+                ${renderScreenTimingRange(result, value => formatExp(value))}
               </strong>
               ${renderScreenApplyButton(result.expPerMinute, result.elapsedSeconds, result.invalidated)}
             </div>
@@ -2388,13 +2451,13 @@
           <div class="result-row">
             <span class="result-label">${renderScreenTimingHelp("오차범위 고려 중간값", "MIN~MAX 범위의 중심 기준값입니다. 일반적으로 경험치 계산기에 적용하기 가장 무난한 값입니다.")}</span>
             <div class="screen-exp-result-action">
-              <strong class="result-value screen-exp-midpoint">${Math.round(result.midpointExpPerMinute).toLocaleString("ko-KR")}</strong>
+              <strong class="result-value screen-exp-midpoint">${formatExp(result.midpointExpPerMinute)}</strong>
               ${renderScreenApplyButton(result.midpointExpPerMinute, result.elapsedSeconds, result.invalidated)}
             </div>
           </div>
           <div class="result-row">
             <span class="result-label">최근 30초 평균</span>
-            <strong class="result-value">${Math.round(result.rollingExpPerMinute).toLocaleString("ko-KR")}</strong>
+            <strong class="result-value">${formatExp(result.rollingExpPerMinute)}</strong>
           </div>
         </div>
       `);
@@ -2635,15 +2698,15 @@
           <div class="result-title">1분당 경험치 정보</div>
           <div class="result-row">
             <span class="result-label">실경험치</span>
-            <strong class="result-value">` + realExp.toLocaleString("ko-KR") + `</strong>
+            <strong class="result-value">` + formatIntegerExp(realExp) + `</strong>
           </div>
           <div class="result-row">
             <span class="result-label">` + numAnimal +`마리 경험치</span>
-            <strong class="result-value">` + animalExp.toLocaleString("ko-KR") + `</strong>
+            <strong class="result-value">` + formatIntegerExp(animalExp) + `</strong>
           </div>
           <div class="result-row">
             <span class="result-label">1분당 경험치</span>
-            <strong class="result-value">` + oneMinExp.toLocaleString("ko-KR") + `</strong>
+            <strong class="result-value">` + formatIntegerExp(oneMinExp) + `</strong>
           </div>
         </div>
       `;
