@@ -88,10 +88,11 @@
 </div>
 
 <script type="module">
-  import { initHanpoData, calculateHanpo } from "../../js/calc/rpMachine.js";
+  import { getMaxHanpoLevel, initHanpoData, calculateHanpo } from "../../js/calc/rpMachine.js";
   import { saveInputs, loadInputs } from "../../js/storage.js";
 
   await initHanpoData("../..");
+  document.getElementById("currentLevel").max = String(getMaxHanpoLevel());
 
   const INPUT_IDS = ["targetHanpo", "rpShop", "encyclopedia", "artifactRing", "vip", "transcendLevel", "hourglassLevel", "currentLevel", "timeResonanceLevel"];
   const CHECKBOX_IDS = ["rebirthBlessingEnabled"];
@@ -213,6 +214,8 @@
 
   window.doCalc = function () {
     const resultEl = document.getElementById("result");
+    const currentLevelInput = document.getElementById("currentLevel");
+    if (!currentLevelInput.reportValidity()) return;
 
     const params = {
       targetHanpo: document.getElementById("targetHanpo").value || "0",

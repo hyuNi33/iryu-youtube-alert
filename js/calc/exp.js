@@ -53,6 +53,10 @@ export async function initExpData(basePath) {
   loaded = true;
 }
 
+export function getMaxExpLevel() {
+  return expNeed.length - 1;
+}
+
 export function getRequiredExpBetweenLevels(currentLv, targetLv) {
   currentLv = Number(currentLv);
   targetLv = Number(targetLv);
@@ -69,7 +73,7 @@ export function getRequiredExpBetweenLevels(currentLv, targetLv) {
     return { error: "목표 레벨은 현재 레벨보다 커야 합니다." };
   }
 
-  if (targetLv - 1 >= expTotal.length) {
+  if (targetLv > getMaxExpLevel()) {
     return { error: "목표 레벨 데이터가 없습니다." };
   }
 
@@ -141,7 +145,7 @@ export function calculateLevelAtMinutes(currentLv, currentExp, expPerMinute, hou
   const expPerMinuteBigInt = parseIntegerBigInt(expPerMinute, { allowZero: false });
   hourglassLv = Number(hourglassLv);
   minutesUntil = Number(minutesUntil);
-  maxLevel = maxLevel === null || maxLevel === "" || maxLevel === undefined ? null : Number(maxLevel);
+  maxLevel = maxLevel === null || maxLevel === "" || maxLevel === undefined ? getMaxExpLevel() : Number(maxLevel);
 
   if (!Number.isInteger(currentLv) || currentLv < 1) {
     return { error: "현재 레벨은 1 이상의 정수로 입력하세요." };
@@ -318,7 +322,7 @@ export function calculateCycleLevel(expPerMinute, hourglassLv, sweepExp, sweepCo
   const grandTotalExp = totalHuntingExp + totalSweepExp;
 
   let cycleLevel = 1;
-  for (let lv = 1; lv < expTotal.length; lv++) {
+  for (let lv = 1; lv < getMaxExpLevel(); lv++) {
     if ((expTotal[lv] * numerator) <= (grandTotalExp * denominator)) {
       cycleLevel = lv + 1;
     } else {

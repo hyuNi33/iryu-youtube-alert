@@ -83,6 +83,10 @@ export async function initHanpoData(basePath) {
   loaded = true;
 }
 
+export function getMaxHanpoLevel() {
+  return hanpoData.at(-1)?.level ?? 0;
+}
+
 export function getTranscendMultiplier(level) {
   return TRANSCEND_MULTIPLIER[level] ?? 1;
 }

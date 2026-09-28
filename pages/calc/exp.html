@@ -370,11 +370,15 @@
   </div>
 
   <script type="module">
-    import { initExpData, calculateLevelUpTime, calculateLevelAtMinutes, calculateCycleLevel, getExpNeedForLevel } from "../../js/calc/exp.js";
+    import { initExpData, calculateLevelUpTime, calculateLevelAtMinutes, calculateCycleLevel, getExpNeedForLevel, getMaxExpLevel } from "../../js/calc/exp.js";
     import { startCapture, stopCapture, captureExpRatio } from "../../js/calc/screen-exp.js";
     import { saveInputs, loadInputs } from "../../js/storage.js";
 
     await initExpData("../..");
+    for (const id of ["currentLv", "targetLv", "forecastCurrentLv", "forecastMaxLv", "screenCurrentLv"]) {
+      const input = document.getElementById(id);
+      if (input) input.max = String(getMaxExpLevel());
+    }
 
     const IS_SCREEN_MEASURE_EMBED = new URLSearchParams(location.search).get("embed") === "screenExp";
     if (IS_SCREEN_MEASURE_EMBED) document.body.classList.add("measure-embed");
@@ -2729,7 +2733,7 @@
 
       while (true) {
         const levelInfo = getExpNeedForLevel(level);
-        if (levelInfo.error) {
+        if (level >= getMaxExpLevel() || levelInfo.error) {
           reachedMaxLevel = true;
           expInLevelScaled = 0n;
           nextLevelExpScaled = 0n;
