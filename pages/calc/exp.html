@@ -1776,7 +1776,7 @@
       const disabledReason = getScreenApplyDisabledReason(elapsedSeconds, invalidated);
       const disabled = disabledReason || !Number.isFinite(rounded) || rounded <= 0;
       const title = disabledReason || "경험치 계산기와 사이클 최적화의 1분당 경험치에 적용합니다.";
-      const attr = disabled ? "disabled" : `data-apply-exp="${rounded}"`;
+      const attr = disabled ? "disabled" : `data-apply-exp="${BigInt(rounded).toString()}"`;
       const buttonClass = disabled ? "btn btn-gray" : "btn btn-green";
       const button = `<button type="button" class="${buttonClass} screen-exp-apply-value-btn" ${attr} title="${title}">경험치 계산기에 적용</button>`;
 
@@ -2464,13 +2464,14 @@
     });
 
     function applyExpPerMinute(value) {
-      const rounded = Math.round(Number(value));
-      if (!Number.isFinite(rounded) || rounded <= 0) {
+      const integer = parseIntegerBigInt(value, { allowZero: false });
+      if (integer === null) {
         setScreenStatus("적용할 1분당 경험치 값이 올바르지 않습니다.");
         return;
       }
 
-      const normalized = String(rounded);
+      // 축약 표시나 Number 재변환 없이 전체 정수 자릿수를 그대로 적용한다.
+      const normalized = integer.toString();
       document.getElementById("expPerMinute").value = normalized;
       document.getElementById("cycleExpPerMinute").value = normalized;
       saveAll();
