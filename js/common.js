@@ -112,6 +112,14 @@ function buildSidebar() {
     + '<span class="hamburger-line"></span>'
     + '<span class="hamburger-line"></span>'
     + '</button>'
+    + '</div>'
+    + '<div class="language-selector">'
+    + '<label for="languageSelect">언어변경</label>'
+    + '<select id="languageSelect" class="notranslate" translate="no">'
+    + '<option value="ko" lang="ko">한국어</option>'
+    + '<option value="zh-TW" lang="zh-TW">繁體中文</option>'
+    + '<option value="en" lang="en">English</option>'
+    + '</select>'
     + '</div>\n<ul class="menu">\n';
 
   for (const item of MENU) {
@@ -136,7 +144,6 @@ function buildSidebar() {
     + buildThemeToggle()
     + '<div class="sidebar-actions">'
     + '<button type="button" class="btn-clear-storage" onclick="clearStorageAndReload()">저장 데이터 초기화</button>'
-    + '<button type="button" class="btn-language-toggle notranslate" translate="no" id="languageToggle" aria-label="대만 번체 중국어로 번역" aria-pressed="false">繁體中文</button>'
     + '</div>'
     + '</div>';
   sidebar.innerHTML = html;
