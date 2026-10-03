@@ -100,13 +100,19 @@ export async function renderTable(csvPath, containerId, options = {}) {
     filteredRows = rows;
 
     if (query) {
+      // 한국어 원본과 현재 표시 언어 양쪽으로 검색한다.
+      const matchesQuery = value => {
+        const original = String(value || "");
+        const translated = window.iryuI18n ? window.iryuI18n.translate(original) : original;
+        return original.toLowerCase().includes(query) || translated.toLowerCase().includes(query);
+      };
       if (searchColumn) {
         filteredRows = filteredRows.filter(row =>
-          String(row[searchColumn] || "").toLowerCase().includes(query)
+          matchesQuery(row[searchColumn])
         );
       } else {
         filteredRows = filteredRows.filter(row =>
-          activeHeaders.some(h => String(row[h]).toLowerCase().includes(query))
+          activeHeaders.some(h => matchesQuery(row[h]))
         );
       }
     }

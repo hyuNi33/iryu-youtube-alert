@@ -3369,3 +3369,13 @@ html[data-theme="dark"] .boss-guide-tip {
   padding: 10px 12px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
+
+/* 초기화 및 한국어/대만 번체 중국어 전환 버튼 */
+.sidebar-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; }
+.sidebar-actions .btn-clear-storage { padding: 8px 10px; }
+.btn-language-toggle { background: none; border: 1px solid rgba(255,255,255,.4); color: rgba(255,255,255,.9); padding: 8px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; transition: .2s; }
+.btn-language-toggle:hover { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.6); }
+.btn-language-toggle:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+html[lang="zh-TW"] body { font-family: "Segoe UI", "Microsoft JhengHei", "PingFang TC", sans-serif; }
+html[lang="zh-TW"] .tab-bar { flex-wrap: wrap; }
+html[lang="zh-TW"] .tab-btn { white-space: nowrap; flex-shrink: 0; }

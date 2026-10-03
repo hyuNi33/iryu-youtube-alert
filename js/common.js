@@ -11,7 +11,6 @@ const MENU = [
   { section: "홈" },
   { label: "홈", href: "/index.html" },
   { label: "가이드", href: "/pages/guide/guide.html" },
-  { label: "장비 슬롯 가이드", href: "/pages/guide/artifact-efficiency.html" },
 
   { section: "계산기" },
   { label: "환포 계산기", href: "/pages/calc/rpMachine.html" },
@@ -20,6 +19,8 @@ const MENU = [
   { label: "RP 스킬 계산기", href: "/pages/calc/rpskill.html" },
 
   { section: "기능" },
+  { label: "레벨업 알림", href: "/pages/tools/level-alert.html" },
+  { label: "도감 알림", href: "/pages/tools/collection-alert.html" },
   { label: "경험치 측정", href: "/pages/tools/exp-measure.html" },
 
   { section: "테이블" },
@@ -133,7 +134,10 @@ function buildSidebar() {
   html += "</ul>";
   html += '<div class="sidebar-footer">'
     + buildThemeToggle()
-    + '<button class="btn-clear-storage" onclick="clearStorageAndReload()">저장 데이터 초기화</button>'
+    + '<div class="sidebar-actions">'
+    + '<button type="button" class="btn-clear-storage" onclick="clearStorageAndReload()">저장 데이터 초기화</button>'
+    + '<button type="button" class="btn-language-toggle notranslate" translate="no" id="languageToggle" aria-label="대만 번체 중국어로 번역" aria-pressed="false">繁體中文</button>'
+    + '</div>'
     + '</div>';
   sidebar.innerHTML = html;
 
@@ -174,6 +178,10 @@ function clearStorageAndReload() {
 
 document.addEventListener("DOMContentLoaded", () => {
   buildSidebar();
+  // 공통 스크립트 기준으로 모든 페이지에서 동일한 번역 모듈을 로드한다.
+  const translationScript = document.createElement('script');
+  translationScript.src = getBasePath() + '/js/i18n.js';
+  document.head.appendChild(translationScript);
 
   // number input 스크롤로 값 변경 방지
   document.addEventListener("wheel", (e) => {
@@ -187,4 +195,3 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
-
