@@ -31,7 +31,14 @@
 
 <script type="module">
   import { renderMultiTable } from "../../js/multi-table-viewer.js";
-  renderMultiTable("../../datas/isekai-perf", "tableContainer");
+  renderMultiTable("../../datas/isekai-perf", "tableContainer", {
+    compactNumberColumns: [
+      "소모 조각",
+      "누적 조각",
+      "소모 구슬",
+      "누적 구슬"
+    ]
+  });
 </script>
 </body>
 </html>
