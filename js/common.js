@@ -23,6 +23,7 @@ const MENU = [
   { section: "계산기" },
   { label: "환포 계산기", href: "/pages/calc/rpMachine.html" },
   { label: "경험치 계산기", href: "/pages/calc/exp.html" },
+  { label: "구슬 획득량 계산기", href: "/pages/calc/orb.html" },
   /*{ label: "유물 계산기", href: "/pages/calc/artifact.html" },*/
   { label: "RP 스킬 계산기", href: "/pages/calc/rpskill.html" },
 

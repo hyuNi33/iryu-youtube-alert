@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>구슬 획득량 계산기 - 이류월드</title>
+  <script>(function(){var p=localStorage.getItem('iryu_theme')||'system';var t=p;if(p==='system')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)})()</script>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="../../js/common.js"></script>
+  <link rel="icon" href="../../assets/mainImg.png">
+  <style>
+    .orb-inputs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+    .orb-field { display:flex; flex-direction:column; gap:8px; }
+    .orb-field label { font-weight:700; }
+    .orb-field input, .orb-field select { flex:0 0 auto; height:48px; min-height:48px; max-height:48px; width:100%; box-sizing:border-box; padding:12px; border:1px solid var(--input-border); border-radius:10px; background:var(--input-bg); color:var(--text-main); font:inherit; }
+    .orb-field small, .orb-note { color:var(--text-sub); line-height:1.7; }
+    .orb-stats { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .orb-stat { padding:18px; background:var(--card-bg); border:1px solid var(--border); border-radius:12px; }
+    .orb-stat span { display:block; margin-bottom:8px; }
+    .orb-stat strong { color:var(--result-highlight); font-size:24px; overflow-wrap:anywhere; }
+    .orb-formula { padding:16px; background:var(--result-bg); border:1px solid var(--result-border); border-radius:12px; line-height:1.8; overflow-wrap:anywhere; }
+    .orb-table-wrap { overflow-x:auto; }
+    .orb-table { width:100%; border-collapse:collapse; margin-top:14px; }
+    .orb-table th,.orb-table td { padding:12px; border-bottom:1px solid var(--border); text-align:center; }
+    #orb-error { color:var(--warning-color); }
+    @media(max-width:700px) { .orb-inputs,.orb-stats { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<div class="wrapper"><div class="container">
+  <aside class="sidebar"></aside>
+  <main class="content">
+    <div class="top-banner"><h1>구슬 획득량 계산기</h1><p>풍요의 축복과 2배 획득 확률을 반영한 구슬의 기대 획득량을 계산합니다.</p></div>
+    <section class="calc-card">
+      <form id="orb-form" novalidate>
+        <div class="orb-inputs">
+          <div class="orb-field"><label for="orb-a">기본 드랍 개수</label><input id="orb-a" type="number" min="0" step="1" value="7" required><small>몬스터 1마리의 기본 드랍 개수</small></div>
+          <div class="orb-field"><label for="orb-blessing">풍요의 축복 배율</label><input id="orb-blessing" type="number" min="0" step="any" value="4.3" required><small>배율을 그대로 입력하세요. 예: 4.3 → 기본 4배 + 30% 확률로 1배 추가</small></div>
+          <div class="orb-field"><label for="orb-d">어둠의 구슬 2배 획득 확률 (%)</label><input id="orb-d" type="number" min="0" max="100" step="any" value="50" required></div>
+          <div class="orb-field"><label for="orb-e">도감 + 초월 재화 2배 획득 확률 (%)</label><input id="orb-e" type="number" min="0" max="100" step="any" value="0" required><small>도감과 초월의 이세계 재화 2배 확률 합계</small></div>
+          <div class="orb-field"><label for="orb-f">재화 자체의 드랍 확률 (%)</label><input id="orb-f" type="number" min="0" max="100" step="any" value="100" required></div>
+          <div class="orb-field"><label for="orb-g">1회 젠 몬스터 마릿수</label><input id="orb-g" type="number" min="1" step="1" value="2" required></div>
+          <div class="orb-field"><label for="orb-h">몬스터 젠타임 (초)</label><input id="orb-h" type="number" min="0" step="any" value="3" required><small>0보다 큰 값을 입력하세요.</small></div>
+        </div>
+        <h2 class="section-title" style="margin-top:28px;">원하는 시간의 기대 획득량</h2>
+        <div class="orb-inputs">
+          <div class="orb-field"><label for="orb-duration">시간</label><input id="orb-duration" type="number" min="0" step="any" value="1" required></div>
+          <div class="orb-field"><label for="orb-unit">시간 단위</label><select id="orb-unit"><option value="1">초</option><option value="60">분</option><option value="3600" selected>시간</option><option value="86400">일</option></select></div>
+        </div>
+        <div style="margin-top:20px;">
+          <div class="form-row checkbox-row">
+            <label for="orb-bellum">벨륨 타임 여부</label>
+            <div class="checkbox-control">
+              <input type="checkbox" id="orb-bellum">
+              <span>적용</span>
+            </div>
+          </div>
+          <p class="orb-note" style="margin:8px 0 0;">벨륨 타임부터 사냥한다고 가정합니다. 매 24시간 중 최대 4시간은 젠타임 2초, 나머지는 입력한 기본 젠타임을 적용합니다.</p>
+        </div>
+        <div class="action-area"><button type="submit" class="btn btn-green">계산하기</button> <button type="reset" class="btn">예시값으로 초기화</button></div>
+      </form>
+      <p id="orb-error" role="alert" hidden></p>
+      <div id="orb-result" class="result-box" aria-live="polite"></div>
+    </section>
+  </main>
+</div></div>
+<script>
+  const orbForm = document.getElementById('orb-form');
+  const orbResult = document.getElementById('orb-result');
+  const orbError = document.getElementById('orb-error');
+  const orbFormat = value => value.toLocaleString('ko-KR', { maximumFractionDigits: 4 });
+
+  function calculateOrb(values) {
+    const [a,b,c,d,e,f,g,h] = values;
+    if (values.some(value => !Number.isFinite(value) || value < 0)) throw new Error('모든 항목에 0 이상의 유효한 숫자를 입력하세요.');
+    if (![a,b,g].every(Number.isSafeInteger) || g < 1) throw new Error('기본 드랍 개수는 0 이상의 정수, 1회 젠 몬스터 마릿수는 1 이상의 정수로 입력하세요.');
+    if ([c,d,e,f].some(value => value > 100)) throw new Error('확률은 0~100% 범위로 입력하세요.');
+    if (d + e > 100) throw new Error('어둠의 구슬과 도감 + 초월의 2배 획득 확률 합계는 100% 이하여야 합니다.');
+    if (h <= 0) throw new Error('몬스터 젠타임은 0보다 커야 합니다.');
+    const extra = c / 100, double = (d + e) / 100, drop = f / 100;
+    const base = a * b, perMonster = a * (b + extra) * (1 + double) * drop;
+    const spawns = 60 / h, monsters = spawns * g, perMinute = perMonster * monsters;
+    const outcomes = new Map();
+    const add = (amount, probability) => outcomes.set(amount, (outcomes.get(amount) || 0) + probability);
+    add(0, 1 - drop);
+    add(base, drop * (1 - extra) * (1 - double));
+    add(base + a, drop * extra * (1 - double));
+    add(base * 2, drop * (1 - extra) * double);
+    add((base + a) * 2, drop * extra * double);
+    if (![base,perMonster,spawns,monsters,perMinute,...outcomes.keys()].every(Number.isFinite)) throw new Error('입력값이 너무 큽니다. 더 작은 값으로 입력하세요.');
+    return { base, perMonster, spawns, monsters, perMinute, outcomes };
+  }
+
+  function calculateOrbDuration(perMonster, monstersPerSpawn, normalSpawnSeconds, durationSeconds, bellumEnabled) {
+    const fullDays = Math.floor(durationSeconds / 86400);
+    const remainder = durationSeconds % 86400;
+    const bellumSeconds = bellumEnabled ? fullDays * 14400 + Math.min(remainder, 14400) : 0;
+    const normalSeconds = durationSeconds - bellumSeconds;
+    const amount = perMonster * monstersPerSpawn * (bellumSeconds / 2 + normalSeconds / normalSpawnSeconds);
+    return { amount, bellumSeconds, normalSeconds };
+  }
+  function renderOrb() {
+    try {
+      const inputs = Array.from(orbForm.querySelectorAll('.orb-inputs:first-child input'));
+      if (inputs.some(input => input.value.trim() === '')) throw new Error('모든 항목을 입력하세요.');
+      const entered = inputs.map(input => Number(input.value));
+      const blessing = entered[1];
+      if (!Number.isFinite(blessing) || blessing < 0) throw new Error('풍요의 축복 배율은 0 이상의 숫자로 입력하세요.');
+      const whole = Math.floor(blessing);
+      const extraPercent = Math.round((blessing - whole) * 100 * 1e10) / 1e10;
+      const values = [entered[0], whole, extraPercent, ...entered.slice(2)];
+      const result = calculateOrb(values);
+      const durationInput = document.getElementById('orb-duration');
+      const duration = Number(durationInput.value);
+      if (durationInput.value.trim() === '' || !Number.isFinite(duration) || duration < 0) throw new Error('시간은 0 이상의 숫자로 입력하세요.');
+      const unitInput = document.getElementById('orb-unit');
+      const unitSeconds = Number(unitInput.value);
+      const unitLabel = { 1: '초', 60: '분', 3600: '시간', 86400: '일' }[unitSeconds];
+      const durationSeconds = duration * unitSeconds;
+      const bellumEnabled = document.getElementById('orb-bellum').checked;
+      const timing = calculateOrbDuration(result.perMonster, values[6], values[7], durationSeconds, bellumEnabled);
+      const durationAmount = timing.amount;
+      if (!Number.isFinite(durationAmount)) throw new Error('입력한 시간이 너무 큽니다. 더 작은 값으로 입력하세요.');
+      orbError.hidden = true;
+      orbError.textContent = '';
+      orbResult.hidden = false;
+      orbResult.innerHTML = `<div class="orb-stats"><div class="orb-stat"><span>1마리당 기대 획득량</span><strong>${orbFormat(result.perMonster)}개</strong></div><div class="orb-stat"><span>1분당 몬스터 마릿수${bellumEnabled ? " (기본)" : ""}</span><strong>${orbFormat(result.monsters)}마리</strong></div><div class="orb-stat"><span>1분당 기대 획득량${bellumEnabled ? " (기본)" : ""}</span><strong>${orbFormat(result.perMinute)}개</strong></div><div class="orb-stat"><span>${orbFormat(duration)}${unitLabel} 동안 기대 획득량</span><strong>${orbFormat(durationAmount)}개</strong></div></div>${bellumEnabled ? `<p class="orb-note">적용 시간: 벨륨 ${orbFormat(timing.bellumSeconds / 3600)}시간 (젠타임 2초) + 기본 ${orbFormat(timing.normalSeconds / 3600)}시간 (젠타임 ${orbFormat(values[7])}초)</p>` : ""}`;
+    } catch (error) {
+      orbError.textContent = error.message;
+      orbError.hidden = false;
+      orbResult.hidden = true;
+      orbResult.innerHTML = '';
+    }
+  }
+  orbForm.addEventListener('submit', event => { event.preventDefault(); renderOrb(); });
+  orbForm.addEventListener('input', renderOrb);
+  orbForm.addEventListener('change', renderOrb);
+  orbForm.addEventListener('reset', () => setTimeout(renderOrb, 0));
+  renderOrb();
+</script>
+</body>
+</html>
