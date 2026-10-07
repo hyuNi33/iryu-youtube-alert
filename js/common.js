@@ -18,6 +18,7 @@ const MENU = [
   { section: "홈" },
   { label: "홈", href: "/index.html" },
   { label: "가이드", href: "/pages/guide/guide.html" },
+  { label: "장비 강화 효율", href: "/pages/guide/artifact-efficiency.html" },
 
   { section: "계산기" },
   { label: "환포 계산기", href: "/pages/calc/rpMachine.html" },
