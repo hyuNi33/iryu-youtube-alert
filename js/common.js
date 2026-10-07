@@ -3,6 +3,13 @@
  * 사이드바 동적 생성 + 네비게이션 + 테마 관리 + 공통 유틸
  */
 
+// 사이트 임시 차단 여부
+var SITE_CLOSED = true;
+
+if (SITE_CLOSED && window.location.pathname !== "/404.html") {
+    window.location.replace("/404.html");
+}
+
 // ==============================
 // 메뉴 정의
 // ==============================
