@@ -4,7 +4,7 @@
  */
 
 // 사이트 임시 차단 여부
-var SITE_CLOSED = true;
+var SITE_CLOSED = false;
 
 if (SITE_CLOSED && window.location.pathname !== "/404.html") {
     window.location.replace("/404.html");
