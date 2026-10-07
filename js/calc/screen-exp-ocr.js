@@ -141,3 +141,7 @@ window.addEventListener('message',event=>{
  intro.querySelector('p').textContent=mode==='manual'?'게임 화면에서 퍼센트 영역을 지정한 뒤 측정 시작·종료를 누르세요. 각 사진에서 읽은 퍼센트를 자동 입력합니다. 사진과 값을 확인하고 필요하면 수정하세요.':'숫자가 겹친 바 내부 색 영역을 선택하세요. 흰 테두리와 바 밖 배경은 제외하세요. 직접 입력 측정과 비교하는 것을 권장합니다.';
  postHeight();
 });
+
+// 설명 그림도 선택한 언어로 전환합니다.
+function updateGuideLanguage(){const language=window.iryuI18n?.getLanguage()||localStorage.getItem('iryu_language')||'ko';const image=document.querySelector('.bar-example img');if(image)image.src='../../assets/guide/exp-bar-selection'+(['en','zh-TW'].includes(language)?'.'+language:'')+'.svg';}
+document.addEventListener('iryu:languagechange',updateGuideLanguage);updateGuideLanguage();
