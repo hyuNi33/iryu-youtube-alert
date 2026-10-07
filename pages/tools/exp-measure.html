@@ -9,8 +9,9 @@
   <script src="../../js/common.js"></script>
   <link rel="icon" href="../../assets/mainImg.png">
   <style>
-    .measure-panel { display: none; overflow: hidden; }
-    .measure-panel.active { display: block; }
+    .measure-panel { overflow: hidden; }
+    .measure-panel[hidden] { display: none; }
+    .measure-page .tab-bar { flex-wrap: wrap; }
     .measure-frame { display: block; width: 100%; height: 1200px; min-height: 620px; border: 0; background: transparent; overflow: hidden; }
   </style>
 </head>
@@ -21,20 +22,20 @@
       <main class="content">
         <div class="top-banner">
           <h1>경험치 측정</h1>
-          <p>실시간 화면 인식 방식과 시작/종료 스냅샷 비교 방식을 탭으로 비교해서 사용할 수 있습니다.</p>
+          <p>직접 입력과 타이머로 획득량을 측정하고, 경험치바 색 경계 자동 측정과 비교합니다.</p>
         </div>
 
         <section class="calc-card measure-page">
           <div class="tab-bar" role="tablist" aria-label="경험치 측정 방식">
-            <button type="button" class="tab-btn active" id="tabLiveBtn" data-panel="livePanel" role="tab" aria-selected="true" aria-controls="livePanel">실시간 측정</button>
-            <button type="button" class="tab-btn" id="tabSnapshotBtn" data-panel="snapshotPanel" role="tab" aria-selected="false" aria-controls="snapshotPanel">스냅샷 측정</button>
+            <button type="button" id="legacyTab" class="tab-btn" role="tab" aria-selected="false" aria-controls="legacyPanel" tabindex="-1" data-mode="legacy">기존 경험치 측정</button>
+            <button type="button" id="manualTab" class="tab-btn active" role="tab" aria-selected="true" aria-controls="livePanel" tabindex="0" data-mode="manual">직접 입력 · 권장</button>
+            <button type="button" id="autoTab" class="tab-btn" role="tab" aria-selected="false" aria-controls="livePanel" tabindex="-1" data-mode="auto">색 경계 자동 측정</button>
           </div>
-
-          <div class="measure-panel active" id="livePanel" role="tabpanel" aria-labelledby="tabLiveBtn">
-            <iframe class="measure-frame" id="liveFrame" src="../calc/exp.html?embed=screenExp" title="실시간 경험치 측정" allow="display-capture" scrolling="no"></iframe>
+          <div class="measure-panel" id="legacyPanel" role="tabpanel" aria-labelledby="legacyTab" hidden>
+            <iframe class="measure-frame" id="legacyFrame" src="../calc/exp.html?embed=screenExp" title="기존 경험치 측정" allow="display-capture" scrolling="no"></iframe>
           </div>
-          <div class="measure-panel" id="snapshotPanel" role="tabpanel" aria-labelledby="tabSnapshotBtn">
-            <iframe class="measure-frame" id="snapshotFrame" src="../calc/screen-exp-snapshot.html?embed=1" title="스냅샷 경험치 측정" allow="display-capture" scrolling="no"></iframe>
+          <div class="measure-panel" id="livePanel" role="tabpanel" aria-labelledby="manualTab">
+            <iframe class="measure-frame" id="liveFrame" src="../calc/exp-ocr-lab.html?embed=1" title="직접 입력 경험치 측정" allow="display-capture" scrolling="no"></iframe>
           </div>
         </section>
       </main>
@@ -42,20 +43,36 @@
   </div>
 
   <script>
-    document.querySelectorAll(".measure-page .tab-btn").forEach(button => {
-      button.addEventListener("click", () => {
-        document.querySelectorAll(".measure-page .tab-btn").forEach(item => {
-          const active = item === button;
-          item.classList.toggle("active", active);
-          item.setAttribute("aria-selected", String(active));
-        });
-        document.querySelectorAll(".measure-panel").forEach(panel => {
-          panel.classList.toggle("active", panel.id === button.dataset.panel);
-        });
-        requestFrameHeight(document.querySelector(`#${button.dataset.panel} iframe`));
+    let activeMode = 'manual';
+    const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+    function syncMode() {
+      document.getElementById('liveFrame').contentWindow?.postMessage({type:'iryuMeasureMode', mode:activeMode==='legacy'?'manual':activeMode},location.origin);
+    }
+    function selectTab(button) {
+      activeMode=button.dataset.mode;
+      tabs.forEach(tab=>{const active=tab===button;tab.classList.toggle('active',active);tab.setAttribute('aria-selected',String(active));tab.tabIndex=active?0:-1;});
+      document.getElementById('legacyPanel').hidden=activeMode!=='legacy';
+      document.getElementById('livePanel').hidden=activeMode==='legacy';
+      if(activeMode!=='legacy') {
+        document.getElementById('livePanel').setAttribute('aria-labelledby',button.id);
+        document.getElementById('liveFrame').title=button.textContent+' 경험치 측정';
+      }
+      syncMode();
+      requestFrameHeight(document.getElementById(activeMode==='legacy'?'legacyFrame':'liveFrame'));
+    }
+    tabs.forEach((tab,index)=>{
+      tab.addEventListener('click',()=>selectTab(tab));
+      tab.addEventListener('keydown',event=>{
+        let next;
+        if(event.key==='ArrowRight')next=(index+1)%tabs.length;
+        if(event.key==='ArrowLeft')next=(index+tabs.length-1)%tabs.length;
+        if(event.key==='Home')next=0;
+        if(event.key==='End')next=tabs.length-1;
+        if(next===undefined)return;event.preventDefault();tabs[next].focus();selectTab(tabs[next]);
       });
     });
-
+    document.getElementById('liveFrame').addEventListener('load',syncMode);
+    window.addEventListener('load',syncMode);
     function requestFrameHeight(frame) {
       if (!frame?.contentWindow) return;
       frame.contentWindow.postMessage({ type: "iryuMeasureRequestHeight" }, location.origin);

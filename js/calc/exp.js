@@ -20,7 +20,7 @@ function parseIntegerBigInt(value, { allowZero = true } = {}) {
   return parsed;
 }
 
-function getHourglassMultiplierParts(hourglassLv) {
+export function getHourglassMultiplierParts(hourglassLv) {
   return {
     numerator: BigInt(10 + hourglassLv),
     denominator: MULTIPLIER_SCALE,
