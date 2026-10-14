@@ -193,7 +193,12 @@
 <script type="module">
   import { renderTable } from "../../js/table-viewer.js";
   renderTable("../../datas/town-defense.csv", "tableContainer", { search: false });
-  renderTable("../../datas/town-defense-hard.csv", "defenseHardTableContainer", { search: false });
+  renderTable("../../datas/town-defense-hard.csv", "defenseHardTableContainer", {
+    search: false,
+    hiddenColumns: ["(지수)"],
+    numberColumns: ["라운드", "HP", "영혼의파편", "수호자의돌", "혼돈의주문서"],
+    tipColumns: { "HP": "(지수)" }
+  });
   renderTable("../../datas/equipment-raid.csv", "equipmentRaidTableContainer", {
     search: false,
     hiddenColumns: ["보스 HP 원본"],

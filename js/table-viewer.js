@@ -3,6 +3,7 @@
  * 범용 CSV 테이블 렌더러 (정렬, 검색 기능)
  */
 import { loadCSV } from "./csv-loader.js";
+import { integerDigits, fullNumber, compactNumber } from "./table-number.js";
 
 /**
  * CSV 데이터를 테이블로 렌더링
@@ -11,6 +12,8 @@ import { loadCSV } from "./csv-loader.js";
  * @param {Object} [options]
  * @param {boolean} [options.search=true] - 검색 필터 표시 여부
  * @param {boolean} [options.sortable=true] - 컬럼 정렬 기능
+ * @param {string[]} [options.numberColumns] - 축약 표시 및 전체 숫자 상세보기 컬럼
+ * @param {string[]} [options.expandedNumberColumns] - 축약 대신 전체 숫자로 표시할 컬럼
  */
 export async function renderTable(csvPath, containerId, options = {}) {
   const {
@@ -20,9 +23,13 @@ export async function renderTable(csvPath, containerId, options = {}) {
     searchColumn = null,
     searchPlaceholder = "검색...",
     hiddenColumns = [],
-    tipColumns = {}
+    tipColumns = {},
+    numberColumns = [],
+    expandedNumberColumns = []
   } = options;
   const hiddenColumnSet = new Set(hiddenColumns);
+  const numberColumnSet = new Set(numberColumns);
+  const expandedNumberColumnSet = new Set(expandedNumberColumns);
 
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -136,6 +143,17 @@ export async function renderTable(csvPath, containerId, options = {}) {
       let va = a[sortCol] || "";
       let vb = b[sortCol] || "";
 
+      if (numberColumnSet.has(sortCol)) {
+        const da = integerDigits(va);
+        const db = integerDigits(vb);
+        if (da !== null && db !== null) {
+          const na = BigInt(da);
+          const nb = BigInt(db);
+          const comparison = na < nb ? -1 : na > nb ? 1 : 0;
+          return sortAsc ? comparison : -comparison;
+        }
+      }
+
       // 숫자 비교 시도
       const na = parseNumber(va);
       const nb = parseNumber(vb);
@@ -184,8 +202,14 @@ export async function renderTable(csvPath, containerId, options = {}) {
         const value = row[h] || "";
         const tipColumn = tipColumns[h];
         const tipValue = tipColumn ? row[tipColumn] : "";
+        const digits = numberColumnSet.has(h) ? integerDigits(value) : null;
 
-        if (tipValue) {
+        if (digits !== null) {
+          const displayValue = expandedNumberColumnSet.has(h) ? fullNumber(digits) : compactNumber(digits);
+          const detailDigits = tipValue ? integerDigits(tipValue) : digits;
+          const detailValue = detailDigits !== null ? fullNumber(detailDigits) : tipValue;
+          html += `<td><button type="button" class="table-tip-trigger" data-tip-title="${escapeAttr(h)} 상세" data-tip-value="${escapeAttr(detailValue)}">${escapeHtml(displayValue)}</button></td>`;
+        } else if (tipValue) {
           html += `<td><button type="button" class="table-tip-trigger" data-tip-title="${escapeAttr(h)} 원본" data-tip-value="${escapeAttr(tipValue)}">${escapeHtml(value)}</button></td>`;
         } else {
           html += `<td>${escapeHtml(value)}</td>`;
