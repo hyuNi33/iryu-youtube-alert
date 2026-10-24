@@ -111,7 +111,7 @@
   const ARTIFACTS = getArtifacts();
 
   function formatNumber(value) {
-    return Number(value || 0).toLocaleString("ko-KR");
+    return BigInt(value || 0).toLocaleString("ko-KR");
   }
 
   // ==============================
@@ -166,10 +166,11 @@
   }
 
   window.calculateArtifacts = function () {
-    const totalStone = Number(document.getElementById("totalStone").value);
+    const totalStoneText = document.getElementById("totalStone").value.replace(/,/g, "").trim();
+    const totalStone = /^\d+$/.test(totalStoneText) ? BigInt(totalStoneText) : null;
     const selectedIds = Array.from(document.querySelectorAll("#artifactList input:checked")).map(el => el.value);
 
-    if (!Number.isFinite(totalStone) || totalStone < 0) {
+    if (totalStone === null) {
       alert("총 수호자의 돌을 올바르게 입력하세요.");
       return;
     }
@@ -247,9 +248,10 @@
   }
 
   window.recommendArtifacts = function () {
-    const remainStone = Number(document.getElementById("remainStone").value);
+    const remainStoneText = document.getElementById("remainStone").value.replace(/,/g, "").trim();
+    const remainStone = /^\d+$/.test(remainStoneText) ? BigInt(remainStoneText) : null;
 
-    if (!Number.isFinite(remainStone) || remainStone < 0) {
+    if (remainStone === null) {
       alert("잔여 수호자의 돌을 올바르게 입력하세요.");
       return;
     }

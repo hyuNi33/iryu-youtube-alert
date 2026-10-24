@@ -3,7 +3,7 @@
  * 범용 CSV 테이블 렌더러 (정렬, 검색 기능)
  */
 import { loadCSV } from "./csv-loader.js";
-import { integerDigits, fullNumber, compactNumber } from "./table-number.js";
+import { integerDigits, fullNumber, compactNumber, compareNumericValues } from "./table-number.js";
 
 /**
  * CSV 데이터를 테이블로 렌더링
@@ -143,16 +143,8 @@ export async function renderTable(csvPath, containerId, options = {}) {
       let va = a[sortCol] || "";
       let vb = b[sortCol] || "";
 
-      if (numberColumnSet.has(sortCol)) {
-        const da = integerDigits(va);
-        const db = integerDigits(vb);
-        if (da !== null && db !== null) {
-          const na = BigInt(da);
-          const nb = BigInt(db);
-          const comparison = na < nb ? -1 : na > nb ? 1 : 0;
-          return sortAsc ? comparison : -comparison;
-        }
-      }
+      const exactComparison = compareNumericValues(va, vb);
+      if (exactComparison !== null) return sortAsc ? exactComparison : -exactComparison;
 
       // 숫자 비교 시도
       const na = parseNumber(va);

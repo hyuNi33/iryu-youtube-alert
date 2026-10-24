@@ -75,7 +75,9 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+  import { integerDigits, compactNumber } from "../../js/table-number.js";
+
   const CSV_FILE = "../../datas/monster.csv";
 
   const tableHead = document.getElementById("tableHead");
@@ -151,68 +153,22 @@
     };
   }
 
-  const KOREAN_UNITS = [
-    { label: "무량대수", value: 1e68 },
-    { label: "불가사의", value: 1e64 },
-    { label: "나유타", value: 1e60 },
-    { label: "아승기", value: 1e56 },
-    { label: "항하사", value: 1e52 },
-    { label: "극", value: 1e48 },
-    { label: "재", value: 1e44 },
-    { label: "정", value: 1e40 },
-    { label: "간", value: 1e36 },
-    { label: "구", value: 1e32 },
-    { label: "양", value: 1e28 },
-    { label: "자", value: 1e24 },
-    { label: "해", value: 1e20 },
-    { label: "경", value: 1e16 },
-    { label: "조", value: 1e12 },
-    { label: "억", value: 1e8 },
-    { label: "만", value: 1e4 }
-  ];
-
   function parseUnitValue(value) {
     const text = compact(value).replace("RP", "").replaceAll(",", "");
+    if (!text) return 0n;
+    if (text.includes("초월")) return 1000000000000000000n + BigInt(text.replace(/[^0-9]/g, "") || "0");
+    const digits = integerDigits(text);
+    return digits === null ? 999999999999999999n : BigInt(digits);
+  }
 
-    if (!text) return 0;
-
-    if (text.includes("초월")) {
-      const level = Number(text.replace(/[^0-9]/g, ""));
-      return 1000000000000000000 + (Number.isFinite(level) ? level : 0);
-    }
-
-    let total = 0;
-    let matched = false;
-
-    for (const unit of KOREAN_UNITS) {
-      const match = text.match(new RegExp(`([0-9.]+)${unit.label}`));
-      if (match) {
-        total += Number(match[1]) * unit.value;
-        matched = true;
-      }
-    }
-
-    if (matched) return total;
-
-    const num = Number(text.replaceAll(",", ""));
-    return Number.isFinite(num) ? num : 999999999999999999;
+  function compareUnitValues(a, b) {
+    const left = parseUnitValue(a), right = parseUnitValue(b);
+    return left < right ? -1 : left > right ? 1 : 0;
   }
 
   function formatKoreanUnit(value) {
-    const num = Number(String(value).replaceAll(",", "").trim());
-    if (!Number.isFinite(num)) return normalize(value);
-
-    for (const unit of KOREAN_UNITS) {
-      if (num >= unit.value) {
-        const scaled = num / unit.value;
-        const formatted = Number.isInteger(scaled)
-          ? String(scaled)
-          : scaled.toFixed(1).replace(/\.0$/, "");
-        return `${formatted}${unit.label}`;
-      }
-    }
-
-    return num.toLocaleString("ko-KR");
+    const digits = integerDigits(value);
+    return digits === null ? normalize(value) : compactNumber(digits);
   }
 
   function getHeaderTitle(header) {
@@ -262,7 +218,7 @@
       .sort((a, b) => a.localeCompare(b, "ko"));
 
     const rps = [...new Set(rows.map(row => normalize(row[cols.rp])).filter(Boolean))]
-      .sort((a, b) => parseUnitValue(a) - parseUnitValue(b));
+      .sort((a, b) => compareUnitValues(a, b));
 
     mapTypes.forEach(type => {
       const option = document.createElement("option");
@@ -302,7 +258,7 @@
         const bValue = normalize(b[index]);
 
         if ([cols.level, cols.hp, cols.exp, cols.rp].includes(index)) {
-          return (parseUnitValue(aValue) - parseUnitValue(bValue)) * direction;
+          return compareUnitValues(aValue, bValue) * direction;
         }
 
         return aValue.localeCompare(bValue, "ko") * direction;

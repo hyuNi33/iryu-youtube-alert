@@ -4,6 +4,12 @@
  */
 import { loadCSV } from "../csv-loader.js";
 
+function parseStone(value) {
+  const text = String(value ?? "").replace(/,/g, "").trim();
+  if (!/^\d+$/.test(text)) throw new Error("수호자의 돌은 0 이상의 정수로 입력하세요.");
+  return BigInt(text);
+}
+
 let ARTIFACTS = {};
 let ARTIFACT_KEYS = [];
 let loaded = false;
@@ -35,10 +41,10 @@ export async function initArtifactData(basePath) {
     if (!art) continue;
 
     art.levels[Number(row.level)] = {
-      need: Number(row.need) || 0,
-      cumStone: Number(row.cumStone) || 0,
-      unlockGem: Number(row.unlockGem) || 0,
-      cumGem: Number(row.cumGem) || 0
+      need: parseStone(row.need || "0"),
+      cumStone: parseStone(row.cumStone || "0"),
+      unlockGem: parseStone(row.unlockGem || "0"),
+      cumGem: parseStone(row.cumGem || "0")
     };
   }
 
@@ -75,7 +81,7 @@ function getLevelData(artifact, level) {
 function getStoneCostBetween(artifact, fromLevel, toLevel) {
   const fromData = getLevelData(artifact, fromLevel);
   const toData = getLevelData(artifact, toLevel);
-  if (!fromData || !toData) return 0;
+  if (!fromData || !toData) return 0n;
   return toData.cumStone - fromData.cumStone;
 }
 
@@ -101,20 +107,20 @@ function getMaxCost(artifact) {
 }
 
 function equalDistributeWithCaps(totalStone, rows) {
-  for (const row of rows) row.allocated = 0;
+  for (const row of rows) row.allocated = 0n;
 
   let remain = totalStone;
   let active = rows.slice();
 
   while (active.length > 0 && remain > 0) {
-    const share = Math.floor(remain / active.length);
+    const share = remain / BigInt(active.length);
 
     if (share <= 0) {
       for (const row of active) {
         if (remain <= 0) break;
         if (row.allocated < row.cap) {
-          row.allocated += 1;
-          remain -= 1;
+          row.allocated += 1n;
+          remain -= 1n;
         }
       }
       break;
@@ -124,7 +130,7 @@ function equalDistributeWithCaps(totalStone, rows) {
     for (const row of active) {
       const room = row.cap - row.allocated;
       if (room <= 0) continue;
-      const give = Math.min(share, room);
+      const give = (share < room ? share : room);
       if (give > 0) {
         row.allocated += give;
         remain -= give;
@@ -141,7 +147,7 @@ function pullEvenlyFromDonors(donors, amount) {
   if (amount <= 0) return true;
   if (!donors || donors.length === 0) return false;
 
-  const totalAvailable = donors.reduce((sum, row) => sum + row.allocated, 0);
+  const totalAvailable = donors.reduce((sum, row) => sum + row.allocated, 0n);
   if (totalAvailable < amount) return false;
 
   let need = amount;
@@ -150,22 +156,22 @@ function pullEvenlyFromDonors(donors, amount) {
     const active = donors.filter(row => row.allocated > 0);
     if (active.length === 0) return false;
 
-    const share = Math.floor(need / active.length);
+    const share = need / BigInt(active.length);
 
     if (share <= 0) {
       for (const row of active) {
         if (need <= 0) break;
         if (row.allocated > 0) {
-          row.allocated -= 1;
-          need -= 1;
+          row.allocated -= 1n;
+          need -= 1n;
         }
       }
       continue;
     }
 
-    let removedThisRound = 0;
+    let removedThisRound = 0n;
     for (const row of active) {
-      const take = Math.min(share, row.allocated);
+      const take = (share < row.allocated ? share : row.allocated);
       if (take > 0) {
         row.allocated -= take;
         need -= take;
@@ -177,9 +183,9 @@ function pullEvenlyFromDonors(donors, amount) {
       for (const row of active) {
         if (need <= 0) break;
         if (row.allocated > 0) {
-          row.allocated -= 1;
-          need -= 1;
-          removedThisRound += 1;
+          row.allocated -= 1n;
+          need -= 1n;
+          removedThisRound += 1n;
         }
       }
       if (removedThisRound <= 0) return false;
@@ -202,7 +208,7 @@ export function getArtifactMaxLevel(id) {
  */
 export function recommendArtifactUpgrades(remainingStone, currentLevels) {
   const levels = { ...currentLevels };
-  let stone = remainingStone;
+  let stone = parseStone(remainingStone);
   const steps = [];
 
   while (stone > 0) {
@@ -222,7 +228,7 @@ export function recommendArtifactUpgrades(remainingStone, currentLevels) {
     }
 
     if (candidates.length === 0) break;
-    candidates.sort((a, b) => a.cost - b.cost || a.id.localeCompare(b.id));
+    candidates.sort((a, b) => (a.cost < b.cost ? -1 : a.cost > b.cost ? 1 : a.id.localeCompare(b.id)));
 
     const best = candidates[0];
     if (best.cost > stone) break;
@@ -242,6 +248,7 @@ export function recommendArtifactUpgrades(remainingStone, currentLevels) {
 }
 
 export function distributeArtifactStones(totalStone, artifactIds) {
+  totalStone = parseStone(totalStone);
   if (!Array.isArray(artifactIds) || artifactIds.length === 0) {
     throw new Error("선택된 유물이 없습니다.");
   }
@@ -256,7 +263,7 @@ export function distributeArtifactStones(totalStone, artifactIds) {
       name: artifact.name,
       artifact,
       cap: getMaxCost(artifact),
-      allocated: 0, used: 0, level: 0, remain: 0, isMax: false
+      allocated: 0n, used: 0n, level: 0, remain: 0n, isMax: false
     };
   });
 
@@ -269,7 +276,7 @@ export function distributeArtifactStones(totalStone, artifactIds) {
     row.isMax = row.allocated >= row.cap;
   }
 
-  const usedStone = rows.reduce((sum, row) => sum + row.used, 0);
+  const usedStone = rows.reduce((sum, row) => sum + row.used, 0n);
 
   return {
     totalStone,

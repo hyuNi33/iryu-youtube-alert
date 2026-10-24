@@ -316,7 +316,8 @@ export function calculateCycleLevel(expPerMinute, hourglassLv, sweepExp, sweepCo
   }
 
   const { numerator, denominator, multiplier } = getHourglassMultiplierParts(hourglassLv);
-  const totalHuntingExp = expPerMinuteBigInt * BigInt(totalHours) * 60n;
+  const totalMilliseconds = BigInt(Math.round(totalHours * 3600000));
+  const totalHuntingExp = expPerMinuteBigInt * totalMilliseconds / MINUTE_MS;
   const sweepSets = Math.max(1, Math.floor(totalHours / 24));
   const totalSweepExp = sweepExpBigInt * BigInt(sweepCount) * BigInt(sweepSets);
   const grandTotalExp = totalHuntingExp + totalSweepExp;

@@ -804,7 +804,9 @@ function calculate() {
     return;
   }
 
-  const average = Number(calculated.gained) / elapsedMinutes;
+  // Round the rate only after exact integer division by the elapsed milliseconds.
+  const elapsedMs = BigInt(Math.max(1, Math.round(elapsedMinutes * 60000)));
+  const average = (calculated.gained * 60000n + elapsedMs / 2n) / elapsedMs;
   startRatioEl.textContent = formatBigInt(startExp.value);
   endRatioEl.textContent = formatBigInt(endExp.value);
   gainedEl.textContent = formatBigInt(calculated.gained);

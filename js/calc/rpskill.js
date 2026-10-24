@@ -50,22 +50,23 @@ function findLevelColumn(rows) {
 }
 
 function getCumulativeValue(tableKey, level) {
-  if (!level || level <= 0) return 0;
+  if (!level || level <= 0) return 0n;
 
   const rows = skillTables[tableKey];
-  if (!rows) return 0;
+  if (!rows) return 0n;
 
   const cumCol = findCumulativeColumn(rows);
   const lvCol = findLevelColumn(rows);
-  if (!cumCol || !lvCol) return 0;
+  if (!cumCol || !lvCol) return 0n;
 
   const row = rows.find(r => {
     const rowLevel = Number(String(r[lvCol]).replace(/,/g, ""));
     return rowLevel === Number(level);
   });
-  if (!row) return 0;
+  if (!row) return 0n;
 
-  return Number(String(row[cumCol]).replace(/,/g, "")) || 0;
+  const value = String(row[cumCol] ?? "").replace(/,/g, "").trim();
+  return /^\d+$/.test(value) ? BigInt(value) : 0n;
 }
 
 export function calcSkillCurrentRP(tableKey, currentLv, maxLv) {
@@ -77,10 +78,10 @@ export function calcSkillRP(tableKey, currentLv, targetLv, maxLv) {
   const current = Math.min(Math.max(Number(currentLv) || 0, 0), maxLv);
   const target = Math.min(Math.max(Number(targetLv) || 0, 0), maxLv);
 
-  if (target <= current) return 0;
+  if (target <= current) return 0n;
 
   const currentTotal = getCumulativeValue(tableKey, current);
   const targetTotal = getCumulativeValue(tableKey, target);
 
-  return Math.max(0, targetTotal - currentTotal);
+  return targetTotal > currentTotal ? targetTotal - currentTotal : 0n;
 }

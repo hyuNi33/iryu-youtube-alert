@@ -4,6 +4,7 @@
  * 디렉토리 내 meta.csv에서 항목 목록을 읽고, 드롭다운으로 선택하면 해당 CSV를 로딩/표시
  */
 import { loadCSV } from "./csv-loader.js";
+import { integerDigits, compactNumber } from "./table-number.js";
 
 function escapeHtml(str) {
   return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -14,30 +15,8 @@ function escapeAttr(str) {
 }
 
 function formatCompactNumber(value) {
-  const cleaned = String(value || "").replace(/,/g, "").trim();
-  if (!/^\d+$/.test(cleaned)) return value || "";
-
-  let text = BigInt(cleaned).toString();
-  if (text === "0") return "0";
-
-  const units = ["", "만", "억", "조", "경", "해", "자", "양", "구", "간", "정", "재", "극", "항하사", "아승기", "나유타", "불가사의", "무량대수"];
-  const groups = [];
-
-  while (text.length > 0) {
-    groups.unshift(text.slice(-4));
-    text = text.slice(0, -4);
-  }
-
-  const parts = [];
-  groups.forEach((group, index) => {
-    const groupValue = Number(group);
-    if (!groupValue) return;
-    const unit = units[groups.length - 1 - index] || "";
-    parts.push(`${groupValue}${unit}`);
-  });
-
-  if (parts.length <= 2) return parts.join(" ");
-  return parts.slice(0, 2).join(" ");
+  const digits = integerDigits(value);
+  return digits === null ? String(value ?? "") : compactNumber(digits);
 }
 
 function showTableTip(anchor, title, value) {

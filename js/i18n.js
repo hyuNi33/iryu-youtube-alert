@@ -3,6 +3,10 @@
   'use strict';
   const dictionaries = {
   "zh-TW": {
+    "승천의 공명": "飛昇共鳴",
+    "승천의공명": "飛昇共鳴",
+    "슈퍼 라이카": "超級萊伊卡",
+    "별빛 일일 획득 상한": "星光每日獲取上限",
     "구슬 획득량 계산기": "寶珠獲取量計算機",
     "풍요의 축복과 2배 획득 확률을 반영한 구슬의 기대 획득량을 계산합니다.": "計算包含豐饒祝福與雙倍獲取機率的寶珠預期獲取量。",
     "기본 드랍 개수": "基礎掉落數量",
@@ -2015,6 +2019,10 @@
     "양쪽": "兩側"
   },
   "en": {
+    "승천의 공명": "Ascension Resonance",
+    "승천의공명": "Ascension Resonance",
+    "슈퍼 라이카": "Super Lyka",
+    "별빛 일일 획득 상한": "Daily Starlight Acquisition Cap",
     "구슬 획득량 계산기": "Orb Drop Calculator",
     "풍요의 축복과 2배 획득 확률을 반영한 구슬의 기대 획득량을 계산합니다.": "Calculate expected orb drops with Blessing of Abundance and double-drop bonuses.",
     "기본 드랍 개수": "Base Drop Amount",
@@ -4487,19 +4495,45 @@
   const attributes = ['placeholder', 'title', 'aria-label', 'alt'];
   let observer;
 
-  // 한국어 숫자 단위는 표시 문자열에서만 영어식 숫자로 변환한다.
+  // Only display text is localized; stored values and full-number details stay exact.
+  // English suffixes use groups of 1,000, with at most three decimal places.
+  function compactEnglishInteger(total) {
+    const suffixes = ["", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "Ud", "Dd", "Td", "Qad", "Qid", "Sxd", "Spd", "Ocd", "Nod", "Vg"];
+    if (total < 1000n) return total.toString();
+    let index = Math.floor((total.toString().length - 1) / 3);
+    if (index >= suffixes.length) {
+      const exponent = total.toString().length - 1;
+      const scale = 10n ** BigInt(exponent);
+      const rounded = (total * 1000n + scale / 2n) / scale;
+      if (rounded >= 10000n) return '1e+' + (exponent + 1);
+      const fraction = (rounded % 1000n).toString().padStart(3, '0').replace(/0+$/, '');
+      return (rounded / 1000n).toString() + (fraction ? '.' + fraction : '') + 'e+' + exponent;
+    }
+    let scale = 1000n ** BigInt(index);
+    let rounded = (total * 1000n + scale / 2n) / scale;
+    if (rounded >= 1000000n) {
+      index += 1;
+      scale *= 1000n;
+      rounded = (total * 1000n + scale / 2n) / scale;
+    }
+    const fraction = (rounded % 1000n).toString().padStart(3, '0').replace(/0+$/, '');
+    return (rounded / 1000n).toString() + (fraction ? '.' + fraction : '') + (suffixes[index] || 'e+' + index * 3);
+  }
+
   function englishNumbers(value) {
-    const powers = { 만:4, 억:8, 조:12, 경:16, 해:20, 자:24, 양:28, 구:32, 간:36, 정:40, 재:44, 극:48 };
-    return value.replace(/(?:\d[\d,.]*\s*[만억조경해자양구간정재극]\s*)+(?:\d[\d,.]*)?/g, group => {
+    const powers = { 만:4, 억:8, 조:12, 경:16, 해:20, 자:24, 양:28, 구:32, 간:36, 정:40, 재:44, 극:48, 항하사:52, 아승기:56, 나유타:60, 불가사의:64, 무량대수:68 };
+    const unitPattern = Object.keys(powers).sort((a, b) => b.length - a.length).join('|');
+    const groups = new RegExp('(?:\\d[\\d,.]*\\s*(?:' + unitPattern + ')\\s*)+(?:\\d[\\d,.]*)?', 'g');
+    const pieces = new RegExp('(\\d[\\d,.]*)\\s*(' + unitPattern + ')?', 'g');
+    return value.replace(groups, group => {
       let total = 0n;
-      const pieces = group.matchAll(/(\d[\d,.]*)\s*([만억조경해자양구간정재극])?/g);
-      for (const [,number,unit] of pieces) {
-        const [whole, fraction=''] = number.replace(/,/g,'').split('.');
+      for (const [, number, unit] of group.matchAll(pieces)) {
+        const [whole, fraction = ''] = number.replace(/,/g, '').split('.');
         const power = (powers[unit] || 0) - fraction.length;
         if (power < 0) return group;
-        total += BigInt(whole+fraction) * 10n ** BigInt(power);
+        total += BigInt(whole + fraction) * 10n ** BigInt(power);
       }
-      return total.toLocaleString('en-US') + (group.endsWith(' ') ? ' ' : '');
+      return compactEnglishInteger(total) + (/\s$/.test(group) ? ' ' : '');
     });
   }
 
@@ -4513,8 +4547,8 @@
     const phrasePattern = patterns[language];
     if (language === 'en') {
       if (value.trim() === '시간') return value.replace('시간', 'Hours');
-      const phrases = value.replace(phrasePattern, match => ' '+dictionary[match]+' ');
-      const result = englishNumbers(phrases)
+      const phrases = englishNumbers(value).replace(phrasePattern, match => ' '+dictionary[match]+' ');
+      const result = phrases
         .replace(/([0-9,.\s])([개회장분초일층배])/g,
           (_, number, unit) => number + ' ' + (dictionary[unit] || unit))
         .replace(/[가-힣]+/g, word => Object.prototype.hasOwnProperty.call(dictionary, word) ? ' '+dictionary[word]+' ' : word);

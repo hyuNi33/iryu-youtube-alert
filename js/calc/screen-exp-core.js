@@ -1,4 +1,7 @@
 export function formatNumber(value) {
+  if (typeof value === "bigint") return value.toLocaleString("ko-KR");
+  const text = String(value ?? "").replace(/,/g, "").trim();
+  if (/^\d+$/.test(text)) return BigInt(text).toLocaleString("ko-KR");
   return Math.round(Number(value) || 0).toLocaleString("ko-KR");
 }
 

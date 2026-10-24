@@ -41,3 +41,27 @@ export function compactNumber(digits) {
   }
   return groups.slice(0, 2).join(" ") || "0";
 }
+
+// Compare signed decimals and scientific notation using integer coefficients.
+// Returning a Number here is intentional: Array.sort requires -1, 0 or 1.
+export function compareNumericValues(left, right) {
+  function ratio(value) {
+    const text = String(value ?? "").replace(/,/g, "").trim();
+    const match = text.match(/^([+-]?)(\d+)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/);
+    if (!match) {
+      const digits = integerDigits(text);
+      return digits === null ? null : { n: BigInt(digits), d: 1n };
+    }
+    const exponent = Number(match[4] || 0);
+    if (Math.abs(exponent) > 1000) return null;
+    const fraction = match[3] || "";
+    const coefficient = BigInt(match[2] + fraction) * (match[1] === "-" ? -1n : 1n);
+    const scale = fraction.length - exponent;
+    return scale >= 0 ? { n: coefficient, d: 10n ** BigInt(scale) }
+      : { n: coefficient * 10n ** BigInt(-scale), d: 1n };
+  }
+  const a = ratio(left), b = ratio(right);
+  if (!a || !b) return null;
+  const x = a.n * b.d, y = b.n * a.d;
+  return x < y ? -1 : x > y ? 1 : 0;
+}

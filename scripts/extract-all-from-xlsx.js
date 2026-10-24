@@ -5,7 +5,7 @@
 const XLSX = require("xlsx");
 const fs = require("fs");
 const path = require("path");
-const { writeCsvFile } = require("./csv-utils");
+const { writeCsvFile, integerText } = require("./csv-utils");
 
 const ROOT = path.join(__dirname, "..");
 const DATAS = path.join(ROOT, "datas");
@@ -295,8 +295,8 @@ if (expSheet) {
   for (let r = 1; r < expData.length; r++) {
     const row = expData[r];
     const lv = Number(row[0]);
-    const exp = Number(String(row[1] ?? "").replace(/,/g, "").trim());
-    if (Number.isFinite(lv) && lv >= 1 && Number.isFinite(exp) && exp > 0) {
+    const exp = integerText(row[1]);
+    if (Number.isFinite(lv) && lv >= 1 && exp !== null && BigInt(exp) > 0n) {
       expRows.push([lv, exp]);
     }
   }
