@@ -29,7 +29,7 @@
   document.querySelectorAll('.rp [aria-label],.rp [title]').forEach(el=>{
    for(const key of ['aria-label','title']){const value=el.getAttribute(key);if(value===null)continue;let map=attributeRecords.get(el);if(!map){map={};attributeRecords.set(el,map);}const old=map[key],source=old&&value===old.last?old.source:value,next=t(source);map[key]={source,last:next};if(value!==next)el.setAttribute(key,next);}
   });
-  document.title=t('승천3 이후 RP 투자 계산기')+' · Iryu World';
+  document.title=t('승천2 이후 RP 투자 계산기')+' · Iryu World';
  }
  function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch{$('status').textContent=t('이 브라우저에서는 완료 상태를 저장할 수 없습니다.');}}
  function errorText(error){const messages={'invalid-rp':'금액은 0 이상의 숫자로 입력하세요. 쉼표 또는 소수점은 선택한 단위에 맞게 사용할 수 있습니다.','invalid-unit':'금액은 0 이상의 숫자로 입력하세요. 쉼표 또는 소수점은 선택한 단위에 맞게 사용할 수 있습니다.',precision:'RP 단위는 정수만, 경은 소수 16자리까지, 해는 소수 20자리까지 입력할 수 있습니다.','too-large':'금액이 너무 큽니다. RP 기준 60자리 이하로 입력하세요.','invalid-period':'1~3,650일을 입력하세요.','invalid-date':'유효한 날짜를 입력하세요.','future-date':'승천일은 오늘보다 미래일 수 없습니다.'};return t(messages[error.message]||'유효한 날짜를 입력하세요.');}
