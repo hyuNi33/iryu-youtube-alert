@@ -56,12 +56,14 @@ const KEY='iryu-rp-plan-v1';
 let state={day:1,start:'',done:{},changed:true};
 try{const saved=JSON.parse(localStorage.getItem(KEY));if(saved&&typeof saved==='object'){state.day=Number.isInteger(saved.day)?Math.max(1,Math.min(30,saved.day)):1;state.start=typeof saved.start==='string'?saved.start:'';state.done=saved.done&&typeof saved.done==='object'?saved.done:{};state.changed=saved.changed!==false;}}catch{}
 const $=id=>document.getElementById(id);
+const rpTranslate=value=>window.iryuI18n?window.iryuI18n.translate(value):value;
+const rpLocale=()=>window.iryuI18n?window.iryuI18n.getLanguage():'ko';
 const cost=(s,l)=>s.cost*(1.2**(l-s.start)-1)/.2;
 const spent=d=>SKILLS.reduce((a,s)=>a+cost(s,s.days[d]),0);
 const fmt=v=>{const n=Math.round(v);return n>=10000?Math.floor(n/10000).toLocaleString('ko-KR')+'해 '+(n%10000).toLocaleString('ko-KR')+'경':n.toLocaleString('ko-KR')+'경';};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch{$('status').textContent='이 브라우저에서는 완료 상태를 저장할 수 없습니다.';}}
 function changes(day){return SKILLS.map((s,i)=>({s,i,level:s.days[day],previous:s.days[day-1]})).filter(x=>x.level>x.previous);}
-function dateFor(day){if(!/^\d{4}-\d{2}-\d{2}$/.test(state.start))return '';const d=new Date(state.start+'T00:00:00');if(Number.isNaN(+d))return '';d.setDate(d.getDate()+day-1);return d.toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'});}
+function dateFor(day){if(!/^\d{4}-\d{2}-\d{2}$/.test(state.start))return '';const d=new Date(state.start+'T00:00:00');if(Number.isNaN(+d))return '';d.setDate(d.getDate()+day-1);return d.toLocaleDateString(rpLocale(),{month:'long',day:'numeric',weekday:'short'});}
 function doneKey(day,i){return day+':'+i;}
 function render(){
  const d=state.day,changed=changes(d),complete=changed.filter(x=>state.done[doneKey(d,x.i)]).length;
@@ -85,10 +87,11 @@ $('start-date').onchange=e=>{state.start=e.target.value;save();render();};
 $('go-today').onclick=()=>{if(!state.start){$('status').textContent='먼저 1일차 시작 날짜를 선택하세요.';return;}const start=new Date(state.start+'T00:00:00'),now=new Date();const delta=Math.floor((Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())-Date.UTC(start.getFullYear(),start.getMonth(),start.getDate()))/86400000)+1;state.day=Math.max(1,Math.min(30,delta));save();render();};
 $('cards').addEventListener('change',e=>{if(e.target.matches('[data-skill]')){state.done[doneKey(state.day,e.target.dataset.skill)]=e.target.checked;save();render();}});
 $('check-all').onclick=()=>{const c=changes(state.day),all=c.every(x=>state.done[doneKey(state.day,x.i)]);c.forEach(x=>state.done[doneKey(state.day,x.i)]=!all);save();render();};
-$('copy').onclick=async()=>{const c=changes(state.day),text='['+state.day+'일차 RP 강화 목표]'+(dateFor(state.day)?' '+dateFor(state.day):'')+'\n'+(c.length?c.map(x=>x.s.name+': '+x.previous+' → '+x.level+'레벨').join('\n'):'강화 없이 RP 모으기 · 기존 레벨 유지')+'\n※ 숫자는 달성 목표 레벨 / 공명 30 유지';try{await navigator.clipboard.writeText(text);$('status').textContent='복사했어요. 디스코드에 붙여넣으세요.';}catch{const area=document.createElement('textarea');area.value=text;area.setAttribute('aria-label','복사할 강화 목표');area.style.width='100%';area.style.minHeight='220px';$('status').replaceChildren(area);area.focus();area.select();}};
+$('copy').onclick=async()=>{const c=changes(state.day),text=rpTranslate('['+state.day+'일차 RP 강화 목표]')+(dateFor(state.day)?' '+dateFor(state.day):'')+'\n'+(c.length?c.map(x=>x.s.name+': '+x.previous+' → '+x.level+'레벨').join('\n'):'강화 없이 RP 모으기 · 기존 레벨 유지')+'\n※ 숫자는 달성 목표 레벨 / 공명 30 유지';const localized=text.split('\n').map(rpTranslate).join('\n');try{await navigator.clipboard.writeText(localized);$('status').textContent='복사했어요. 디스코드에 붙여넣으세요.';}catch{const area=document.createElement('textarea');area.value=localized;area.setAttribute('aria-label',rpTranslate('복사할 강화 목표'));area.style.width='100%';area.style.minHeight='220px';$('status').replaceChildren(area);area.focus();area.select();}};
 $('table-toggle').onclick=()=>{const open=$('table-wrap').hidden;$('table-wrap').hidden=!open;$('table-toggle').textContent=open?'전체 표 접기':'전체 표 펼치기';$('table-toggle').setAttribute('aria-expanded',String(open));$('table-scroll-controls').hidden=!open;};
 $('table-left').onclick=()=>{$('table-wrap').scrollBy({left:-Math.max(256,$('table-wrap').clientWidth*.65),behavior:'smooth'});};
 $('table-right').onclick=()=>{$('table-wrap').scrollBy({left:Math.max(256,$('table-wrap').clientWidth*.65),behavior:'smooth'});};
 $('overview').insertAdjacentHTML('beforeend','<thead><tr><th scope="col">스킬</th><th scope="col">시작</th>'+Array.from({length:30},(_,i)=>'<th scope="col">'+(i+1)+'일</th>').join('')+'</tr></thead><tbody>'+SKILLS.map(s=>'<tr><th scope="row">'+s.name+'</th><td>'+s.start+'</td>'+s.days.slice(1).map((l,i)=>'<td class="'+(l>s.days[i]?'changed':'')+'">'+l+'</td>').join('')+'</tr>').join('')+'</tbody>');
+document.addEventListener('iryu:languagechange',()=>{render();});
 render();
 </script></body></html>
