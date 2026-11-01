@@ -31,25 +31,43 @@
   return {days,ordinal:days+1};
  }
  function addDate(value,days){return new Date((dateNumber(value)+days)*86400000).toISOString().slice(0,10);}
- function buildPlan({initial,daily,period}){
+ function normalizeIncomeChanges(changes){
+  if(!Array.isArray(changes)||changes.length>100)throw Error('invalid-income-history');
+  const sorted=changes.map(c=>{if(!Number.isInteger(c.day)||typeof c.daily!=='bigint'||c.daily<0n)throw Error('invalid-income-history');return {day:c.day,daily:c.daily};}).sort((a,b)=>a.day-b.day);
+  for(let i=1;i<sorted.length;i++)if(sorted[i].day===sorted[i-1].day)throw Error('duplicate-income-date');
+  return sorted;
+ }
+ function incomeBetween(daily,changes,from,to){
+  const sorted=normalizeIncomeChanges(changes);let rate=daily,cursor=from,total=0n;
+  for(const change of sorted){if(change.day<=from){rate=change.daily;continue;}if(change.day>=to)break;total+=rate*BigInt(change.day-cursor);cursor=change.day;rate=change.daily;}
+  return total+rate*BigInt(Math.max(0,to-cursor));
+ }
+ function buildPlan({initial,daily,period,incomeChanges=[],completed=[]}){
   if(typeof initial!=='bigint'||typeof daily!=='bigint'||initial<0n||daily<0n)throw Error('invalid-rp');
   if(!Number.isInteger(period)||period<1||period>3650)throw Error('invalid-period');
-  if((initial+daily*BigInt(period)).toString().length>64)throw Error('too-large');
+  const history=normalizeIncomeChanges(incomeChanges),budgets=[initial],dailyIncome=[0n];let rate=daily,changeIndex=0;
+  for(let d=1;d<=period;d++){while(changeIndex<history.length&&history[changeIndex].day<=d)rate=history[changeIndex++].daily;dailyIncome.push(rate);budgets.push(budgets[d-1]+(d===1?0n:rate));}
+  if(budgets[period].toString().length>64)throw Error('too-large');
+  if(!Array.isArray(completed))throw Error('invalid-completed');
+  const locks=Array.from({length:period+1},()=>[]);
+  for(const item of completed){const s=SKILLS[item.skill];if(!s||!Number.isInteger(item.day)||item.day<1||!Number.isInteger(item.level)||item.level<s.start||(item.level-s.start)%s.step!==0)throw Error('invalid-completed');if(item.day<=period)locks[item.day].push(item);}
   const series=SKILLS.map(s=>{const sums=[0n];let a=s.base,b=1n;return {s,sums,extend(){sums.push(sums.at(-1)+round(a,b));a*=6n;b*=5n;}};});
   const weights=series.map(q=>{while(q.sums.length<=q.s.reference-q.s.start)q.extend();return q.sums[q.s.reference-q.s.start];});
-  const denominator=weights.reduce((a,b)=>a+b,0n);
-  const levels=SKILLS.map(s=>[s.start]),totals=[0n],balances=[initial];
-  const counts=SKILLS.map(()=>0);
+  const denominator=weights.reduce((a,b)=>a+b,0n),levels=SKILLS.map(s=>[s.start]),totals=[0n],balances=[initial],counts=SKILLS.map(()=>0);
   for(let day=1;day<=period;day++){
-   const budget=initial+daily*BigInt(day);let total=0n;
+   const budget=budgets[day];
+   for(const item of locks[day])counts[item.skill]=Math.max(counts[item.skill],item.level-SKILLS[item.skill].start);
+   let total=0n;
+   for(let i=0;i<SKILLS.length;i++){const q=series[i];while(q.sums.length<=counts[i])q.extend();total+=q.sums[counts[i]];}
+   if(total>budget)throw Error('completed-over-budget');
    for(let i=0;i<SKILLS.length;i++){
     const q=series[i],quota=budget*weights[i]/denominator;
-    while(true){const next=counts[i]+q.s.step;while(q.sums.length<=next)q.extend();if(q.sums[next]>quota)break;counts[i]=next;}
-    levels[i].push(q.s.start+counts[i]);total+=q.sums[counts[i]];
+    while(true){const next=counts[i]+q.s.step;while(q.sums.length<=next)q.extend();const extra=q.sums[next]-q.sums[counts[i]];if(q.sums[next]>quota||total+extra>budget)break;counts[i]=next;total+=extra;}
+    levels[i].push(q.s.start+counts[i]);
    }
    totals.push(total);balances.push(budget-total);
   }
-  return {period,initial,daily,levels,totals,balances,weights,denominator,totalBudget:initial+daily*BigInt(period)};
+  return {period,initial,daily,levels,totals,balances,weights,denominator,budgets,dailyIncome,incomeChanges:history,totalBudget:budgets[period]};
  }
- return {SKILLS,parseRP,dateNumber,koreaToday,timeZoneFor,todayInZone,elapsed,addDate,buildPlan};
+ return {SKILLS,parseRP,dateNumber,koreaToday,timeZoneFor,todayInZone,elapsed,addDate,normalizeIncomeChanges,incomeBetween,buildPlan};
 });
