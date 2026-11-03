@@ -8,6 +8,33 @@
   <link rel="stylesheet" href="../../css/style.css">
   <script src="../../js/common.js"></script>
   <link rel="icon" href="../../assets/mainImg.png">
+  <style>
+    /* 요약 카드 4개: 넓은 화면 2열, 모바일 1열 */
+    #result .hanpo-summary-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #result .hanpo-summary-card {
+      min-width: 0;
+    }
+
+    #result .hanpo-summary-card .mini-title {
+      line-height: 1.5;
+      word-break: keep-all;
+    }
+
+    #result .hanpo-summary-value .rp-machine-tip {
+      max-width: 100%;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 640px) {
+      #result .hanpo-summary-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+  </style>
 </head>
 <body>
 <div class="wrapper">
@@ -231,6 +258,8 @@
     };
 
     const r = calculateHanpo(params);
+    // BigInt 정밀도를 유지해 표시값과 상세 툴팁 모두 정확히 3배로 계산한다.
+    const currentHanpoTriple = r.currentHanpoWithMult * 3n;
 
     resultEl.innerHTML = `
       <div class="quick-info-grid hanpo-summary-grid">
@@ -245,6 +274,10 @@
         <div class="mini-box hanpo-summary-card">
           <div class="mini-title">현재 레벨(${r.currentLevel}) 환포</div>
           <div class="mini-value hanpo-summary-value highlight">${hanpoTip(r.currentHanpoWithMult, "현재 레벨 환포 상세")}</div>
+        </div>
+        <div class="mini-box hanpo-summary-card">
+          <div class="mini-title">현재 레벨(${r.currentLevel}) 환포 3배</div>
+          <div class="mini-value hanpo-summary-value highlight">${hanpoTip(currentHanpoTriple, "현재 레벨 환포 상세 3배")}</div>
         </div>
       </div>
 

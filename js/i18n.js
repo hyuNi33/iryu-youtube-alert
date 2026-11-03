@@ -4554,6 +4554,9 @@
   // RP_CALCULATOR_MENU_LABEL
   dictionaries.en["승천2 이후 RP 투자 계산기"] = "RP Upgrade Calculator After Ascension 2";
   dictionaries["zh-TW"]["승천2 이후 RP 투자 계산기"] = "飛昇 2 後 RP 投資計算機";
+  // 환포 계산기의 현재 레벨 3배 요약 카드 및 상세 툴팁
+  const hanpoTripleTranslations = {"en":{"현재 레벨 환포 상세 3배":"Current-Level Rebirth Points Details ×3","현재 레벨 환포 상세":"Current-Level Rebirth Points Details","환포 3배":"Rebirth Points ×3"},"zh-TW":{"현재 레벨 환포 상세 3배":"目前等級轉生點數詳情（3 倍）","현재 레벨 환포 상세":"目前等級轉生點數詳情","환포 3배":"轉生點數（3 倍）"}};
+  for (const code of ["en", "zh-TW"]) Object.assign(dictionaries[code], hanpoTripleTranslations[code]);
   const patterns = {};
   const escape = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   for (const [code, dictionary] of Object.entries(dictionaries)) {
@@ -4612,6 +4615,14 @@
   function translate(value) {
     if (language === 'ko' || !/[가-힣]/.test(value)) return value;
     const dictionary = dictionaries[language];
+    const currentHanpoTitle = value.trim().match(/^현재 레벨\((\d+)\) 환포( 3배)?$/);
+    if (currentHanpoTitle) {
+      const level = currentHanpoTitle[1], triple = !!currentHanpoTitle[2];
+      const translated = language === 'en'
+        ? 'Rebirth Points at Level ' + level + (triple ? ' ×3' : '')
+        : '目前等級（' + level + '）轉生點數' + (triple ? '（3 倍）' : '');
+      return value.match(/^\s*/)[0] + translated + value.match(/\s*$/)[0];
+    }
     const exactKey = value.trim();
     if (Object.prototype.hasOwnProperty.call(dictionary, exactKey)) {
       return value.match(/^\s*/)[0] + dictionary[exactKey] + value.match(/\s*$/)[0];
