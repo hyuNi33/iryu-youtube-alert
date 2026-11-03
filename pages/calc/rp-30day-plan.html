@@ -1031,7 +1031,8 @@
                     목표 계산하기
                   </button>
                 </div>
-                <p id="calc-error" class="error" role="alert">
+                <p id="draft-note" class="muted" role="status" aria-live="polite"></p>
+                    <p id="calc-error" class="error" role="alert">
                 </p>
               </form>
             </section>
@@ -1251,7 +1252,7 @@
               </div>
             </details>
             <p class="footer-note">
-              설정과 완료 체크는 이 브라우저에 저장됩니다.
+              입력값과 획득량 변경 이력은 자동 저장되며, 다른 페이지를 다녀와도 이 브라우저에서 복원됩니다.
             </p>
           </div>
         </main>
@@ -1263,11 +1264,11 @@
     </script>
 
     <!-- 외부 스크립트 2: 한국어 / 영어 / 대만 번체 번역 -->
-    <script src="./rp-planner-locales.js?v=20261102-gains">
+    <script src="./rp-planner-locales.js?v=20261103-autosave">
     </script>
 
     <!-- 외부 스크립트 3: 입력, 날짜, 완료 체크 등 화면 동작 -->
-    <script src="./rp-planner-ui.js?v=20261102-gains">
+    <script src="./rp-planner-ui.js?v=20261103-autosave">
     </script>
   </body>
 </html>

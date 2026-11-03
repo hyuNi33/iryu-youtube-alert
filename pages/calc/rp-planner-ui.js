@@ -4,7 +4,10 @@
  const defaults={daily:'2,364,606,387,153,462,989,610',dailyUnit:'RP',initial:'1,686,164,325,465,481,286,674',initialUnit:'RP',period:30,incomeChanges:[],start:E.todayInZone(E.timeZoneFor(window.iryuI18n?.getLanguage()||localStorageLanguage())),asc:''};
  let state={config:{...defaults},day:1,changed:true,done:{}};
  try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==='object'){state.config={...defaults,...s.config};state.day=Number.isInteger(s.day)?s.day:1;state.changed=s.changed!==false;state.done=s.done&&typeof s.done==='object'?s.done:{};}}catch{}
- let incomeDraft=Array.isArray(state.config.incomeChanges)?state.config.incomeChanges.map(x=>({...x})):[];
+ const DRAFT_KEY='iryu_rp_calculator_draft_v1';
+ let formDraft=null,draftStorageError=false;
+ try{const saved=JSON.parse(localStorage.getItem(DRAFT_KEY));if(saved&&typeof saved==='object'&&!Array.isArray(saved)){formDraft={};for(const field of ['daily','dailyUnit','initial','initialUnit','period','start','asc'])if(typeof saved[field]==='string')formDraft[field]=saved[field];if(Array.isArray(saved.incomeChanges))formDraft.incomeChanges=saved.incomeChanges.slice(0,100).map(x=>({date:typeof x?.date==='string'?x.date:'',amount:typeof x?.amount==='string'?x.amount:'',unit:['RP','경','해'].includes(x?.unit)?x.unit:'RP'}));}}catch{}
+ let incomeDraft=Array.isArray(formDraft?.incomeChanges)?formDraft.incomeChanges.map(x=>({...x})):Array.isArray(state.config.incomeChanges)?state.config.incomeChanges.map(x=>({...x})):[];
  let selectedLanguage=null,noticeKey='',calculationError=null;
  const locale=()=>selectedLanguage||window.iryuI18n?.getLanguage()||localStorageLanguage();
  const timeZone=()=>E.timeZoneFor(locale());
@@ -38,13 +41,17 @@
   const config={daily:$('daily-input').value.trim(),dailyUnit:$('daily-unit').value,initial:$('initial-input').value.trim(),initialUnit:$('initial-unit').value,period:Number($('period-input').value),start:$('start-date').value,asc:$('asc-date').value,incomeChanges:incomeDraft.map(x=>({...x}))};
   E.dateNumber(config.start);return config;
  }
+ function captureDraft(){return {daily:$('daily-input').value,dailyUnit:$('daily-unit').value,initial:$('initial-input').value,initialUnit:$('initial-unit').value,period:$('period-input').value,start:$('start-date').value,asc:$('asc-date').value,incomeChanges:incomeDraft.map(x=>({...x}))};}
+ function draftDiffers(){if(!formDraft)return false;const raw={...state.config,...formDraft};return ['daily','dailyUnit','initial','initialUnit','period','start','asc'].some(k=>String(raw[k]??'').trim()!==String(state.config[k]??'').trim())||JSON.stringify(raw.incomeChanges||[])!==JSON.stringify(state.config.incomeChanges||[]);}
+ function renderDraftNote(){$('draft-note').textContent=draftStorageError?t('이 브라우저에서는 입력값을 저장할 수 없습니다.'):draftDiffers()?t('입력값은 자동 저장되었습니다. 변경 내용을 목표에 적용하려면 목표 계산하기를 눌러주세요.'):t('입력값이 자동 저장됩니다. 다른 페이지를 다녀와도 이 브라우저에서 복원됩니다.');}
+ function saveDraft(){formDraft=captureDraft();try{localStorage.setItem(DRAFT_KEY,JSON.stringify(formDraft));draftStorageError=false;}catch{draftStorageError=true;}renderDraftNote();}
  function schedule(config){return (config.incomeChanges||[]).map(x=>({day:E.dateNumber(x.date)-E.dateNumber(config.start)+1,daily:E.parseRP(x.amount,x.unit)}));}
  function completionLocks(){return Object.entries(state.done).filter(([,level])=>Number.isInteger(level)&&level>0).map(([key,level])=>{const [day,skill]=key.split(':').map(Number);return {day,skill,level};});}
  function calculate(config,completed=[]){return E.buildPlan({initial:E.parseRP(config.initial,config.initialUnit),daily:E.parseRP(config.daily,config.dailyUnit),period:config.period,incomeChanges:schedule(config),completed});}
  let plan;try{plan=calculate(state.config,completionLocks());E.dateNumber(state.config.start);}catch(error){if(error.message==='completed-over-budget'){plan=calculate(state.config);calculationError=error;}else{state={config:{...defaults},day:1,changed:true,done:{}};plan=calculate(state.config);}}
  for(const [id,value]of Object.entries(state.done)){if(value===true){const [day,i]=id.split(':').map(Number);if(plan.levels[i]?.[day])state.done[id]=plan.levels[i][day];else delete state.done[id];}else if(!Number.isInteger(value)||value<=0)delete state.done[id];}
  state.day=Math.max(1,Math.min(plan.period,state.day));
- function populate(){const c=state.config;incomeDraft=(c.incomeChanges||[]).map(x=>({...x}));renderIncomeHistory();$('daily-input').value=c.daily;$('daily-unit').value=c.dailyUnit;$('initial-input').value=c.initial;$('initial-unit').value=c.initialUnit;$('period-input').value=c.period;$('start-date').value=c.start;$('asc-date').value=c.asc;$('asc-date').max=today();}
+ function populate(){const c={...state.config,...formDraft};incomeDraft=(c.incomeChanges||[]).map(x=>({...x}));renderIncomeHistory();$('daily-input').value=c.daily;$('daily-unit').value=c.dailyUnit;$('initial-input').value=c.initial;$('initial-unit').value=c.initialUnit;$('period-input').value=c.period;$('start-date').value=c.start;$('asc-date').value=c.asc;$('asc-date').max=today();}
  const key=(d,i)=>d+':'+i;
  const isComplete=(day,i)=>Number(state.done[key(day,i)]||0)>=plan.levels[i][day];
  function changes(day){return E.SKILLS.map((s,i)=>({s,i,level:plan.levels[i][day],previous:plan.levels[i][day-1]})).filter(x=>x.level>x.previous);}
@@ -80,7 +87,7 @@
   const entries=state.changed?changed:E.SKILLS.map((s,i)=>({s,i,level:plan.levels[i][day],previous:plan.levels[i][day-1]}));
   $('cards').innerHTML=entries.length?entries.map(x=>{const active=x.level>x.previous,checked=active&&isComplete(day,x.i);return '<label class="skill '+(checked?'done':'')+'"><input type="checkbox" data-skill="'+x.i+'" '+(checked?'checked ':'')+(!active?'disabled ':'')+'aria-label="'+t('{skill} {level}레벨 강화 완료',{skill:t(x.s.name),level:x.level})+'"><div class="skill-main"><div class="skill-name">'+t(x.s.name)+'</div><small>'+(active?t('이전 {prev} → {level} · +{gain}레벨',{prev:x.previous,level:x.level,gain:x.level-x.previous}):t('유지 · 추가 강화 없음'))+'</small></div><div class="level">'+x.level+'<span> Lv</span></div></label>';}).join(''):'<div class="empty" style="grid-column:1/-1"><strong>'+t('차곡차곡, 다음 강화를 준비해요.')+'</strong><span class="muted">'+t('오늘은 변경할 스킬이 없습니다.')+'<br>'+t('전체 스킬을 보고 싶으면 위 필터를 해제하세요.')+'</span></div>';
   $('basis-list').innerHTML=E.SKILLS.map((s,i)=>'<div class="basis-row"><strong>'+t(s.name)+'</strong><br>'+t('시작 레벨')+': '+s.start+' · '+t('기간 추천 목표')+': '+plan.levels[i][plan.period]+'<br>'+t('다음 강화 RP')+': '+money(s.base)+'</div>').join('');
-  overview(from,to);hint();translateStatic();
+  overview(from,to);hint();translateStatic();renderDraftNote();
   if(noticeKey)$('status').textContent=t(noticeKey);
   $('calc-error').textContent=calculationError?errorText(calculationError):'';
  }
@@ -90,13 +97,13 @@
   $('income-rows').innerHTML=incomeDraft.length?incomeDraft.map((row,i)=>'<div class="income-change-row"><label>'+t('획득량 변경 적용일')+'<input type="date" data-history-index="'+i+'" data-history-field="date" value="'+escapeInput(row.date)+'"></label><label>'+t('변경 후 하루 RP 획득량')+'<div class="amount-field"><input type="text" inputmode="decimal" data-history-index="'+i+'" data-history-field="amount" value="'+escapeInput(row.amount)+'"><select data-history-index="'+i+'" data-history-field="unit" aria-label="'+t('단위')+'">'+['RP','경','해'].map(unit=>'<option value="'+unit+'" '+(row.unit===unit?'selected':'')+'>'+t(unit==='RP'?'RP':unit==='경'?'경 (10¹⁶ RP)':'해 (10²⁰ RP)')+'</option>').join('')+'</select></div></label><button type="button" data-remove-income="'+i+'">'+t('삭제')+'</button></div>').join(''):'<p class="muted income-empty">'+t('변경 이력이 없으면 기본 하루 획득량을 전체 기간에 적용합니다.')+'</p>';
   $('add-income').disabled=incomeDraft.length>=100;
  }
- $('add-income').onclick=()=>{if(incomeDraft.length>=100)return;incomeDraft.push({date:today(),amount:$('daily-input').value,unit:$('daily-unit').value});renderIncomeHistory();};
+ $('add-income').onclick=()=>{if(incomeDraft.length>=100)return;incomeDraft.push({date:today(),amount:$('daily-input').value,unit:$('daily-unit').value});renderIncomeHistory();saveDraft();};
  $('income-rows').addEventListener('input',event=>{const i=Number(event.target.dataset.historyIndex),field=event.target.dataset.historyField;if(incomeDraft[i]&&['date','amount','unit'].includes(field))incomeDraft[i][field]=event.target.value;});
  $('income-rows').addEventListener('change',event=>{const i=Number(event.target.dataset.historyIndex),field=event.target.dataset.historyField;if(incomeDraft[i]&&['date','amount','unit'].includes(field))incomeDraft[i][field]=event.target.value;});
- $('income-rows').addEventListener('click',event=>{const remove=event.target.closest('[data-remove-income]');if(remove){incomeDraft.splice(Number(remove.dataset.removeIncome),1);renderIncomeHistory();return;}if(event.target.matches('input[type="date"]')&&typeof event.target.showPicker==='function'){try{event.target.showPicker();event.preventDefault();}catch{}}});
+ $('income-rows').addEventListener('click',event=>{const remove=event.target.closest('[data-remove-income]');if(remove){incomeDraft.splice(Number(remove.dataset.removeIncome),1);renderIncomeHistory();saveDraft();return;}if(event.target.matches('input[type="date"]')&&typeof event.target.showPicker==='function'){try{event.target.showPicker();event.preventDefault();}catch{}}});
  $('rp-form').addEventListener('submit',event=>{
-  event.preventDefault();calculationError=null;$('calc-error').textContent='';
-  try{const config=readConfig(),sameOrigin=state.config.start===config.start&&E.parseRP(state.config.initial,state.config.initialUnit)===E.parseRP(config.initial,config.initialUnit),next=calculate(config,sameOrigin?completionLocks():[]);state.config=config;plan=next;if(!sameOrigin)state.done={};state.day=Math.min(state.day,plan.period);save();render();noticeKey='획득량 이력을 반영해 계산했습니다. 같은 시작일과 남은 RP를 유지하면 완료한 강화도 보존됩니다.';$('status').textContent=t(noticeKey);}
+  event.preventDefault();saveDraft();calculationError=null;$('calc-error').textContent='';
+  try{const config=readConfig(),sameOrigin=state.config.start===config.start&&E.parseRP(state.config.initial,state.config.initialUnit)===E.parseRP(config.initial,config.initialUnit),next=calculate(config,sameOrigin?completionLocks():[]);state.config=config;plan=next;if(!sameOrigin)state.done={};state.day=Math.min(state.day,plan.period);save();saveDraft();render();noticeKey='획득량 이력을 반영해 계산했습니다. 같은 시작일과 남은 RP를 유지하면 완료한 강화도 보존됩니다.';$('status').textContent=t(noticeKey);}
   catch(error){calculationError=error;$('calc-error').textContent=errorText(error);}
  });
  document.querySelectorAll('[data-period]').forEach(button=>button.addEventListener('click',()=>{$('period-input').value=button.dataset.period;$('rp-form').requestSubmit();}));
@@ -139,6 +146,14 @@
    if(event.key==='Enter'||event.key===' '||(event.altKey&&event.key==='ArrowDown'))openPicker(event);
   });
  });
+
+ // Save raw edits independently of the last successfully calculated plan.
+ // Invalid or unfinished input is restored too, without clearing completion records.
+ $('rp-form').addEventListener('input',saveDraft);
+ $('rp-form').addEventListener('change',saveDraft);
+ $('asc-date').addEventListener('input',saveDraft);
+ // The existing ascension-date change handler saves applied metadata as before.
+ document.addEventListener('change',event=>{if(event.target.id==='asc-date')saveDraft();});
  populate();render();
  window.setInterval(()=>{if(!document.hidden)updateAsc();},1000);
 })();
