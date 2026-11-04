@@ -646,6 +646,7 @@
 
       .rp .calc-fields {
         display: grid;
+        align-items: start;
         grid-template-columns: repeat(2,minmax(0,1fr));
         gap: 18px;
         margin-top: 18px
@@ -653,6 +654,8 @@
 
       .rp .calc-fields label {
         display: grid;
+        align-content: start;
+        line-height: 1.5;
         gap: 8px;
         font-size: 13px;
         font-weight: 700;
@@ -668,6 +671,13 @@
         background: var(--surface);
         color: inherit;
         font: inherit
+      }
+
+      /* 설명 문구 유무와 관계없이 입력칸 높이와 시작 위치를 통일 */
+      .rp .calc-fields input,
+      .rp .calc-fields select {
+        box-sizing: border-box;
+        height: 44px;
       }
 
       .rp .amount-field {
@@ -883,6 +893,32 @@
         }
 
       }
+          .rp .final-spend-option {
+        margin-top: 18px;
+        padding: 14px 16px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+      }
+
+      .rp .final-spend-option .settings {
+        align-items: flex-start;
+        line-height: 1.6;
+        font-weight: 700;
+      }
+
+      .rp .final-spend-option input {
+        margin-top: 3px;
+      }
+
+      .rp .final-spend-option p {
+        margin-top: 8px;
+      }
+          .rp .resonance-options { margin-top: 18px; padding: 16px; border: 1px solid var(--line); border-radius: 10px; }
+      .rp .resonance-options[hidden], .rp #resonance-level-group[hidden] { display: none; }
+      .rp .resonance-options p, .rp #resonance-summary { margin-top: 10px; }
+      .rp #resonance-level-group { margin-top: 14px; }
+      .rp #resonance-level { max-width: 100px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: inherit; }
     </style>
   </head>
   <body>
@@ -942,6 +978,10 @@
               </p>
               <form id="rp-form" novalidate>
                 <div class="calc-fields">
+                  <label for="ascension-stage">
+                    현재 승천 단계
+                    <select id="ascension-stage"><option value="2">승천2</option><option value="3+">승천3 이상</option></select>
+                  </label>
                   <label>
                     기본 하루 RP 획득량
                     <div class="amount-field">
@@ -995,6 +1035,14 @@
                     <input id="start-date" type="date" required>
                   </label>
                 </div>
+                <!-- 승천2 전용: 공명 포함 여부와 현재 레벨 -->
+                <div id="resonance-options" class="resonance-options">
+                  <label class="settings" for="include-resonance"><input type="checkbox" id="include-resonance">승천의 공명을 올리시겠습니까?</label>
+                  <label id="resonance-level-group" class="settings" hidden>현재 공명 레벨<input id="resonance-level" type="number" min="0" max="30" step="1" value="0"></label>
+                  <p class="muted">공명은 CSV의 실제 비용으로 일반 스킬과 함께 배분하며, 최대 30레벨까지만 올립니다.</p>
+                  <p class="muted" id="resonance-data-status" role="status"></p>
+                </div>
+                <p class="muted" id="resonance-summary" aria-live="polite"></p>
                 <section class="income-history" aria-labelledby="income-history-title">
                   <div class="row">
                     <div>
@@ -1030,6 +1078,14 @@
                   <button class="primary" type="submit">
                     목표 계산하기
                   </button>
+                </div>
+                <!-- 마지막 날 잔액으로 추가 강화 (선택 사항) -->
+                <div class="final-spend-option">
+                  <label class="settings" for="spend-all-last-day">
+                    <input type="checkbox" id="spend-all-last-day">
+                    선택 기간 마지막날 남은 RP 다 사용하시겠습니까?
+                  </label>
+                  <p class="muted">체크 후 목표 계산하기를 누르면 마지막 날에 추가 강화가 가능한 만큼 RP를 사용합니다. 다음 강화 비용보다 적은 잔액은 남을 수 있습니다.</p>
                 </div>
                 <p id="draft-note" class="muted" role="status" aria-live="polite"></p>
                     <p id="calc-error" class="error" role="alert">
@@ -1237,10 +1293,10 @@
                 계산 기준과 시작 레벨
               </summary>
               <p>
-                기존 30일 추천안의 스킬별 총 투자 비중을 입력한 예산에 적용합니다. 각 스킬은 배정된 몫 안에서 강화하며, 남은 RP는 잔액으로 보관합니다. 실제 딜 효율을 최적화한 계산기는 아닙니다.
+                일반 스킬은 기존 30일 추천안의 투자 비중을 사용합니다. 공명 포함 시 현재 레벨부터 30레벨까지 필요한 CSV 비용을 배분 가중치로 추가합니다. 공명 30레벨 달성 후에는 예산을 일반 스킬에 재배분합니다. 실제 딜 효율을 최적화한 계산기는 아닙니다.
               </p>
               <p>
-                일반 스킬의 다음 강화 비용은 매번 1.2배로 증가하며 RP 단위로 반올림합니다. 샤프아이즈는 2레벨 단위로 계산합니다. 승천의 공명은 추천 투자 대상에서 제외합니다. 승천3에서는 공명 30레벨까지 완료한 뒤 사용하세요. 공명 외 실제 최대레벨은 미반영입니다.
+                일반 스킬의 강화 비용은 매번 1.2배로 증가하며 RP 단위로 반올림합니다. 샤프아이즈는 2레벨 단위로 계산합니다. 공명은 CSV에 명시된 비용과 효과를 사용하고 최대 30레벨을 적용합니다. 승천3 이상은 공명 30레벨 완료 기준입니다. 다른 스킬의 실제 최대레벨은 미반영입니다.
               </p>
               <p>
                 입력 금액과 예산은 정수 RP로 계산합니다. 요약 표시는 큰 단위로 줄여 보여줍니다. 하루 획득량은 변경 이력에 따라 날짜별로 적용합니다.
@@ -1260,15 +1316,15 @@
     </div>
 
     <!-- 외부 스크립트 1: 예산 및 강화 계산 -->
-    <script src="./rp-planner-engine.js?v=20261102-day1">
+    <script src="./rp-planner-engine.js?v=20261104-resonance">
     </script>
 
     <!-- 외부 스크립트 2: 한국어 / 영어 / 대만 번체 번역 -->
-    <script src="./rp-planner-locales.js?v=20261103-autosave">
+    <script src="./rp-planner-locales.js?v=20261104-resonance">
     </script>
 
     <!-- 외부 스크립트 3: 입력, 날짜, 완료 체크 등 화면 동작 -->
-    <script src="./rp-planner-ui.js?v=20261103-autosave">
+    <script src="./rp-planner-ui.js?v=20261104-resonance">
     </script>
   </body>
 </html>

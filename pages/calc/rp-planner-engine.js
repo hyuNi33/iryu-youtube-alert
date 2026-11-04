@@ -42,7 +42,22 @@
   for(const change of sorted){if(change.day<=from){rate=change.daily;continue;}if(change.day>=to)break;total+=rate*BigInt(change.day-cursor);cursor=change.day;rate=change.daily;}
   return total+rate*BigInt(Math.max(0,to-cursor));
  }
- function buildPlan({initial,daily,period,incomeChanges=[],completed=[]}){
+ function parseResonanceCSV(text){
+  const rows=[];let row=[],cell='',quoted=false;
+  for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(quoted&&text[i+1]==='"'){cell+='"';i++;}else quoted=!quoted;}else if(c===','&&!quoted){row.push(cell);cell='';}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(v=>v.trim()))rows.push(row);row=[];cell='';}else cell+=c;}
+  if(quoted)throw Error('resonance-data');row.push(cell);if(row.some(v=>v.trim()))rows.push(row);
+  if(rows.length!==31||rows[0][0].replace(/^\uFEFF/,'').trim()!=='레벨')throw Error('resonance-data');
+  let cumulative=0n;
+  return rows.slice(1).map((r,i)=>{const level=Number(r[0]),raw=(r[1]||'').replace(/,/g,'').trim(),sum=(r[2]||'').replace(/,/g,'').trim(),effect=r[3]||'',match=effect.match(/최종데미지\s*([\d.]+)%.*상한\s*([\d.]+)%/);if(level!==i+1||!/^\d+$/.test(raw)||!/^\d+$/.test(sum)||!match)throw Error('resonance-data');const cost=BigInt(raw);if(cost<=0n)throw Error('resonance-data');cumulative+=cost;if(cumulative!==BigInt(sum))throw Error('resonance-data');return {level,cost,cumulative,damage:Number(match[1]),starlight:Number(match[2]),effect};});
+ }
+ function buildPlan({initial,daily,period,incomeChanges=[],completed=[],spendAllOnLastDay=false,ascensionStage="2",includeResonance=false,resonanceLevel=0,resonanceTable=[]}){
+  if(!['2','3+'].includes(ascensionStage))throw Error('invalid-ascension');
+  const useResonance=ascensionStage==='2'&&includeResonance===true,skills=SKILLS.map(s=>({...s}));
+  if(useResonance){
+   if(!Number.isInteger(resonanceLevel)||resonanceLevel<0||resonanceLevel>30)throw Error('invalid-resonance-level');
+   if(!Array.isArray(resonanceTable)||resonanceTable.length!==30)throw Error('resonance-data');
+   skills.push({name:'승천의 공명',kind:'resonance',start:resonanceLevel,reference:30,maxLevel:30,step:1,base:resonanceTable[resonanceLevel]?.cost||0n});
+  }
   if(typeof initial!=='bigint'||typeof daily!=='bigint'||initial<0n||daily<0n)throw Error('invalid-rp');
   if(!Number.isInteger(period)||period<1||period>3650)throw Error('invalid-period');
   const history=normalizeIncomeChanges(incomeChanges),budgets=[initial],dailyIncome=[0n];let rate=daily,changeIndex=0;
@@ -50,24 +65,43 @@
   if(budgets[period].toString().length>64)throw Error('too-large');
   if(!Array.isArray(completed))throw Error('invalid-completed');
   const locks=Array.from({length:period+1},()=>[]);
-  for(const item of completed){const s=SKILLS[item.skill];if(!s||!Number.isInteger(item.day)||item.day<1||!Number.isInteger(item.level)||item.level<s.start||(item.level-s.start)%s.step!==0)throw Error('invalid-completed');if(item.day<=period)locks[item.day].push(item);}
-  const series=SKILLS.map(s=>{const sums=[0n];let a=s.base,b=1n;return {s,sums,extend(){sums.push(sums.at(-1)+round(a,b));a*=6n;b*=5n;}};});
+  for(const item of completed){const s=skills[item.skill];if(!s||!Number.isInteger(item.day)||item.day<1||!Number.isInteger(item.level)||item.level<s.start||(s.maxLevel!==undefined&&item.level>s.maxLevel)||(item.level-s.start)%s.step!==0)throw Error('invalid-completed');if(item.day<=period)locks[item.day].push(item);}
+  const series=skills.map(s=>{const sums=[0n];let a=s.base,b=1n;return {s,sums,extend(){if(s.kind==='resonance'){const record=resonanceTable[s.start+sums.length-1];if(!record)throw Error('invalid-resonance-level');sums.push(sums.at(-1)+record.cost);}else{sums.push(sums.at(-1)+round(a,b));a*=6n;b*=5n;}}};});
   const weights=series.map(q=>{while(q.sums.length<=q.s.reference-q.s.start)q.extend();return q.sums[q.s.reference-q.s.start];});
-  const denominator=weights.reduce((a,b)=>a+b,0n),levels=SKILLS.map(s=>[s.start]),totals=[0n],balances=[initial],counts=SKILLS.map(()=>0);
+  const denominator=weights.reduce((a,b)=>a+b,0n),levels=skills.map(s=>[s.start]),totals=[0n],balances=[initial],counts=skills.map(()=>0);
   for(let day=1;day<=period;day++){
    const budget=budgets[day];
-   for(const item of locks[day])counts[item.skill]=Math.max(counts[item.skill],item.level-SKILLS[item.skill].start);
+   for(const item of locks[day])counts[item.skill]=Math.max(counts[item.skill],item.level-skills[item.skill].start);
    let total=0n;
-   for(let i=0;i<SKILLS.length;i++){const q=series[i];while(q.sums.length<=counts[i])q.extend();total+=q.sums[counts[i]];}
+   for(let i=0;i<skills.length;i++){const q=series[i];while(q.sums.length<=counts[i])q.extend();total+=q.sums[counts[i]];}
    if(total>budget)throw Error('completed-over-budget');
-   for(let i=0;i<SKILLS.length;i++){
-    const q=series[i],quota=budget*weights[i]/denominator;
-    while(true){const next=counts[i]+q.s.step;while(q.sums.length<=next)q.extend();const extra=q.sums[next]-q.sums[counts[i]];if(q.sums[next]>quota||total+extra>budget)break;counts[i]=next;total+=extra;}
+   const quotas=weights.map(w=>budget*w/denominator);
+   const resonanceIndex=skills.findIndex(s=>s.kind==='resonance');
+   if(resonanceIndex>=0){const maxCost=series[resonanceIndex].sums.at(-1);if(quotas[resonanceIndex]>=maxCost){const rest=budget-maxCost,restWeight=denominator-weights[resonanceIndex];for(let i=0;i<skills.length;i++)quotas[i]=i===resonanceIndex?maxCost:rest*weights[i]/restWeight;}}
+   for(let i=0;i<skills.length;i++){
+    const q=series[i],quota=quotas[i];
+    while(true){const next=counts[i]+q.s.step;if(q.s.maxLevel!==undefined&&q.s.start+next>q.s.maxLevel)break;while(q.sums.length<=next)q.extend();const extra=q.sums[next]-q.sums[counts[i]];if(q.sums[next]>quota||total+extra>budget)break;counts[i]=next;total+=extra;}
     levels[i].push(q.s.start+counts[i]);
+   }
+   // 마지막 날에만 배분 한도를 풀고, 기존 투자 비중에 가깝게 추가 강화한다.
+   // 레벨은 정수 단위이므로 더 이상 구매할 수 없는 잔액은 남긴다.
+   if(spendAllOnLastDay===true&&day===period){
+    while(true){
+     let best=null;
+     for(let i=0;i<skills.length;i++){
+      const q=series[i],next=counts[i]+q.s.step;if(q.s.maxLevel!==undefined&&q.s.start+next>q.s.maxLevel)continue;while(q.sums.length<=next)q.extend();
+      const extra=q.sums[next]-q.sums[counts[i]];
+      if(total+extra>budget)continue;
+      const candidate={i,next,extra,after:q.sums[next]};
+      if(!best||candidate.after*weights[best.i]<best.after*weights[i])best=candidate;
+     }
+     if(!best)break;counts[best.i]=best.next;total+=best.extra;
+    }
+    for(let i=0;i<skills.length;i++)levels[i][day]=skills[i].start+counts[i];
    }
    totals.push(total);balances.push(budget-total);
   }
-  return {period,initial,daily,levels,totals,balances,weights,denominator,budgets,dailyIncome,incomeChanges:history,totalBudget:budgets[period]};
+  return {skills,ascensionStage,includeResonance:useResonance,resonanceLevel:useResonance?resonanceLevel:null,resonanceTable:useResonance?resonanceTable:[],period,initial,daily,spendAllOnLastDay:spendAllOnLastDay===true,levels,totals,balances,weights,denominator,budgets,dailyIncome,incomeChanges:history,totalBudget:budgets[period]};
  }
- return {SKILLS,parseRP,dateNumber,koreaToday,timeZoneFor,todayInZone,elapsed,addDate,normalizeIncomeChanges,incomeBetween,buildPlan};
+ return {SKILLS,parseRP,dateNumber,koreaToday,timeZoneFor,todayInZone,elapsed,addDate,normalizeIncomeChanges,incomeBetween,parseResonanceCSV,buildPlan};
 });
