@@ -4557,6 +4557,27 @@
   // 환포 계산기의 현재 레벨 3배 요약 카드 및 상세 툴팁
   const hanpoTripleTranslations = {"en":{"현재 레벨 환포 상세 3배":"Current-Level Rebirth Points Details ×3","현재 레벨 환포 상세":"Current-Level Rebirth Points Details","환포 3배":"Rebirth Points ×3"},"zh-TW":{"현재 레벨 환포 상세 3배":"目前等級轉生點數詳情（3 倍）","현재 레벨 환포 상세":"目前等級轉生點數詳情","환포 3배":"轉生點數（3 倍）"}};
   for (const code of ["en", "zh-TW"]) Object.assign(dictionaries[code], hanpoTripleTranslations[code]);
+  // 승천 4 및 이세계스킬 페이지에 추가된 콘텐츠
+  Object.assign(dictionaries["zh-TW"], {
+    "승천 3을 달성한 상태에서 검은마법사를 처치하면 승천 4를 달성할 수 있습니다.": "達成飛昇 3 後，擊敗黑魔法師即可達成飛昇 4。",
+    "승천 후 쌓은 누적 RP에 따라 최종 데미지가 증가합니다. 초반에 가파르게 증가하며, 누적 RP 5000해 도달 시 최대 +800%에 도달한 뒤 유지됩니다.": "最終傷害隨飛昇後累積的 RP 提升。初期提升較快，累積 RP 達到 5,000 垓時，最高提升至 +800%，之後維持此上限。",
+    "40해 +84%, 100해 +166%, 300해 +311%, 1,000해 +509%": "40 垓 +84%、100 垓 +166%、300 垓 +311%、1,000 垓 +509%",
+    "누적 RP 5000해 도달 시 최대 +800% (이후 유지)": "累積 RP 達到 5,000 垓時最高 +800%（之後維持）",
+    "무한연격 -> 무한연격·극": "無限連擊 -> 無限連擊·極",
+    "쉐도우 파트너 -> 그림자 군단": "影分身 -> 影子軍團",
+    "블리자드": "暴風雪",
+    "이세계스킬 데이터 테이블": "異世界技能資料表"
+  });
+  Object.assign(dictionaries.en, {
+    "승천 3을 달성한 상태에서 검은마법사를 처치하면 승천 4를 달성할 수 있습니다.": "After reaching Ascension 3, defeat the Black Mage to reach Ascension 4.",
+    "승천 후 쌓은 누적 RP에 따라 최종 데미지가 증가합니다. 초반에 가파르게 증가하며, 누적 RP 5000해 도달 시 최대 +800%에 도달한 뒤 유지됩니다.": "Final damage increases with RP accumulated after ascension. It rises rapidly at first, reaching a maximum of +800% at 500Sx cumulative RP and remaining at that cap.",
+    "40해 +84%, 100해 +166%, 300해 +311%, 1,000해 +509%": "4Sx: +84%, 10Sx: +166%, 30Sx: +311%, 100Sx: +509%",
+    "누적 RP 5000해 도달 시 최대 +800% (이후 유지)": "Maximum +800% at 500Sx cumulative RP (maintained thereafter)",
+    "무한연격 -> 무한연격·극": "Infinite Strike -> Infinite Strike: Extreme",
+    "쉐도우 파트너 -> 그림자 군단": "Shadow Partner -> Shadow Legion",
+    "블리자드": "Blizzard",
+    "이세계스킬 데이터 테이블": "Otherworld Skills Data Table"
+  });
   const patterns = {};
   const escape = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   for (const [code, dictionary] of Object.entries(dictionaries)) {
