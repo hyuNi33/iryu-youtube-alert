@@ -1,4 +1,4 @@
-﻿/**
+/**
  * RP 스킬 계산 로직
  * datas/rpskill/ 디렉토리의 CSV에서 데이터 로딩
  */
@@ -16,7 +16,11 @@ export async function initRPSkillData(basePath) {
   skillMeta = meta.map(row => ({
     tableKey: row.tableKey,
     name: row.skillName,
-    maxLevels: Array.from({ length: 13 }, (_, i) => Number(row[`maxLevel${i}`]) || 0)
+    maxLevels: Object.keys(row).reduce((levels, key) => {
+      const match = /^maxLevel(\d+)$/.exec(key);
+      if (match) levels[Number(match[1])] = Number(row[key]) || 0;
+      return levels;
+    }, [])
   }));
 
   // 각 테이블 CSV 로딩

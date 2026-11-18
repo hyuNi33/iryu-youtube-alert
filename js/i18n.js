@@ -4578,6 +4578,42 @@
     "블리자드": "Blizzard",
     "이세계스킬 데이터 테이블": "Otherworld Skills Data Table"
   });
+  // RP 스킬 신규 데이터와 몬스터 데이터 번역
+  Object.assign(dictionaries.en, {
+    "마무리일격": "Finishing Blow",
+    "창세의 잔향": "Echo of Genesis",
+    "마무리일격 최대 30": "Finishing Blow · Max Lv. 30",
+    "창세의 잔향 최대 30": "Echo of Genesis · Max Lv. 30",
+    "승천3": "Ascension 3",
+    "승천4": "Ascension 4",
+    "빛의 주시자": "Watcher of Light",
+    "슈퍼타운": "Super Town",
+    "슈퍼타운-슈퍼타운": "Super Town - Super Town",
+    "HP가 30% 이하인 몬스터에게 주는 최종 데미지 N% 증가": "Increases final damage dealt to monsters with 30% HP or less by N%",
+    "승천으로 얻는 최종 데미지 보너스가 N% 커진다.": "Increases the final damage bonus gained from ascension by N%."
+  });
+  Object.assign(dictionaries["zh-TW"], {
+    "마무리일격": "終結一擊",
+    "창세의 잔향": "創世餘響",
+    "마무리일격 최대 30": "終結一擊 · 最高 30 級",
+    "창세의 잔향 최대 30": "創世餘響 · 最高 30 級",
+    "승천3": "飛昇 3",
+    "승천4": "飛昇 4",
+    "빛의 주시자": "光之凝視者",
+    "슈퍼타운": "超級城鎮",
+    "슈퍼타운-슈퍼타운": "超級城鎮－超級城鎮",
+    "HP가 30% 이하인 몬스터에게 주는 최종 데미지 N% 증가": "對 HP 低於或等於 30% 的怪物造成的最終傷害提升 N%",
+    "승천으로 얻는 최종 데미지 보너스가 N% 커진다.": "飛昇所獲得的最終傷害加成提高 N%。"
+  });
+  for (let level = 1; level <= 30; level++) {
+    const finishingBlow = `HP가 30% 이하인 몬스터에게 주는 최종 데미지 ${level}% 증가`;
+    const genesisEcho = `승천으로 얻는 최종 데미지 보너스가 ${level}% 커진다.`;
+    dictionaries.en[finishingBlow] = `Increases final damage dealt to monsters with 30% HP or less by ${level}%`;
+    dictionaries["zh-TW"][finishingBlow] = `對 HP 低於或等於 30% 的怪物造成的最終傷害提升 ${level}%`;
+    dictionaries.en[genesisEcho] = `Increases the final damage bonus gained from ascension by ${level}%.`;
+    dictionaries["zh-TW"][genesisEcho] = `飛昇所獲得的最終傷害加成提高 ${level}%。`;
+  }
+
   const patterns = {};
   const escape = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   for (const [code, dictionary] of Object.entries(dictionaries)) {
