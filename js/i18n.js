@@ -4554,6 +4554,90 @@
   // RP_CALCULATOR_MENU_LABEL
   dictionaries.en["승천2 이후 RP 투자 계산기"] = "RP Upgrade Calculator After Ascension 2";
   dictionaries["zh-TW"]["승천2 이후 RP 투자 계산기"] = "飛昇 2 後 RP 投資計算機";
+  Object.assign(dictionaries.en, {
+    "승천2 이후 RP 투자 추천": "RP Upgrade Recommendations After Ascension 2",
+    "일일 RP 추천": "Daily RP Recommendations",
+    "누적 RP 추천": "Cumulative RP Recommendations",
+  });
+  Object.assign(dictionaries["zh-TW"], {
+    "승천2 이후 RP 투자 추천": "飛昇 2 後 RP 投資建議",
+    "일일 RP 추천": "每日 RP 建議",
+    "누적 RP 추천": "累積 RP 建議",
+  });
+  const rpSkillEffectTranslations = [
+    [/^크리티컬 확률 \+(\d+(?:\.\d+)?)%, 크리티컬 데미지 \+(\d+(?:\.\d+)?)%$/, "Critical Rate +{0}%, Critical Damage +{1}%", "爆擊率 +{0}%，爆擊傷害 +{1}%"],
+    [/^캐릭터의 공격력과 마력이 (\d+(?:\.\d+)?)% 증가$/, "Attack and Magic Attack increase by {0}%", "攻擊力與魔力提高 {0}%"],
+    [/^최종 물리 및 마법 데미지 \+(\d+(?:\.\d+)?)%$/, "Final Physical and Magic Damage +{0}%", "最終物理與魔法傷害 +{0}%"],
+    [/^데미지 (\d+(?:\.\d+)?)%의 그림자 동료 소환$/, "Summons a shadow companion that deals {0}% damage", "召喚造成 {0}% 傷害的影分身"],
+    [/^모든 최종 스탯 \+(\d+(?:\.\d+)?)%$/, "All Final Stats +{0}%", "全最終能力值 +{0}%"],
+    [/^슈퍼 크리티컬 확률 \+(\d+(?:\.\d+)?)%, 슈퍼 크리티컬 데미지 \+(\d+(?:\.\d+)?)% \(슈퍼 크리티컬 발동 시 현재 데미지의 10배\)$/, "Super Critical Rate +{0}%, Super Critical Damage +{1}% (a Super Critical deals 10× current damage)", "超級爆擊率 +{0}%，超級爆擊傷害 +{1}%（觸發時造成目前傷害的 10 倍）"],
+    [/^주간보스·레이드 보스에게 주는 데미지 \+(\d+(?:\.\d+)?)%$/, "Damage to weekly and raid bosses +{0}%", "對每週首領與團隊副本首領的傷害 +{0}%"],
+    [/^보유 메소 50조당 최종 데미지 \+0\.01%, 최종 데미지 상한 \+(\d+(?:\.\d+)?)%$/, "Final Damage +0.01% per 50 trillion mesos held, up to +{0}%", "每持有 50 兆楓幣，最終傷害 +0.01%，上限為 +{0}%"],
+    [/^크리티컬 확률의 (\d+(?:\.\d+)?)%만큼 크리티컬 데미지 증가$/, "Critical Damage increases by {0}% of Critical Rate", "爆擊傷害提高，增幅為爆擊率的 {0}%"],
+    [/^몬스터 HP 100% 기준 최종 데미지 \+(\d+(?:\.\d+)?)%, HP가 10%p 감소할 때마다 최대 증가량의 1\/10 감소$/, "Final Damage +{0}% at full monster HP. The bonus drops by one tenth of its maximum for each 10 percentage points of HP lost.", "怪物 HP 為 100% 時，最終傷害 +{0}%。HP 每降低 10 個百分點，加成減少最大值的十分之一。"],
+    [/^파이널 어택의 발동 확률 \+(\d+(?:\.\d+)?)%p, 데미지 \+(\d+(?:\.\d+)?)%$/, "Final Attack trigger rate +{0} percentage points, damage +{1}%", "終極攻擊觸發率 +{0} 個百分點，傷害 +{1}%"],
+    [/^최종데미지 (\d+(?:\.\d+)?)%, 별빛 일일 획득 상한 (\d+(?:\.\d+)?)%$/, "Final Damage {0}%, Daily Starlight Cap {1}%", "最終傷害 {0}%，每日星光獲取上限 {1}%"],
+    [/^HP가 30% 이하인 몬스터에게 주는 최종 데미지 (\d+(?:\.\d+)?)% 증가$/, "Final Damage against monsters at 30% HP or below increases by {0}%", "對 HP 低於或等於 30% 的怪物，最終傷害提高 {0}%"],
+    [/^승천으로 얻는 최종 데미지 보너스가 (\d+(?:\.\d+)?)% 커진다\.$/, "The Final Damage bonus from Ascension increases by {0}%.", "飛昇提供的最終傷害加成提高 {0}%。"],
+  ];
+  if (/\/pages\/calc\/rp-skill-recommend(?:\.html)?\/?$/.test(location.pathname)) {
+    Object.assign(dictionaries["en"], {
+      "누적 RP 스킬 추천 - 이류월드": "Cumulative RP Skill Recommendations - Iryu World",
+      "누적 RP 스킬 추천": "Cumulative RP Skill Recommendations",
+      "승천 1단계까지의 스킬을 모두 달성한 상태로 계산합니다.": "The calculation assumes all skills available through Ascension 1 are maxed.",
+      "승천3부터는 승천의 공명 먼저 투자 후 남은 RP로 다른 RP스킬들을 추천합니다.": "From Ascension 3 onward, the calculator prioritizes Ascension Resonance and uses the remaining RP for other skills.",
+      "승천 단계": "Ascension Stage",
+      "누적 RP": "Cumulative RP",
+      "추천 계산": "Calculate Recommendations",
+      "스킬 데이터를 불러오는 중입니다.": "Loading skill data…",
+      "추천 투자": "Recommended Upgrades",
+      "승천1까지 사용한 RP": "RP Spent Through Ascension 1",
+      "투자 가능 RP": "Available RP",
+      "추천 투자 RP": "Recommended RP Spend",
+      "남은 RP": "Remaining RP",
+      "스킬": "Skill",
+      "시작 레벨": "Starting Level",
+      "목표 레벨": "Target Level",
+      "필요 RP": "Required RP",
+      "목표 레벨 효과": "Effect at Target Level",
+      "선택한 단위에 맞는 0 이상의 누적 RP를 입력하세요.": "Enter a nonnegative cumulative RP amount in the selected unit.",
+      "현재 예산으로 추가 강화할 수 있는 스킬이 없습니다.": "Your current RP budget cannot buy any further upgrades.",
+      "스킬 데이터를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.": "Could not load skill data. Refresh the page and try again.",
+      "효과 데이터 없음": "Effect data unavailable",
+      "마무리일격": "Finishing Blow",
+      "창세의 잔향": "Genesis Echo",
+      "승천의 공명": "Ascension Resonance",
+      "캐릭터 레벨에 비례해 최종 데미지가 증가": "Final damage increases with character level",
+    });
+    Object.assign(dictionaries["zh-TW"], {
+      "누적 RP 스킬 추천 - 이류월드": "累積 RP 技能建議 - 異流世界",
+      "누적 RP 스킬 추천": "累積 RP 技能建議",
+      "승천 1단계까지의 스킬을 모두 달성한 상태로 계산합니다.": "計算時假設飛昇 1 以前開放的技能均已升滿。",
+      "승천3부터는 승천의 공명 먼저 투자 후 남은 RP로 다른 RP스킬들을 추천합니다.": "飛昇 3 起，優先投資飛昇共鳴，再用剩餘 RP 推薦其他技能。",
+      "승천 단계": "飛昇階段",
+      "누적 RP": "累積 RP",
+      "추천 계산": "計算建議",
+      "스킬 데이터를 불러오는 중입니다.": "正在載入技能資料…",
+      "추천 투자": "建議投資",
+      "승천1까지 사용한 RP": "飛昇 1 為止已投入的 RP",
+      "투자 가능 RP": "可投資 RP",
+      "추천 투자 RP": "建議投入 RP",
+      "남은 RP": "剩餘 RP",
+      "스킬": "技能",
+      "시작 레벨": "起始等級",
+      "목표 레벨": "目標等級",
+      "필요 RP": "所需 RP",
+      "목표 레벨 효과": "目標等級效果",
+      "선택한 단위에 맞는 0 이상의 누적 RP를 입력하세요.": "請依所選單位輸入大於或等於 0 的累積 RP。",
+      "현재 예산으로 추가 강화할 수 있는 스킬이 없습니다.": "目前的 RP 預算不足以再強化任何技能。",
+      "스킬 데이터를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.": "無法載入技能資料，請重新整理後再試。",
+      "효과 데이터 없음": "無效果資料",
+      "마무리일격": "終結一擊",
+      "창세의 잔향": "創世餘響",
+      "승천의 공명": "飛昇共鳴",
+      "캐릭터 레벨에 비례해 최종 데미지가 증가": "最終傷害隨角色等級提升",
+    });
+  }
   // 환포 계산기의 현재 레벨 3배 요약 카드 및 상세 툴팁
   const hanpoTripleTranslations = {"en":{"현재 레벨 환포 상세 3배":"Current-Level Rebirth Points Details ×3","현재 레벨 환포 상세":"Current-Level Rebirth Points Details","환포 3배":"Rebirth Points ×3"},"zh-TW":{"현재 레벨 환포 상세 3배":"目前等級轉生點數詳情（3 倍）","현재 레벨 환포 상세":"目前等級轉生點數詳情","환포 3배":"轉生點數（3 倍）"}};
   for (const code of ["en", "zh-TW"]) Object.assign(dictionaries[code], hanpoTripleTranslations[code]);
@@ -4683,6 +4767,19 @@
     const exactKey = value.trim();
     if (Object.prototype.hasOwnProperty.call(dictionary, exactKey)) {
       return value.match(/^\s*/)[0] + dictionary[exactKey] + value.match(/\s*$/)[0];
+    }
+    const budgetShortfall = exactKey.match(/^승천1까지 필요한 (.+ RP)보다 누적 RP가 (.+ RP) 부족합니다\.$/);
+    if (budgetShortfall) {
+      const [, required, missing] = budgetShortfall;
+      return language === "en"
+        ? `You are ${translate(missing)} short of the ${translate(required)} needed through Ascension 1.`
+        : `飛昇 1 為止需要 ${translate(required)}，目前還差 ${translate(missing)}。`;
+    }
+    if (/\d%/.test(exactKey)) {
+      for (const [pattern, en, zh] of rpSkillEffectTranslations) {
+        const match = exactKey.match(pattern);
+        if (match) return (language === "en" ? en : zh).replace(/\{(\d+)\}/g, (_, index) => match[Number(index) + 1]);
+      }
     }
     const phrasePattern = patterns[language];
     if (language === 'en') {

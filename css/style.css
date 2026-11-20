@@ -1403,6 +1403,47 @@ html[data-theme="dark"] .table-tip-popover {
   border-bottom-color: var(--main-blue);
 }
 
+.tab-bar.rp-recommend-tabs {
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--result-bg);
+}
+
+.tab-bar.rp-recommend-tabs .tab-btn {
+  display: grid;
+  place-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 50px;
+  margin: 0;
+  padding: 10px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--text-main);
+  text-align: center;
+  text-decoration: none;
+  white-space: normal;
+}
+
+.tab-bar.rp-recommend-tabs .tab-btn:hover {
+  border-color: var(--result-highlight);
+  background: var(--tab-hover-bg);
+}
+
+.tab-bar.rp-recommend-tabs .tab-btn.active {
+  border-color: var(--result-highlight);
+  background: #175da8;
+  color: #fff;
+}
+
+.tab-bar.rp-recommend-tabs .tab-btn:focus-visible {
+  outline: 2px solid var(--result-highlight);
+  outline-offset: 2px;
+}
+
 .tab-content {
   display: none;
 }

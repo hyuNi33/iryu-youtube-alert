@@ -8,7 +8,11 @@
  let formDraft=null,draftStorageError=false;
  try{const saved=JSON.parse(localStorage.getItem(DRAFT_KEY));if(saved&&typeof saved==='object'&&!Array.isArray(saved)){formDraft={};for(const field of ['daily','dailyUnit','initial','initialUnit','period','start','asc','ascensionStage','resonanceLevel'])if(typeof saved[field]==='string')formDraft[field]=saved[field];if(typeof saved.includeResonance==='boolean')formDraft.includeResonance=saved.includeResonance;if(typeof saved.spendAllOnLastDay==='boolean')formDraft.spendAllOnLastDay=saved.spendAllOnLastDay;if(Array.isArray(saved.incomeChanges))formDraft.incomeChanges=saved.incomeChanges.slice(0,100).map(x=>({date:typeof x?.date==='string'?x.date:'',amount:typeof x?.amount==='string'?x.amount:'',unit:['RP','경','해'].includes(x?.unit)?x.unit:'RP'}));}}catch{}
  let incomeDraft=Array.isArray(formDraft?.incomeChanges)?formDraft.incomeChanges.map(x=>({...x})):Array.isArray(state.config.incomeChanges)?state.config.incomeChanges.map(x=>({...x})):[];
- let resonanceTable=[],resonanceStatus='loading';
+ const skillTables={};
+ let resonanceStatus='loading',restorePending=false;
+ const normalizeStage=stage=>stage==='3+'?'3':stage;
+ state.config.ascensionStage=normalizeStage(state.config.ascensionStage);
+ if(formDraft?.ascensionStage)formDraft.ascensionStage=normalizeStage(formDraft.ascensionStage);
  let selectedLanguage=null,noticeKey='',calculationError=null;
  const locale=()=>selectedLanguage||window.iryuI18n?.getLanguage()||localStorageLanguage();
  const timeZone=()=>E.timeZoneFor(locale());
@@ -37,7 +41,7 @@
   document.title=t('승천2 이후 RP 투자 계산기')+' · Iryu World';
  }
  function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch{$('status').textContent=t('이 브라우저에서는 완료 상태를 저장할 수 없습니다.');}}
- function errorText(error){const messages={'duplicate-income-date':'같은 날짜의 획득량 변경이 중복되어 있습니다. 날짜마다 하나만 남겨주세요.','invalid-income-history':'획득량 변경일과 금액을 모두 올바르게 입력하세요. 최대 100개까지 추가할 수 있습니다.','completed-over-budget':'완료한 강화 비용이 변경된 획득량 예산보다 큽니다. 획득량 이력과 남은 RP를 확인하세요.','invalid-completed':'저장된 완료 기록을 확인해주세요.','resonance-data':'공명 CSV 데이터를 불러올 수 없습니다. 새로고침하거나 공명 강화 옵션을 해제하세요.','invalid-resonance-level':'현재 공명 레벨은 0~30의 정수로 입력하세요.','invalid-ascension':'승천 단계를 선택하세요.','invalid-rp':'금액은 0 이상의 숫자로 입력하세요. 쉼표 또는 소수점은 선택한 단위에 맞게 사용할 수 있습니다.','invalid-unit':'금액은 0 이상의 숫자로 입력하세요. 쉼표 또는 소수점은 선택한 단위에 맞게 사용할 수 있습니다.',precision:'RP 단위는 정수만, 경은 소수 16자리까지, 해는 소수 20자리까지 입력할 수 있습니다.','too-large':'금액이 너무 큽니다. RP 기준 60자리 이하로 입력하세요.','invalid-period':'1~3,650일을 입력하세요.','invalid-date':'유효한 날짜를 입력하세요.','future-date':'승천일은 오늘보다 미래일 수 없습니다.'};return t(messages[error.message]||'유효한 날짜를 입력하세요.');}
+ function errorText(error){const messages={'duplicate-income-date':'같은 날짜의 획득량 변경이 중복되어 있습니다. 날짜마다 하나만 남겨주세요.','invalid-income-history':'획득량 변경일과 금액을 모두 올바르게 입력하세요. 최대 100개까지 추가할 수 있습니다.','completed-over-budget':'완료한 강화 비용이 변경된 획득량 예산보다 큽니다. 획득량 이력과 남은 RP를 확인하세요.','invalid-completed':'저장된 완료 기록을 확인해주세요.','resonance-data':'공명 CSV 데이터를 불러올 수 없습니다. 새로고침하거나 공명 강화 옵션을 해제하세요.','ascension-skill-data':'승천 스킬 CSV 데이터를 불러오는 중이거나 불러올 수 없습니다. 잠시 후 다시 계산하거나 새로고침하세요.','invalid-resonance-level':'현재 공명 레벨은 0~30의 정수로 입력하세요.','invalid-ascension':'승천 단계를 선택하세요.','invalid-rp':'금액은 0 이상의 숫자로 입력하세요. 쉼표 또는 소수점은 선택한 단위에 맞게 사용할 수 있습니다.','invalid-unit':'금액은 0 이상의 숫자로 입력하세요. 쉼표 또는 소수점은 선택한 단위에 맞게 사용할 수 있습니다.',precision:'RP 단위는 정수만, 경은 소수 16자리까지, 해는 소수 20자리까지 입력할 수 있습니다.','too-large':'금액이 너무 큽니다. RP 기준 60자리 이하로 입력하세요.','invalid-period':'1~3,650일을 입력하세요.','invalid-date':'유효한 날짜를 입력하세요.','future-date':'승천일은 오늘보다 미래일 수 없습니다.'};return t(messages[error.message]||'유효한 날짜를 입력하세요.');}
  function readConfig(){
   const config={daily:$('daily-input').value.trim(),dailyUnit:$('daily-unit').value,initial:$('initial-input').value.trim(),initialUnit:$('initial-unit').value,period:Number($('period-input').value),start:$('start-date').value,asc:$('asc-date').value,ascensionStage:$('ascension-stage').value,includeResonance:$('ascension-stage').value==='2'&&$('include-resonance').checked,resonanceLevel:$('resonance-level').value===''?NaN:Number($('resonance-level').value),spendAllOnLastDay:$('spend-all-last-day').checked,incomeChanges:incomeDraft.map(x=>({...x}))};
   E.dateNumber(config.start);return config;
@@ -48,8 +52,8 @@
  function saveDraft(){formDraft=captureDraft();try{localStorage.setItem(DRAFT_KEY,JSON.stringify(formDraft));draftStorageError=false;}catch{draftStorageError=true;}renderDraftNote();}
  function schedule(config){return (config.incomeChanges||[]).map(x=>({day:E.dateNumber(x.date)-E.dateNumber(config.start)+1,daily:E.parseRP(x.amount,x.unit)}));}
  function completionLocks(){return Object.entries(state.done).filter(([,level])=>Number.isInteger(level)&&level>0).map(([key,level])=>{const [day,skill]=key.split(':').map(Number);return {day,skill,level};});}
- function calculate(config,completed=[]){return E.buildPlan({initial:E.parseRP(config.initial,config.initialUnit),daily:E.parseRP(config.daily,config.dailyUnit),period:config.period,incomeChanges:schedule(config),completed:completed.filter(x=>x.skill<E.SKILLS.length||(config.ascensionStage==='2'&&config.includeResonance===true&&x.level>=Number(config.resonanceLevel))),ascensionStage:config.ascensionStage||'2',includeResonance:config.includeResonance===true,resonanceLevel:Number(config.resonanceLevel),resonanceTable,spendAllOnLastDay:config.spendAllOnLastDay===true});}
- let plan;try{plan=calculate(state.config,completionLocks());E.dateNumber(state.config.start);}catch(error){if(error.message==='resonance-data'){plan=calculate({...state.config,includeResonance:false},completionLocks());calculationError=error;}else if(error.message==='completed-over-budget'){plan=calculate(state.config);calculationError=error;}else{state={config:{...defaults},day:1,changed:true,done:{}};plan=calculate(state.config);}}
+ function calculate(config,completed=[]){return E.buildPlan({initial:E.parseRP(config.initial,config.initialUnit),daily:E.parseRP(config.daily,config.dailyUnit),period:config.period,incomeChanges:schedule(config),completed:completed.filter(x=>x.skill<E.SKILLS.length||(x.skill===E.SKILLS.length&&config.ascensionStage==='2'&&config.includeResonance===true&&x.level>=Number(config.resonanceLevel))||(x.skill===E.SKILLS.length+1&&config.ascensionStage!=='2')||(x.skill===E.SKILLS.length+2&&config.ascensionStage==='4')),ascensionStage:config.ascensionStage||'2',includeResonance:config.includeResonance===true,resonanceLevel:Number(config.resonanceLevel),...skillTables,spendAllOnLastDay:config.spendAllOnLastDay===true});}
+ let plan;try{plan=calculate(state.config,completionLocks());E.dateNumber(state.config.start);}catch(error){if(['resonance-data','ascension-skill-data'].includes(error.message)){plan=calculate({...state.config,ascensionStage:'2',includeResonance:false},completionLocks());restorePending=true;calculationError=error;}else if(error.message==='completed-over-budget'){plan=calculate(state.config);calculationError=error;}else{state={config:{...defaults},day:1,changed:true,done:{}};plan=calculate(state.config);}}
  for(const [id,value]of Object.entries(state.done)){if(value===true){const [day,i]=id.split(':').map(Number);if(plan.levels[i]?.[day])state.done[id]=plan.levels[i][day];else delete state.done[id];}else if(!Number.isInteger(value)||value<=0)delete state.done[id];}
  state.day=Math.max(1,Math.min(plan.period,state.day));
  function populate(){const c={...state.config,...formDraft};incomeDraft=(c.incomeChanges||[]).map(x=>({...x}));renderIncomeHistory();$('daily-input').value=c.daily;$('daily-unit').value=c.dailyUnit;$('initial-input').value=c.initial;$('initial-unit').value=c.initialUnit;$('period-input').value=c.period;$('start-date').value=c.start;$('asc-date').value=c.asc;$('asc-date').max=today();$('spend-all-last-day').checked=c.spendAllOnLastDay===true;$('ascension-stage').value=c.ascensionStage||'2';$('include-resonance').checked=c.includeResonance===true;$('resonance-level').value=c.resonanceLevel??0;syncResonanceInputs();}
@@ -70,7 +74,7 @@
  function overview(from,to){
   $('overview-title').textContent=t('{period}일 전체 목표',{period:plan.period});
   const count=to-from+1,table=$('overview');table.style.setProperty('--rp-table-width','calc(var(--rp-first-col) + '+((count+1)*64)+'px)');
-  table.innerHTML='<caption style="text-align:left;padding:12px">'+t(plan.ascensionStage==='3+'?'일별 목표 레벨 · 공명 30레벨 유지':plan.includeResonance?'일별 목표 레벨 · 공명 포함 배분':'일별 목표 레벨 · 공명 추가 강화 제외')+' · '+t('{from}~{to}일 / 총 {period}일',{from,to,period:plan.period})+'</caption><thead><tr><th scope="col">'+t('스킬')+'</th><th scope="col">'+t('시작')+'</th>'+Array.from({length:count},(_,i)=>'<th scope="col">'+t('{day}일',{day:from+i})+'</th>').join('')+'</tr></thead><tbody>'+plan.skills.map((s,i)=>'<tr><th scope="row">'+t(s.name)+'</th><td>'+s.start+'</td>'+Array.from({length:count},(_,j)=>{const day=from+j,l=plan.levels[i][day];return '<td class="'+(l>plan.levels[i][day-1]?'changed':'')+'">'+l+'</td>';}).join('')+'</tr>').join('')+'</tbody>';
+  table.innerHTML='<caption style="text-align:left;padding:12px">'+t(plan.ascensionStage!=='2'?'일별 목표 레벨 · 공명 30레벨 유지':plan.includeResonance?'일별 목표 레벨 · 공명 포함 배분':'일별 목표 레벨 · 공명 추가 강화 제외')+' · '+t('{from}~{to}일 / 총 {period}일',{from,to,period:plan.period})+'</caption><thead><tr><th scope="col">'+t('스킬')+'</th><th scope="col">'+t('시작')+'</th>'+Array.from({length:count},(_,i)=>'<th scope="col">'+t('{day}일',{day:from+i})+'</th>').join('')+'</tr></thead><tbody>'+plan.skills.map((s,i)=>'<tr><th scope="row">'+t(s.name)+'</th><td>'+s.start+'</td>'+Array.from({length:count},(_,j)=>{const day=from+j,l=plan.levels[i][day];return '<td class="'+(l>plan.levels[i][day-1]?'changed':'')+'">'+l+'</td>';}).join('')+'</tr>').join('')+'</tbody>';
  }
  function render(){
   const day=state.day,changed=changes(day),done=changed.filter(x=>isComplete(day,x.i)).length;
@@ -101,7 +105,7 @@
   $('resonance-data-status').textContent=resonanceStatus==='ready'?'':t(resonanceStatus==='loading'?'공명 CSV 데이터를 불러오는 중입니다.':'공명 CSV 데이터를 불러올 수 없습니다. 새로고침하거나 공명 강화 옵션을 해제하세요.');
  }
  function renderResonanceSummary(){
-  if(plan.ascensionStage==='3+'){$('resonance-summary').textContent=t('승천3 이상은 공명 30레벨 완료 기준으로 계산하며 추가 투자하지 않습니다.');return;}
+  if(plan.ascensionStage!=='2'){$('resonance-summary').textContent=t('승천3 이상은 공명 30레벨 완료 기준으로 계산하며 추가 투자하지 않습니다.');return;}
   if(!plan.includeResonance){$('resonance-summary').textContent=t('현재 계산 결과에는 공명 추가 강화가 포함되지 않습니다.');return;}
   const i=plan.skills.findIndex(s=>s.kind==='resonance'),level=plan.levels[i][state.day],last=plan.levels[i][plan.period],record=plan.resonanceTable[level-1];
   $('resonance-summary').textContent=t('선택일 공명 {level}레벨 · 최종데미지 {damage}% · 별빛 일일 획득 상한 {starlight}% · 기간 최종 목표 {last}레벨',{level,damage:record?.damage||0,starlight:record?.starlight||0,last});
@@ -118,7 +122,7 @@
  $('income-rows').addEventListener('change',event=>{const i=Number(event.target.dataset.historyIndex),field=event.target.dataset.historyField;if(incomeDraft[i]&&['date','amount','unit'].includes(field))incomeDraft[i][field]=event.target.value;});
  $('income-rows').addEventListener('click',event=>{const remove=event.target.closest('[data-remove-income]');if(remove){incomeDraft.splice(Number(remove.dataset.removeIncome),1);renderIncomeHistory();saveDraft();return;}if(event.target.matches('input[type="date"]')&&typeof event.target.showPicker==='function'){try{event.target.showPicker();event.preventDefault();}catch{}}});
  $('rp-form').addEventListener('submit',event=>{
-  event.preventDefault();saveDraft();calculationError=null;$('calc-error').textContent='';
+  event.preventDefault();saveDraft();restorePending=false;calculationError=null;$('calc-error').textContent='';
   try{const config=readConfig(),sameOrigin=state.config.start===config.start&&E.parseRP(state.config.initial,state.config.initialUnit)===E.parseRP(config.initial,config.initialUnit),next=calculate(config,sameOrigin?completionLocks():[]);state.config=config;plan=next;if(!sameOrigin)state.done={};state.day=Math.min(state.day,plan.period);save();saveDraft();render();noticeKey='획득량 이력을 반영해 계산했습니다. 같은 시작일과 남은 RP를 유지하면 완료한 강화도 보존됩니다.';$('status').textContent=t(noticeKey);}
   catch(error){calculationError=error;$('calc-error').textContent=errorText(error);}
  });
@@ -132,7 +136,7 @@
  $('go-today').onclick=()=>go(Math.max(1,Math.min(plan.period,E.dateNumber(today())-E.dateNumber(state.config.start)+1)));
  $('cards').addEventListener('change',event=>{if(event.target.matches('[data-skill]')){const i=Number(event.target.dataset.skill);if(event.target.checked)state.done[key(state.day,i)]=plan.levels[i][state.day];else delete state.done[key(state.day,i)];save();render();}});
  $('check-all').onclick=()=>{const c=changes(state.day),all=c.every(x=>isComplete(state.day,x.i));c.forEach(x=>{if(all)delete state.done[key(state.day,x.i)];else state.done[key(state.day,x.i)]=x.level;});save();render();};
- $('copy').onclick=async()=>{const c=changes(state.day),text=t('[{day}일차 RP 강화 목표]',{day:state.day})+' '+dateFor(state.day)+'\n'+(c.length?c.map(x=>t('{skill}: {prev} → {level}레벨',{skill:t(x.s.name),prev:x.previous,level:x.level})).join('\n'):t('강화 없이 RP 모으기 · 기존 레벨 유지'))+'\n'+t(plan.ascensionStage==='3+'?'※ 숫자는 달성 목표 레벨 / 공명 30 유지':plan.includeResonance?'※ 숫자는 달성 목표 레벨 / 공명 포함':'※ 숫자는 달성 목표 레벨 / 공명 강화 제외');try{await navigator.clipboard.writeText(text);noticeKey='복사했어요. 디스코드에 붙여넣으세요.';$('status').textContent=t(noticeKey);}catch{const area=document.createElement('textarea');area.value=text;area.setAttribute('aria-label',t('복사할 강화 목표'));area.style.width='100%';area.style.minHeight='220px';$('status').replaceChildren(area);area.focus();area.select();}};
+ $('copy').onclick=async()=>{const c=changes(state.day),text=t('[{day}일차 RP 강화 목표]',{day:state.day})+' '+dateFor(state.day)+'\n'+(c.length?c.map(x=>t('{skill}: {prev} → {level}레벨',{skill:t(x.s.name),prev:x.previous,level:x.level})).join('\n'):t('강화 없이 RP 모으기 · 기존 레벨 유지'))+'\n'+t(plan.ascensionStage!=='2'?'※ 숫자는 달성 목표 레벨 / 공명 30 유지':plan.includeResonance?'※ 숫자는 달성 목표 레벨 / 공명 포함':'※ 숫자는 달성 목표 레벨 / 공명 강화 제외');try{await navigator.clipboard.writeText(text);noticeKey='복사했어요. 디스코드에 붙여넣으세요.';$('status').textContent=t(noticeKey);}catch{const area=document.createElement('textarea');area.value=text;area.setAttribute('aria-label',t('복사할 강화 목표'));area.style.width='100%';area.style.minHeight='220px';$('status').replaceChildren(area);area.focus();area.select();}};
  $('table-toggle').onclick=()=>{const open=$('table-wrap').hidden;$('table-wrap').hidden=!open;$('table-scroll-controls').hidden=!open;$('table-toggle').textContent=t(open?'전체 표 접기':'전체 표 펼치기');$('table-toggle').setAttribute('aria-expanded',String(open));};
  $('table-left').onclick=()=>$('table-wrap').scrollBy({left:-Math.max(256,$('table-wrap').clientWidth*.65),behavior:'smooth'});$('table-right').onclick=()=>$('table-wrap').scrollBy({left:Math.max(256,$('table-wrap').clientWidth*.65),behavior:'smooth'});
  function refreshLanguage(language){
@@ -171,9 +175,23 @@
  // The existing ascension-date change handler saves applied metadata as before.
  document.addEventListener('change',event=>{if(event.target.id==='asc-date')saveDraft();});
  populate();render();
- if(typeof fetch==='function')fetch('../../datas/rpskill-perf/ascension-resonance.csv',{cache:'no-cache'})
-  .then(response=>{if(!response.ok)throw Error('resonance-data');return response.text();})
-  .then(text=>{resonanceTable=E.parseResonanceCSV(text);resonanceStatus='ready';try{plan=calculate(state.config,completionLocks());if(calculationError?.message==='resonance-data')calculationError=null;}catch(error){calculationError=error;}render();})
-  .catch(()=>{resonanceStatus='error';syncResonanceInputs();});
+ if(typeof fetch==='function'){
+  const sources=[['resonanceTable','ascension-resonance',E.parseResonanceCSV],['finishingBlowTable','finishing-blow',E.parseSkillCSV],['genesisEchoTable','genesis-echo',E.parseSkillCSV]];
+  for(const [key,file,parse] of sources)fetch('../../datas/rpskill-perf/'+file+'.csv',{cache:'no-cache'})
+   .then(response=>{if(!response.ok)throw Error('ascension-skill-data');return response.text();})
+   .then(text=>{
+    skillTables[key]=parse(text);
+    if(key==='resonanceTable')resonanceStatus='ready';
+    if(restorePending){
+     try{plan=calculate(state.config,completionLocks());calculationError=null;restorePending=false;}
+     catch(error){
+      if(error.message==='completed-over-budget'){plan=calculate(state.config);restorePending=false;}
+      calculationError=error;
+     }
+    }
+    render();
+   })
+   .catch(()=>{if(key==='resonanceTable'){resonanceStatus='error';syncResonanceInputs();}});
+ }
  window.setInterval(()=>{if(!document.hidden)updateAsc();},1000);
 })();

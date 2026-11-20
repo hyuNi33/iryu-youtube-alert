@@ -927,6 +927,10 @@
         <aside class="sidebar">
         </aside>
         <main class="content">
+          <nav class="tab-bar rp-recommend-tabs" aria-label="승천2 이후 RP 투자 추천">
+            <a class="tab-btn active" href="./rp-30day-plan.html" aria-current="page">일일 RP 추천</a>
+            <a class="tab-btn" href="./rp-skill-recommend.html">누적 RP 추천</a>
+          </nav>
           <div class="rp" translate="no">
 
             <!-- 상단 제목 및 승천별 시작 조건 -->
@@ -935,7 +939,7 @@
                 IRYU WORLD / RP PLANNER
               </div>
               <h1>
-                승천2 이후 RP 투자 계산기
+                일일 RP 추천
               </h1>
               <p class="intro">
                 하루 획득량과 기간을 입력하면 예산에 맞는 일별 스킬 목표를 계산합니다.
@@ -955,7 +959,7 @@
                   </section>
                   <section>
                     <h3>
-                      승천3
+                      승천3·4
                     </h3>
                     <p>
                       승천1에서 찍었던 RP 스킬을 모두 다시 찍고, 승천의 공명 30레벨까지 완료한 뒤 남은 RP를 입력하세요.
@@ -964,7 +968,7 @@
                 </div>
                 <p class="start-condition-note">
                   필수 스킬을 모두 완료한 당일을 계산 시작일로 지정하세요. 1일차는 남은 RP만 사용하고, 2일차부터 하루 획득량을 더해 계산합니다.<br>
-                  <span>해당 추천은 999레벨 까지 있는 스킬들만 추천을 합니다.</span>
+                  <span>승천3부터 마무리일격, 승천4부터 창세의 잔향을 추천에 포함합니다.</span>
                 </p>
               </aside>
             </header>
@@ -981,7 +985,7 @@
                 <div class="calc-fields">
                   <label for="ascension-stage">
                     현재 승천 단계
-                    <select id="ascension-stage"><option value="2">승천2</option><option value="3+">승천3 이상</option></select>
+                    <select id="ascension-stage"><option value="2">승천2</option><option value="3">승천3</option><option value="4">승천4</option></select>
                   </label>
                   <label>
                     기본 하루 RP 획득량
@@ -1294,10 +1298,10 @@
                 계산 기준과 시작 레벨
               </summary>
               <p>
-                일반 스킬은 기존 30일 추천안의 투자 비중을 사용합니다. 공명 포함 시 현재 레벨부터 30레벨까지 필요한 CSV 비용을 배분 가중치로 추가합니다. 공명 30레벨 달성 후에는 예산을 일반 스킬에 재배분합니다. 실제 딜 효율을 최적화한 계산기는 아닙니다.
+                일반 스킬은 기존 30일 추천안의 투자 비중을 사용합니다. 공명, 마무리일격, 창세의 잔향은 시작 레벨부터 30레벨까지 필요한 CSV 비용을 투자 비중에 반영합니다. 30레벨에 도달한 스킬의 배정액은 나머지 스킬에 재배분합니다.
               </p>
               <p>
-                일반 스킬의 강화 비용은 매번 1.2배로 증가하며 RP 단위로 반올림합니다. 샤프아이즈는 2레벨 단위로 계산합니다. 공명은 CSV에 명시된 비용과 효과를 사용하고 최대 30레벨을 적용합니다. 승천3 이상은 공명 30레벨 완료 기준입니다. 다른 스킬의 실제 최대레벨은 미반영입니다.
+                일반 스킬의 강화 비용은 1.2배씩 증가하며 RP 단위로 반올림합니다. 샤프아이즈는 2레벨 단위로 계산합니다. 승천3·4는 공명 30레벨 완료 기준이며, 마무리일격과 창세의 잔향은 0레벨에서 시작합니다.
               </p>
               <p>
                 입력 금액과 예산은 정수 RP로 계산합니다. 요약 표시는 큰 단위로 줄여 보여줍니다. 하루 획득량은 변경 이력에 따라 날짜별로 적용합니다.
@@ -1317,15 +1321,15 @@
     </div>
 
     <!-- 외부 스크립트 1: 예산 및 강화 계산 -->
-    <script src="./rp-planner-engine.js?v=20261104-resonance">
+    <script src="./rp-planner-engine.js?v=20261120-ascension">
     </script>
 
     <!-- 외부 스크립트 2: 한국어 / 영어 / 대만 번체 번역 -->
-    <script src="./rp-planner-locales.js?v=20261118-level-cap">
+    <script src="./rp-planner-locales.js?v=20261120-daily-title">
     </script>
 
     <!-- 외부 스크립트 3: 입력, 날짜, 완료 체크 등 화면 동작 -->
-    <script src="./rp-planner-ui.js?v=20261104-resonance">
+    <script src="./rp-planner-ui.js?v=20261120-ascension">
     </script>
   </body>
 </html>

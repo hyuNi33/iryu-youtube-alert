@@ -42,21 +42,33 @@
   for(const change of sorted){if(change.day<=from){rate=change.daily;continue;}if(change.day>=to)break;total+=rate*BigInt(change.day-cursor);cursor=change.day;rate=change.daily;}
   return total+rate*BigInt(Math.max(0,to-cursor));
  }
- function parseResonanceCSV(text){
+ function parseSkillCSV(text, resonance=false){
   const rows=[];let row=[],cell='',quoted=false;
   for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(quoted&&text[i+1]==='"'){cell+='"';i++;}else quoted=!quoted;}else if(c===','&&!quoted){row.push(cell);cell='';}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(v=>v.trim()))rows.push(row);row=[];cell='';}else cell+=c;}
   if(quoted)throw Error('resonance-data');row.push(cell);if(row.some(v=>v.trim()))rows.push(row);
   if(rows.length!==31||rows[0][0].replace(/^\uFEFF/,'').trim()!=='레벨')throw Error('resonance-data');
   let cumulative=0n;
-  return rows.slice(1).map((r,i)=>{const level=Number(r[0]),raw=(r[1]||'').replace(/,/g,'').trim(),sum=(r[2]||'').replace(/,/g,'').trim(),effect=r[3]||'',match=effect.match(/최종데미지\s*([\d.]+)%.*상한\s*([\d.]+)%/);if(level!==i+1||!/^\d+$/.test(raw)||!/^\d+$/.test(sum)||!match)throw Error('resonance-data');const cost=BigInt(raw);if(cost<=0n)throw Error('resonance-data');cumulative+=cost;if(cumulative!==BigInt(sum))throw Error('resonance-data');return {level,cost,cumulative,damage:Number(match[1]),starlight:Number(match[2]),effect};});
+  return rows.slice(1).map((r,i)=>{const level=Number(r[0]),raw=(r[1]||'').replace(/,/g,'').trim(),sum=(r[2]||'').replace(/,/g,'').trim(),effect=r[3]||'',match=effect.match(/최종데미지\s*([\d.]+)%.*상한\s*([\d.]+)%/);if(level!==i+1||!/^\d+$/.test(raw)||!/^\d+$/.test(sum)||!effect||(resonance&&!match))throw Error('resonance-data');const cost=BigInt(raw);if(cost<=0n)throw Error('resonance-data');cumulative+=cost;if(cumulative!==BigInt(sum))throw Error('resonance-data');return {level,cost,cumulative,damage:Number(match?.[1]||0),starlight:Number(match?.[2]||0),effect};});
  }
- function buildPlan({initial,daily,period,incomeChanges=[],completed=[],spendAllOnLastDay=false,ascensionStage="2",includeResonance=false,resonanceLevel=0,resonanceTable=[]}){
-  if(!['2','3+'].includes(ascensionStage))throw Error('invalid-ascension');
+ const parseResonanceCSV=text=>parseSkillCSV(text,true);
+ function buildPlan({initial,daily,period,incomeChanges=[],completed=[],spendAllOnLastDay=false,ascensionStage="2",includeResonance=false,resonanceLevel=0,resonanceTable=[],finishingBlowTable=[],genesisEchoTable=[]}){
+  if(ascensionStage==='3+')ascensionStage='3';
+  if(!['2','3','4'].includes(ascensionStage))throw Error('invalid-ascension');
   const useResonance=ascensionStage==='2'&&includeResonance===true,skills=SKILLS.map(s=>({...s}));
   if(useResonance){
    if(!Number.isInteger(resonanceLevel)||resonanceLevel<0||resonanceLevel>30)throw Error('invalid-resonance-level');
    if(!Array.isArray(resonanceTable)||resonanceTable.length!==30)throw Error('resonance-data');
-   skills.push({name:'승천의 공명',kind:'resonance',start:resonanceLevel,reference:30,maxLevel:30,step:1,base:resonanceTable[resonanceLevel]?.cost||0n});
+   skills.push({name:'승천의 공명',kind:'resonance',start:resonanceLevel,reference:30,maxLevel:30,step:1,base:resonanceTable[resonanceLevel]?.cost||0n,table:resonanceTable});
+  }
+  if(ascensionStage!=='2'){
+   const addSkill=(name,start,table)=>{
+    if(start<30&&(!Array.isArray(table)||table.length!==30))throw Error('ascension-skill-data');
+    skills.push({name,start,reference:30,maxLevel:30,step:1,base:table[start]?.cost||0n,table});
+   };
+   // Keep the resonance slot so saved completion indices refer to the same skills across stages.
+   addSkill('승천의 공명',30,[]);
+   addSkill('마무리일격',0,finishingBlowTable);
+   if(ascensionStage==='4')addSkill('창세의 잔향',0,genesisEchoTable);
   }
   if(typeof initial!=='bigint'||typeof daily!=='bigint'||initial<0n||daily<0n)throw Error('invalid-rp');
   if(!Number.isInteger(period)||period<1||period>3650)throw Error('invalid-period');
@@ -66,7 +78,7 @@
   if(!Array.isArray(completed))throw Error('invalid-completed');
   const locks=Array.from({length:period+1},()=>[]);
   for(const item of completed){const s=skills[item.skill];if(!s||!Number.isInteger(item.day)||item.day<1||!Number.isInteger(item.level)||item.level<s.start||(s.maxLevel!==undefined&&item.level>s.maxLevel)||(item.level-s.start)%s.step!==0)throw Error('invalid-completed');if(item.day<=period)locks[item.day].push(item);}
-  const series=skills.map(s=>{const sums=[0n];let a=s.base,b=1n;return {s,sums,extend(){if(s.kind==='resonance'){const record=resonanceTable[s.start+sums.length-1];if(!record)throw Error('invalid-resonance-level');sums.push(sums.at(-1)+record.cost);}else{sums.push(sums.at(-1)+round(a,b));a*=6n;b*=5n;}}};});
+  const series=skills.map(s=>{const sums=[0n];let a=s.base,b=1n;return {s,sums,extend(){if(s.table){const record=s.table[s.start+sums.length-1];if(!record)throw Error('invalid-resonance-level');sums.push(sums.at(-1)+record.cost);}else{sums.push(sums.at(-1)+round(a,b));a*=6n;b*=5n;}}};});
   const weights=series.map(q=>{while(q.sums.length<=q.s.reference-q.s.start)q.extend();return q.sums[q.s.reference-q.s.start];});
   const denominator=weights.reduce((a,b)=>a+b,0n),levels=skills.map(s=>[s.start]),totals=[0n],balances=[initial],counts=skills.map(()=>0);
   for(let day=1;day<=period;day++){
@@ -75,9 +87,17 @@
    let total=0n;
    for(let i=0;i<skills.length;i++){const q=series[i];while(q.sums.length<=counts[i])q.extend();total+=q.sums[counts[i]];}
    if(total>budget)throw Error('completed-over-budget');
-   const quotas=weights.map(w=>budget*w/denominator);
-   const resonanceIndex=skills.findIndex(s=>s.kind==='resonance');
-   if(resonanceIndex>=0){const maxCost=series[resonanceIndex].sums.at(-1);if(quotas[resonanceIndex]>=maxCost){const rest=budget-maxCost,restWeight=denominator-weights[resonanceIndex];for(let i=0;i<skills.length;i++)quotas[i]=i===resonanceIndex?maxCost:rest*weights[i]/restWeight;}}
+   const quotas=weights.map(()=>0n);
+   let remaining=budget,weightLeft=denominator;
+   let active=weights.map((_,i)=>i).filter(i=>weights[i]>0n);
+   const capped=active.filter(i=>skills[i].table);
+   for(const i of capped){
+    const limit=weights[i];
+    if(remaining<weightLeft)break;
+    quotas[i]=limit;remaining-=limit;weightLeft-=weights[i];
+    active=active.filter(index=>index!==i);
+   }
+   for(const i of active)quotas[i]=remaining*weights[i]/weightLeft;
    for(let i=0;i<skills.length;i++){
     const q=series[i],quota=quotas[i];
     while(true){const next=counts[i]+q.s.step;if(q.s.maxLevel!==undefined&&q.s.start+next>q.s.maxLevel)break;while(q.sums.length<=next)q.extend();const extra=q.sums[next]-q.sums[counts[i]];if(q.sums[next]>quota||total+extra>budget)break;counts[i]=next;total+=extra;}
@@ -103,5 +123,5 @@
   }
   return {skills,ascensionStage,includeResonance:useResonance,resonanceLevel:useResonance?resonanceLevel:null,resonanceTable:useResonance?resonanceTable:[],period,initial,daily,spendAllOnLastDay:spendAllOnLastDay===true,levels,totals,balances,weights,denominator,budgets,dailyIncome,incomeChanges:history,totalBudget:budgets[period]};
  }
- return {SKILLS,parseRP,dateNumber,koreaToday,timeZoneFor,todayInZone,elapsed,addDate,normalizeIncomeChanges,incomeBetween,parseResonanceCSV,buildPlan};
+ return {SKILLS,parseRP,dateNumber,koreaToday,timeZoneFor,todayInZone,elapsed,addDate,normalizeIncomeChanges,incomeBetween,parseSkillCSV,parseResonanceCSV,buildPlan};
 });

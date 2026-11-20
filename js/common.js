@@ -26,7 +26,7 @@ const MENU = [
   { label: "구슬 획득량 계산기", href: "/pages/calc/orb.html" },
   /*{ label: "유물 계산기", href: "/pages/calc/artifact.html" },*/
   { label: "RP 스킬 계산기", href: "/pages/calc/rpskill.html" },
-  { label: "승천2 이후 RP 투자 계산기", href: "/pages/calc/rp-30day-plan.html" },
+  { label: "승천2 이후 RP 투자 추천", href: "/pages/calc/rp-30day-plan.html", relatedPaths: ["/pages/calc/rp-skill-recommend.html"] },
 
   { section: "기능" },
   { label: "레벨업 알림", href: "/pages/tools/level-alert.html" },
@@ -142,7 +142,7 @@ function buildSidebar() {
 
     // .html 유무에 관계없이 비교 (serve 등 clean URL 대응)
     const stripHtml = (p) => p.replace(/\.html$/, "");
-    const isActive = stripHtml(currentPath).endsWith(stripHtml(item.href)) ||
+    const isActive = [item.href, ...(item.relatedPaths || [])].some(path => stripHtml(currentPath).endsWith(stripHtml(path))) ||
       (item.href === "/index.html" && (currentPath === "/" || currentPath.endsWith("/")));
     const activeClass = isActive ? ' class="active"' : "";
 
