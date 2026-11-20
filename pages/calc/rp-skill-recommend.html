@@ -51,6 +51,14 @@
       background: var(--tag-bg);
     }
     .rp-summary-highlight dd { color: var(--tag-color); }
+    .rp-summary .table-tip-trigger { text-align: left; }
+    .rp-summary .table-tip-trigger:focus-visible {
+      outline: 2px solid var(--result-highlight);
+      outline-offset: 4px;
+      border-radius: 2px;
+    }
+    .rp-summary-detail { display: block; margin-top: 8px; font-size: .875rem; font-weight: 600; }
+    .rp-summary-detail[hidden] { display: none; }
     .rp-results-table { overflow-x: auto; }
     .rp-results table { width: 100%; border-collapse: collapse; }
     .rp-results th, .rp-results td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
@@ -99,19 +107,31 @@
           <dl class="rp-summary">
             <div>
               <dt>승천1까지 사용한 RP</dt>
-              <dd id="rp-baseline"></dd>
+              <dd>
+                <button type="button" class="table-tip-trigger" id="rp-baseline" aria-expanded="false" aria-controls="rp-baseline-detail"></button>
+                <span class="rp-summary-detail" id="rp-baseline-detail" hidden></span>
+              </dd>
             </div>
             <div>
               <dt>투자 가능 RP</dt>
-              <dd id="rp-budget"></dd>
+              <dd>
+                <button type="button" class="table-tip-trigger" id="rp-budget" aria-expanded="false" aria-controls="rp-budget-detail"></button>
+                <span class="rp-summary-detail" id="rp-budget-detail" hidden></span>
+              </dd>
             </div>
             <div class="rp-summary-highlight">
               <dt>추천 투자 RP</dt>
-              <dd id="rp-spent"></dd>
+              <dd>
+                <button type="button" class="table-tip-trigger" id="rp-spent" aria-expanded="false" aria-controls="rp-spent-detail"></button>
+                <span class="rp-summary-detail" id="rp-spent-detail" hidden></span>
+              </dd>
             </div>
             <div>
               <dt>남은 RP</dt>
-              <dd id="rp-left"></dd>
+              <dd>
+                <button type="button" class="table-tip-trigger" id="rp-left" aria-expanded="false" aria-controls="rp-left-detail"></button>
+                <span class="rp-summary-detail" id="rp-left-detail" hidden></span>
+              </dd>
             </div>
           </dl>
           <div class="rp-results-table">

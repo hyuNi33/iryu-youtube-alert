@@ -125,6 +125,23 @@ function showRP(node, amount) {
   node.title = fullRP(amount);
 }
 
+function showSummaryRP(id, amount) {
+  const button = element(id);
+  const detail = element(id + "-detail");
+  showRP(button, amount);
+  detail.textContent = fullRP(amount);
+  detail.hidden = true;
+  button.setAttribute("aria-expanded", "false");
+}
+
+document.querySelectorAll(".rp-summary button[aria-controls]").forEach(button => {
+  button.addEventListener("click", () => {
+    const detail = element(button.getAttribute("aria-controls"));
+    detail.hidden = !detail.hidden;
+    button.setAttribute("aria-expanded", String(!detail.hidden));
+  });
+});
+
 function restoreInputs() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
@@ -185,10 +202,10 @@ async function initialize() {
     const budget = total - baseline;
     const { targets, left } = recommend(skills, inputs.get("stage"), budget);
     const upgrades = targets.filter(target => target.level > target.start);
-    showRP(element("rp-baseline"), baseline);
-    showRP(element("rp-budget"), budget);
-    showRP(element("rp-spent"), budget - left);
-    showRP(element("rp-left"), left);
+    showSummaryRP("rp-baseline", baseline);
+    showSummaryRP("rp-budget", budget);
+    showSummaryRP("rp-spent", budget - left);
+    showSummaryRP("rp-left", left);
     element("rp-rows").replaceChildren(...upgrades.map(target => {
       const row = document.createElement("tr");
       for (const value of [target.name, target.start, target.level]) {
