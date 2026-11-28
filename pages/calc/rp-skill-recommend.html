@@ -10,11 +10,96 @@
   <script src="../../js/common.js"></script>
   <style>
     html[data-theme="dark"] { color-scheme: dark; }
-    .rp-inputs { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
-    .rp-inputs label { display: grid; gap: 6px; }
-    .rp-inputs input { max-width: 100%; }
-    .rp-inputs .btn { min-height: 44px; }
+    .rp-inputs { display: grid; gap: 14px; container-type: inline-size; }
+    .rp-main-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: end;
+      gap: 14px 12px;
+    }
+    .rp-main-fields label {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+      color: var(--section-title-color);
+      font-size: .9375rem;
+      font-weight: 700;
+    }
+    .rp-main-fields :is(input, select, .btn) { min-height: 48px; }
+    .rp-main-fields select { max-width: none; }
+    .rp-total, .rp-main-fields .btn { grid-column: 1 / -1; }
+    .rp-total input {
+      border-color: var(--result-highlight);
+      font-family: inherit;
+      font-size: clamp(1rem, 3cqi, 1.125rem);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
     .rp-inputs .btn:disabled { opacity: .55; cursor: default; }
+    @container (min-width: 34rem) {
+      .rp-main-fields { grid-template-columns: 1fr 1fr 1.5fr 1fr; }
+      .rp-total { grid-column: 1 / -2; }
+      .rp-main-fields .btn { grid-column: auto; }
+    }
+    @container (min-width: 57rem) {
+      html:not(:lang(en)) .rp-main-fields {
+        grid-template-columns: minmax(0, 1fr) 118px 92px 106px 156px 108px;
+      }
+      html:not(:lang(en)) .rp-total { grid-column: auto; }
+    }
+    @container (min-width: 64rem) {
+      html:lang(en) .rp-main-fields {
+        grid-template-columns: minmax(0, 1fr) 110px 128px 118px 176px 165px;
+      }
+      html:lang(en) .rp-total { grid-column: auto; }
+    }
+    @container (max-width: 34rem) {
+      html:lang(en) .rp-main-fields label:nth-last-of-type(-n + 2) { grid-column: 1 / -1; }
+    }
+    .rp-options {
+      min-width: 0;
+      border-top: 1px solid var(--border);
+      margin-top: 4px;
+    }
+    .rp-options summary {
+      padding: 12px 0;
+      color: var(--section-title-color);
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .rp-options-groups { display: flex; flex-wrap: wrap; gap: 12px; }
+    .rp-options-group {
+      flex: 1 1 340px;
+      min-width: 0;
+      padding: 12px clamp(10px, 2vw, 16px) 16px;
+      border: 1px solid var(--result-border);
+      border-radius: 12px;
+      background: var(--result-bg);
+    }
+    .rp-options-group:first-child { flex-basis: 100%; }
+    .rp-options-group legend {
+      padding: 0 6px;
+      color: var(--section-title-color);
+      font-weight: 700;
+    }
+    .rp-options-fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 175px), 1fr));
+      gap: 14px;
+    }
+    .rp-option-field { display: grid; align-content: start; gap: 6px; min-width: 0; }
+    .rp-option-field[hidden] { display: none; }
+    .rp-option-field label { display: block; font-size: .9375rem; font-weight: 600; }
+    .rp-option-field input { font-variant-numeric: tabular-nums; }
+    .rp-options-help { color: var(--text-sub); font-size: .8125rem; line-height: 1.55; }
+    .rp-options-intro { margin-bottom: 12px; }
+    .rp-options-example {
+      display: block;
+      margin-top: 4px;
+      color: var(--result-value-color);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
     .rp-results { margin-top: 16px; }
     .rp-results h2 { color: var(--section-title-color); }
     .rp-summary {
@@ -77,33 +162,120 @@
         <header class="top-banner">
           <h1>누적 RP 스킬 추천</h1>
           <p>승천 1단계까지의 스킬을 모두 달성한 상태로 계산합니다.</p>
-          <p>승천3부터는 승천의 공명 먼저 투자 후 남은 RP로 다른 RP스킬들을 추천합니다.</p>
+          <p>승천3부터는 승천의 공명을 먼저 올리고, 남은 RP는 선택한 대상의 예상 데미지 상승 효율에 따라 투자합니다.</p>
         </header>
         <section class="calc-card">
           <form id="rp-form" class="rp-inputs">
-            <label>승천 단계
-              <select name="stage" class="table-dropdown">
-                <option value="12">승천2</option>
-                <option value="13">승천3</option>
-                <option value="14">승천4</option>
-              </select>
-            </label>
-            <label>누적 RP
-              <input name="total" type="text" inputmode="decimal" required>
-            </label>
-            <label>단위
-              <select name="unit" class="table-dropdown">
-                <option value="RP">RP</option>
-                <option value="경">경</option>
-                <option value="해">해</option>
-              </select>
-            </label>
-            <button type="submit" class="btn" disabled>추천 계산</button>
+            <div class="rp-main-fields">
+              <label class="rp-total">누적 RP
+                <input name="total" type="text" inputmode="decimal" required>
+              </label>
+              <label>단위
+                <select name="unit" class="table-dropdown">
+                  <option value="RP">RP</option>
+                  <option value="경">경 (10¹⁶ RP)</option>
+                  <option value="해">해 (10²⁰ RP)</option>
+                </select>
+              </label>
+              <label>승천 단계
+                <select name="stage" class="table-dropdown">
+                  <option value="12">승천2</option>
+                  <option value="13">승천3</option>
+                  <option value="14">승천4</option>
+                </select>
+              </label>
+              <label>캐릭터 레벨
+                <input name="characterLevel" type="number" min="1" max="99999" step="1" value="806" required>
+              </label>
+              <label>추천 기준
+                <select name="goal" class="table-dropdown">
+                  <option value="boss">보스 데미지</option>
+                  <option value="normal">일반 몬스터 데미지</option>
+                </select>
+              </label>
+              <button type="submit" class="btn" disabled>추천 계산</button>
+            </div>
+            <details class="rp-options">
+              <summary>데미지 계산 세부 설정</summary>
+              <p class="rp-options-help rp-options-intro">크리티컬 입력 예시는 샤프 Lv.92와 샤프니스 Lv.49 기준입니다.</p>
+              <div class="rp-options-groups">
+                <fieldset class="rp-options-group">
+                  <legend>크리티컬</legend>
+                  <div class="rp-options-fields">
+                    <div class="rp-option-field">
+                      <label for="rp-critical-rate">발동 확률 (%)</label>
+                      <input id="rp-critical-rate" name="criticalRate" type="number" min="0" max="1000000" step="any" value="174" aria-describedby="rp-critical-rate-help" required>
+                      <p id="rp-critical-rate-help" class="rp-options-help">표시된 크리티컬 확률에서 샤프 증가분을 뺀 값입니다.</p>
+                    </div>
+                    <div class="rp-option-field">
+                      <label for="rp-critical-damage">데미지 증가 (%)</label>
+                      <input id="rp-critical-damage" name="criticalDamage" type="number" min="0" max="1000000" step="any" value="626" aria-describedby="rp-critical-damage-help" required>
+                      <p id="rp-critical-damage-help" class="rp-options-help">표시된 크리티컬 데미지에서 샤프 증가분을 뺀 값입니다. 예를 들어 +728%에서 +102%를 빼면 626을 입력합니다.</p>
+                    </div>
+                    <div class="rp-option-field">
+                      <label for="rp-critical-multiplier">기타 크리티컬 배율</label>
+                      <input id="rp-critical-multiplier" name="criticalMultiplier" type="number" min="1" max="1000000" step="any" value="5.71667" aria-describedby="rp-critical-multiplier-help" required>
+                      <p id="rp-critical-multiplier-help" class="rp-options-help">
+                        최종 크리티컬 데미지(스킬), 유물의 최종 크리티컬 데미지, 차원의 경계의 크리티컬 배율을 곱한 값입니다.
+                        <span class="rp-options-example">예시 2.00 × 2.45 × 1.167 ≈ 5.72</span>
+                      </p>
+                    </div>
+                  </div>
+                </fieldset>
+                <fieldset class="rp-options-group">
+                  <legend>슈퍼 크리티컬</legend>
+                  <div class="rp-options-fields">
+                    <div class="rp-option-field">
+                      <label for="rp-super-rate">발동 확률 (%)</label>
+                      <input id="rp-super-rate" name="superCriticalRate" type="number" min="0" max="100" step="any" value="60.2" aria-describedby="rp-super-rate-help" required>
+                      <p id="rp-super-rate-help" class="rp-options-help">표시된 슈퍼 크리티컬 확률에서 샤프니스 증가분을 뺀 값입니다.</p>
+                    </div>
+                    <div class="rp-option-field">
+                      <label for="rp-super-multiplier">기본 배율</label>
+                      <input id="rp-super-multiplier" name="superCriticalMultiplier" type="number" min="1" max="1000000" step="any" value="10" aria-describedby="rp-super-multiplier-help" required>
+                      <p id="rp-super-multiplier-help" class="rp-options-help">샤프니스 적용 전 기본값은 10입니다. 샤프니스가 +49%라면 발동 시 10 × 1.49 = 14.90배가 됩니다.</p>
+                    </div>
+                  </div>
+                </fieldset>
+                <fieldset class="rp-options-group">
+                  <legend>파이널 어택</legend>
+                  <div class="rp-options-fields">
+                    <div class="rp-option-field">
+                      <label for="rp-final-attack-extra-rate">RP 스킬 외 발동 확률 (%p)</label>
+                      <input id="rp-final-attack-extra-rate" name="finalAttackExtraRate" type="number" min="0" max="100" step="any" value="5" aria-describedby="rp-final-attack-extra-rate-help" required>
+                      <p id="rp-final-attack-extra-rate-help" class="rp-options-help">기본 파이널 어택 Lv.10의 발동 확률 10%에 10초월 보너스 5%p를 더하면 어드밴스드 Lv.0에서 15%입니다. 연쇄 일격 등 다른 보너스도 이 칸에 합해 입력하세요.</p>
+                    </div>
+                    <div class="rp-option-field">
+                      <label for="rp-final-attack-multiplier">기본 데미지 배율</label>
+                      <input id="rp-final-attack-multiplier" name="finalAttackMultiplier" type="number" min="0" max="1000000" step="any" value="1" aria-describedby="rp-final-attack-multiplier-help" required>
+                      <p id="rp-final-attack-multiplier-help" class="rp-options-help">추가타가 원래 공격과 같은 데미지를 준다고 가정한 값은 1입니다. 어드밴스드 효과 적용 전 배율을 입력하세요.</p>
+                    </div>
+                  </div>
+                </fieldset>
+                <fieldset class="rp-options-group">
+                  <legend>메소·승천</legend>
+                  <div class="rp-options-fields">
+                    <div class="rp-option-field">
+                      <label for="rp-meso">보유 메소 (조)</label>
+                      <input id="rp-meso" name="meso" type="number" min="0" max="1000000000000000" step="any" value="250000" aria-describedby="rp-meso-help" required>
+                      <p id="rp-meso-help" class="rp-options-help">그리드 계산에 사용합니다. 25경은 250000을 입력합니다.</p>
+                    </div>
+                    <div id="rp-ascension-bonus-field" class="rp-option-field" hidden>
+                      <label for="rp-ascension-bonus">승천 최종 데미지 (%)</label>
+                      <input id="rp-ascension-bonus" name="ascensionBonus" type="number" min="0" max="1000000" step="any" aria-describedby="rp-ascension-bonus-help">
+                      <p id="rp-ascension-bonus-help" class="rp-options-help">승천 4는 비워 두면 RP로 추정합니다. 그보다 높은 단계는 게임에 표시된 값을 입력하세요.</p>
+                    </div>
+                  </div>
+                </fieldset>
+              </div>
+            </details>
           </form>
           <p id="rp-status" role="status">스킬 데이터를 불러오는 중입니다.</p>
         </section>
         <section id="rp-results" class="calc-card rp-results" hidden>
           <h2>추천 투자</h2>
+          <p>승천1 스킬 기준으로 투자 전후를 비교합니다. 관록과 몬스터 HP에 따라 달라지는 효과는 표시값을 바탕으로 추정합니다.</p>
+          <p>쉐도우 파트너와 파이널 어택의 추가 타격은 해당 스킬이 적용되는 공격을 기준으로 계산합니다.</p>
           <dl class="rp-summary">
             <div>
               <dt>승천1까지 사용한 RP</dt>
@@ -132,6 +304,14 @@
                 <button type="button" class="table-tip-trigger" id="rp-left" aria-expanded="false" aria-controls="rp-left-detail"></button>
                 <span class="rp-summary-detail" id="rp-left-detail" hidden></span>
               </dd>
+            </div>
+            <div id="rp-normal-result">
+              <dt>일반 몬스터 예상 데미지 증가</dt>
+              <dd id="rp-normal-gain"></dd>
+            </div>
+            <div id="rp-boss-result">
+              <dt>보스 예상 데미지 증가</dt>
+              <dd id="rp-boss-gain"></dd>
             </div>
           </dl>
           <div class="rp-results-table">

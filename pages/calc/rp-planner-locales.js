@@ -10,3 +10,41 @@ Object.assign(window.IryuRPLocales.en,{"승천4":"Ascension 4","승천3·4":"Asc
 Object.assign(window.IryuRPLocales["zh-TW"],{"승천4":"飛昇 4","승천3·4":"飛昇 3–4","마무리일격":"終結一擊","창세의 잔향":"創世餘響","승천3부터 마무리일격, 승천4부터 창세의 잔향을 추천에 포함합니다.":"飛昇 3 起納入終結一擊，飛昇 4 起納入創世餘響。","일반 스킬은 기존 30일 추천안의 투자 비중을 사용합니다. 공명, 마무리일격, 창세의 잔향은 시작 레벨부터 30레벨까지 필요한 CSV 비용을 투자 비중에 반영합니다. 30레벨에 도달한 스킬의 배정액은 나머지 스킬에 재배분합니다.":"一般技能沿用原本 30 天計畫的分配比例。共鳴、終結一擊、創世餘響依 CSV 由起始等級升至 30 級的費用計入分配。技能達 30 級後，剩餘額度會重新分配。","일반 스킬의 강화 비용은 1.2배씩 증가하며 RP 단위로 반올림합니다. 샤프아이즈는 2레벨 단위로 계산합니다. 승천3·4는 공명 30레벨 완료 기준이며, 마무리일격과 창세의 잔향은 0레벨에서 시작합니다.":"一般技能強化費用每級成長 1.2 倍，四捨五入至整數 RP。會心之眼以 2 級為單位。飛昇 3、4 視為共鳴已達 30 級，終結一擊與創世餘響從 0 級開始。","승천 스킬 CSV 데이터를 불러오는 중이거나 불러올 수 없습니다. 잠시 후 다시 계산하거나 새로고침하세요.":"飛昇技能資料正在載入或無法取得。請稍後重新計算或重新整理頁面。"});
 window.IryuRPLocales.en["일일 RP 추천"] = "Daily RP Recommendations";
 window.IryuRPLocales["zh-TW"]["일일 RP 추천"] = "每日 RP 建議";
+
+for (const [ko, en, tw] of [
+  ["추천 기준", "Recommendation goal", "推薦目標"],
+  ["보스 데미지", "Boss damage", "首領傷害"],
+  ["일반 몬스터 데미지", "Normal monster damage", "一般怪物傷害"],
+  ["캐릭터 레벨", "Character level", "角色等級"],
+  ["데미지 계산 세부 설정", "Damage calculation settings", "傷害計算詳細設定"],
+  ["크리티컬", "Critical hits", "爆擊"],
+  ["크리티컬 확률 (%) · 샤프 제외", "Critical chance (%) before Sharp Eyes", "爆擊機率（%）・扣除會心之眼"],
+  ["크리티컬 데미지 증가 (%) · 샤프 제외", "Critical damage bonus (%) before Sharp Eyes", "爆擊傷害加成（%）・扣除會心之眼"],
+  ["기타 크리티컬 배율", "Other critical multiplier", "其他爆擊倍率"],
+  ["스킬, 유물, 차원의 경계의 크리티컬 배율을 곱한 값입니다. 예시 2.00 × 2.45 × 1.167 ≈ 5.72", "Multiply the critical multipliers from skills, artifacts, and Dimensional Boundary. Example 2.00 × 2.45 × 1.167 ≈ 5.72", "將技能、遺物與次元邊界的爆擊倍率相乘。範例 2.00 × 2.45 × 1.167 ≈ 5.72"],
+  ["슈퍼 크리티컬", "Super critical hits", "超級爆擊"],
+  ["슈퍼 크리티컬 확률 (%) · 샤프니스 제외", "Super critical chance (%) before Sharpness", "超級爆擊機率（%）・扣除銳利"],
+  ["슈퍼 크리티컬 기본 배율", "Base super critical multiplier", "超級爆擊基礎倍率"],
+  ["샤프니스 적용 전 기본 배율은 10입니다.", "The base multiplier before Sharpness is 10.", "套用銳利前的基礎倍率為 10。"],
+  ["파이널 어택", "Final Attack", "終極攻擊"],
+  ["RP 스킬 외 발동 확률 (%p)", "Proc chance from other sources (percentage points)", "RP 技能以外的觸發機率（百分點）"],
+  ["기본값 5%p에는 10초월 효과가 들어 있습니다. 기본 파이널 어택 Lv.10이면 어드밴스드 Lv.0에서 총 15%입니다.", "The default 5 points come from Transcendence 10. With Final Attack Lv. 10 and Advanced Final Attack Lv. 0, the total is 15%.", "預設 5 個百分點來自超越 10。終極攻擊 Lv.10、進階終極攻擊 Lv.0 時，總觸發率為 15%。"],
+  ["기본 데미지 배율", "Base damage multiplier", "基礎傷害倍率"],
+  ["추가타가 원래 공격과 같은 데미지를 주는 경우 1을 입력하세요.", "Enter 1 if the extra hit deals the same damage as the original hit.", "若追加攻擊與原攻擊的傷害相同，請輸入 1。"],
+  ["메소·승천", "Mesos and Ascension", "楓幣與飛昇"],
+  ["보유 메소 (조)", "Mesos held (trillions)", "持有楓幣（兆）"],
+  ["승천 최종 데미지 (%)", "Ascension final damage (%)", "飛昇最終傷害（%）"],
+  ["승천 4는 비워 두면 RP로 추정합니다. 그보다 높은 단계는 게임에 표시된 값을 입력하세요.", "At Ascension 4, leave blank to estimate from RP. For higher stages, enter the value shown in the game.", "飛昇 4 可留空，系統會依 RP 估算。更高階段請輸入遊戲顯示的數值。"],
+  ["공명은 실제 강화 비용과 데미지 상승 효율을 기준으로 최대 30레벨까지 추천합니다.", "Resonance is recommended up to Lv. 30 based on actual upgrade costs and damage gained per RP.", "共鳴依實際強化費用與傷害提升效率推薦，最高 Lv.30。"],
+  ["체크하면 마지막 날 남은 RP로 살 수 있는 강화 중 데미지가 오르는 항목을 효율순으로 추천합니다.", "On the last day, rank affordable upgrades that increase damage by efficiency.", "勾選後，最後一天會依效率推薦剩餘 RP 可購買且能提高傷害的強化。"],
+  ["스킬 데이터를 불러오는 중입니다.", "Loading skill data.", "正在載入技能資料。"],
+  ["스킬 데이터를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.", "Could not load the skill data. Refresh to try again.", "無法載入技能資料，請重新整理後再試。"],
+  ["캐릭터 레벨과 데미지 세부 설정의 입력값을 확인하세요.", "Check the character level and damage settings.", "請檢查角色等級與傷害詳細設定。"],
+  ["시작 대비 예상 데미지 · 일반 몬스터 {normal} · 보스 {boss}", "Estimated damage gain from start · Normal monsters {normal} · Bosses {boss}", "相較起始的預估傷害提升・一般怪物 {normal}・首領 {boss}"],
+  ["누적 RP 추천과 같은 방식으로 강화할 때마다 예상 데미지 상승률을 계산하고, RP 대비 효율이 높은 강화부터 추천합니다. 다음 강화에 필요한 RP가 부족하면 잔액을 다음 날로 넘깁니다.", "The planner uses the cumulative RP damage formula and recommends each upgrade by estimated damage gain per RP. If the next upgrade is unaffordable, the balance carries over.", "以累積 RP 的傷害公式計算每次強化的預估成長，優先推薦每點 RP 效率最高的強化。若下一次強化的 RP 不足，餘額會留到隔天。"],
+  ["스킬표의 강화 비용과 승천별 최대 레벨을 사용합니다. 샤프아이즈는 2레벨 단위로 계산합니다. 승천3·4는 공명 30레벨 완료 기준이며, 마무리일격과 창세의 잔향은 0레벨에서 시작합니다.", "Upgrade costs and Ascension level caps come from the skill tables. Sharp Eyes upgrades in two-level steps. At Ascension 3 or 4, Resonance starts at Lv. 30, and Finishing Blow and Genesis Echo start at Lv. 0.", "使用技能表的強化費用與各階飛昇等級上限。會心之眼每次提升 2 級。飛昇 3、4 的共鳴從 Lv.30 開始，終結一擊與創世餘響從 Lv.0 開始。"],
+  ["관록과 몬스터 체력에 따른 효과는 추정치입니다. 쉐도우 파트너와 파이널 어택의 추가 타격은 해당 스킬이 적용되는 공격을 기준으로 계산합니다.", "Veteran Experience and monster HP effects are estimates. Shadow Partner and Final Attack extra hits assume an eligible attack.", "資歷與受怪物生命值影響的效果採用估算值。影分身與終極攻擊的追加打擊以可觸發的攻擊為準。"],
+]) {
+  window.IryuRPLocales.en[ko] = en;
+  window.IryuRPLocales["zh-TW"][ko] = tw;
+}

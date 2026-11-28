@@ -51,6 +51,14 @@
   return rows.slice(1).map((r,i)=>{const level=Number(r[0]),raw=(r[1]||'').replace(/,/g,'').trim(),sum=(r[2]||'').replace(/,/g,'').trim(),effect=r[3]||'',match=effect.match(/최종데미지\s*([\d.]+)%.*상한\s*([\d.]+)%/);if(level!==i+1||!/^\d+$/.test(raw)||!/^\d+$/.test(sum)||!effect||(resonance&&!match))throw Error('resonance-data');const cost=BigInt(raw);if(cost<=0n)throw Error('resonance-data');cumulative+=cost;if(cumulative!==BigInt(sum))throw Error('resonance-data');return {level,cost,cumulative,damage:Number(match?.[1]||0),starlight:Number(match?.[2]||0),effect};});
  }
  const parseResonanceCSV=text=>parseSkillCSV(text,true);
+ function buildIncomeSchedule({initial,daily,period,incomeChanges=[]}){
+  if(typeof initial!=='bigint'||typeof daily!=='bigint'||initial<0n||daily<0n)throw Error('invalid-rp');
+  if(!Number.isInteger(period)||period<1||period>3650)throw Error('invalid-period');
+  const history=normalizeIncomeChanges(incomeChanges),budgets=[initial],dailyIncome=[0n];let rate=daily,changeIndex=0;
+  for(let d=1;d<=period;d++){while(changeIndex<history.length&&history[changeIndex].day<=d)rate=history[changeIndex++].daily;dailyIncome.push(rate);budgets.push(budgets[d-1]+(d===1?0n:rate));}
+  if(budgets[period].toString().length>64)throw Error('too-large');
+  return {history,budgets,dailyIncome};
+ }
  function buildPlan({initial,daily,period,incomeChanges=[],completed=[],spendAllOnLastDay=false,ascensionStage="2",includeResonance=false,resonanceLevel=0,resonanceTable=[],finishingBlowTable=[],genesisEchoTable=[]}){
   if(ascensionStage==='3+')ascensionStage='3';
   if(!['2','3','4'].includes(ascensionStage))throw Error('invalid-ascension');
@@ -70,11 +78,7 @@
    addSkill('마무리일격',0,finishingBlowTable);
    if(ascensionStage==='4')addSkill('창세의 잔향',0,genesisEchoTable);
   }
-  if(typeof initial!=='bigint'||typeof daily!=='bigint'||initial<0n||daily<0n)throw Error('invalid-rp');
-  if(!Number.isInteger(period)||period<1||period>3650)throw Error('invalid-period');
-  const history=normalizeIncomeChanges(incomeChanges),budgets=[initial],dailyIncome=[0n];let rate=daily,changeIndex=0;
-  for(let d=1;d<=period;d++){while(changeIndex<history.length&&history[changeIndex].day<=d)rate=history[changeIndex++].daily;dailyIncome.push(rate);budgets.push(budgets[d-1]+(d===1?0n:rate));}
-  if(budgets[period].toString().length>64)throw Error('too-large');
+  const {history,budgets,dailyIncome}=buildIncomeSchedule({initial,daily,period,incomeChanges});
   if(!Array.isArray(completed))throw Error('invalid-completed');
   const locks=Array.from({length:period+1},()=>[]);
   for(const item of completed){const s=skills[item.skill];if(!s||!Number.isInteger(item.day)||item.day<1||!Number.isInteger(item.level)||item.level<s.start||(s.maxLevel!==undefined&&item.level>s.maxLevel)||(item.level-s.start)%s.step!==0)throw Error('invalid-completed');if(item.day<=period)locks[item.day].push(item);}
@@ -123,5 +127,5 @@
   }
   return {skills,ascensionStage,includeResonance:useResonance,resonanceLevel:useResonance?resonanceLevel:null,resonanceTable:useResonance?resonanceTable:[],period,initial,daily,spendAllOnLastDay:spendAllOnLastDay===true,levels,totals,balances,weights,denominator,budgets,dailyIncome,incomeChanges:history,totalBudget:budgets[period]};
  }
- return {SKILLS,parseRP,dateNumber,koreaToday,timeZoneFor,todayInZone,elapsed,addDate,normalizeIncomeChanges,incomeBetween,parseSkillCSV,parseResonanceCSV,buildPlan};
+ return {SKILLS,parseRP,dateNumber,koreaToday,timeZoneFor,todayInZone,elapsed,addDate,normalizeIncomeChanges,incomeBetween,parseSkillCSV,parseResonanceCSV,buildIncomeSchedule,buildPlan};
 });

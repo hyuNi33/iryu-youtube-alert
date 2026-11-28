@@ -4565,6 +4565,10 @@
     "누적 RP 추천": "累積 RP 建議",
   });
   const rpSkillEffectTranslations = [
+    [/^최종 데미지 \+(\d+(?:\.\d+)?)%$/, "Final Damage +{0}%", "最終傷害 +{0}%"],
+    [/^보스 데미지 \+(\d+(?:\.\d+)?)%$/, "Boss Damage +{0}%", "首領傷害 +{0}%"],
+    [/^캐릭터 Lv\.(\d+) 기준 최종 데미지 약 \+(\d+(?:\.\d+)?)%$/, "Approx. +{1}% Final Damage at Character Lv. {0}", "角色 Lv. {0} 時，最終傷害約 +{1}%"],
+    [/^보유 메소 기준 최종 데미지 \+(\d+(?:\.\d+)?)% \(상한 \+(\d+(?:\.\d+)?)%\)$/, "Final Damage +{0}% from mesos held (cap +{1}%)", "依持有楓幣增加最終傷害 +{0}%（上限 +{1}%）"],
     [/^크리티컬 확률 \+(\d+(?:\.\d+)?)%, 크리티컬 데미지 \+(\d+(?:\.\d+)?)%$/, "Critical Rate +{0}%, Critical Damage +{1}%", "爆擊率 +{0}%，爆擊傷害 +{1}%"],
     [/^캐릭터의 공격력과 마력이 (\d+(?:\.\d+)?)% 증가$/, "Attack and Magic Attack increase by {0}%", "攻擊力與魔力提高 {0}%"],
     [/^최종 물리 및 마법 데미지 \+(\d+(?:\.\d+)?)%$/, "Final Physical and Magic Damage +{0}%", "最終物理與魔法傷害 +{0}%"],
@@ -4581,6 +4585,53 @@
     [/^승천으로 얻는 최종 데미지 보너스가 (\d+(?:\.\d+)?)% 커진다\.$/, "The Final Damage bonus from Ascension increases by {0}%.", "飛昇提供的最終傷害加成提高 {0}%。"],
   ];
   if (/\/pages\/calc\/rp-skill-recommend(?:\.html)?\/?$/.test(location.pathname)) {
+    const cumulativeRpTranslations = [
+      ["승천3부터는 승천의 공명을 먼저 올리고, 남은 RP는 선택한 대상의 예상 데미지 상승 효율에 따라 투자합니다.", "From Ascension 3, upgrade Ascension Resonance first, then invest the remaining RP based on estimated damage gained per RP against the selected target.", "飛昇 3 起優先升級飛昇共鳴，再依所選目標的預估傷害提升效率分配剩餘 RP。"],
+      ["경 (10¹⁶ RP)", "10¹⁶ RP", "京（10¹⁶ RP）"],
+      ["해 (10²⁰ RP)", "10²⁰ RP", "垓（10²⁰ RP）"],
+      ["캐릭터 레벨", "Character Level", "角色等級"],
+      ["추천 기준", "Target", "推薦目標"],
+      ["보스 데미지", "Bosses", "首領"],
+      ["일반 몬스터 데미지", "Normal Monsters", "一般怪物"],
+      ["데미지 계산 세부 설정", "Damage Calculation Settings", "傷害計算詳細設定"],
+      ["크리티컬 입력 예시는 샤프 Lv.92와 샤프니스 Lv.49 기준입니다.", "These example values assume Sharp Eyes Lv. 92 and Sharpness Lv. 49.", "爆擊輸入範例以會心之眼 Lv. 92 與銳利 Lv. 49 為準。"],
+      ["크리티컬", "Critical Hits", "爆擊"],
+      ["발동 확률 (%)", "Trigger Chance (%)", "觸發機率（%）"],
+      ["표시된 크리티컬 확률에서 샤프 증가분을 뺀 값입니다.", "Subtract the Sharp Eyes bonus from your displayed critical chance.", "從顯示的爆擊機率扣除會心之眼的加成。"],
+      ["데미지 증가 (%)", "Damage Bonus (%)", "傷害加成（%）"],
+      ["표시된 크리티컬 데미지에서 샤프 증가분을 뺀 값입니다. 예를 들어 +728%에서 +102%를 빼면 626을 입력합니다.", "Subtract the Sharp Eyes bonus from your displayed critical damage. For example, if it shows +728% and Sharp Eyes adds +102%, enter 626.", "從顯示的爆擊傷害扣除會心之眼的加成。例如顯示 +728%，會心之眼加成為 +102%，就輸入 626。"],
+      ["기타 크리티컬 배율", "Other Critical Multiplier", "其他爆擊倍率"],
+      ["최종 크리티컬 데미지(스킬), 유물의 최종 크리티컬 데미지, 차원의 경계의 크리티컬 배율을 곱한 값입니다.", "Multiply the final critical damage multipliers from skills and artifacts by the critical multiplier from Dimensional Boundary.", "將技能和遺物的最終爆擊傷害倍率，再乘上次元邊界的爆擊倍率。"],
+      ["예시 2.00 × 2.45 × 1.167 ≈ 5.72", "Example 2.00 × 2.45 × 1.167 ≈ 5.72", "範例 2.00 × 2.45 × 1.167 ≈ 5.72"],
+      ["슈퍼 크리티컬", "Super Critical Hits", "超級爆擊"],
+      ["표시된 슈퍼 크리티컬 확률에서 샤프니스 증가분을 뺀 값입니다.", "Subtract the Sharpness bonus from your displayed super critical chance.", "從顯示的超級爆擊機率扣除銳利的加成。"],
+      ["기본 배율", "Base Multiplier", "基礎倍率"],
+      ["샤프니스 적용 전 기본값은 10입니다. 샤프니스가 +49%라면 발동 시 10 × 1.49 = 14.90배가 됩니다.", "The base multiplier is 10 before Sharpness. With a +49% Sharpness bonus, a super critical hit deals 10 × 1.49 = 14.90 times damage.", "套用銳利前的基礎倍率為 10。銳利加成為 +49% 時，超級爆擊會造成 10 × 1.49 = 14.90 倍傷害。"],
+      ["파이널 어택", "Final Attack", "終極攻擊"],
+      ["RP 스킬 외 발동 확률 (%p)", "Proc Chance from Other Sources (pp)", "RP 技能以外的觸發機率（百分點）"],
+      ["기본 파이널 어택 Lv.10의 발동 확률 10%에 10초월 보너스 5%p를 더하면 어드밴스드 Lv.0에서 15%입니다. 연쇄 일격 등 다른 보너스도 이 칸에 합해 입력하세요.", "Final Attack Lv. 10 gives a 10% trigger chance. Transcendence 10 adds 5 percentage points, bringing it to 15% at Advanced Final Attack Lv. 0. Include other bonuses, such as Chain Strike, in this field.", "終極攻擊 Lv. 10 提供 10% 觸發機率。超越 10 再加 5 個百分點，因此進階終極攻擊 Lv. 0 時合計為 15%。連鎖一擊等其他加成也請一併填入此欄。"],
+      ["기본 데미지 배율", "Base Damage Multiplier", "基礎傷害倍率"],
+      ["추가타가 원래 공격과 같은 데미지를 준다고 가정한 값은 1입니다. 어드밴스드 효과 적용 전 배율을 입력하세요.", "Enter the multiplier before Advanced Final Attack. Use 1 if the extra hit deals the same damage as the original hit.", "請輸入套用進階終極攻擊前的倍率。追加攻擊與原攻擊傷害相同時，請輸入 1。"],
+      ["메소·승천", "Mesos and Ascension", "楓幣與飛昇"],
+      ["보유 메소 (조)", "Mesos Held (Trillions)", "持有楓幣（兆）"],
+      ["그리드 계산에 사용합니다. 25경은 250000을 입력합니다.", "Used to calculate Greed. For 250 quadrillion mesos, enter 250000.", "用於計算貪婪。持有 25 京楓幣時，請輸入 250000。"],
+      ["승천 최종 데미지 (%)", "Ascension Final Damage (%)", "飛昇最終傷害（%）"],
+      ["승천 4는 비워 두면 RP로 추정합니다. 그보다 높은 단계는 게임에 표시된 값을 입력하세요.", "At Ascension 4, leave blank to estimate from RP. For higher stages, enter the value shown in the game.", "飛昇 4 可留空，系統會依 RP 估算。更高階段請輸入遊戲顯示的數值。"],
+      ["승천1 스킬 기준으로 투자 전후를 비교합니다. 관록과 몬스터 HP에 따라 달라지는 효과는 표시값을 바탕으로 추정합니다.", "Damage gains are measured against the Ascension 1 skill levels. Veteran Experience and effects that depend on monster HP are estimated from the displayed values.", "傷害提升以飛昇 1 的技能等級為基準。資歷與受怪物 HP 影響的效果會根據顯示的數值估算。"],
+      ["쉐도우 파트너와 파이널 어택의 추가 타격은 해당 스킬이 적용되는 공격을 기준으로 계산합니다.", "Extra hits from Shadow Partner and Final Attack are calculated for attacks that can trigger them.", "影分身與終極攻擊的追加打擊以可觸發該技能的攻擊為準。"],
+      ["일반 몬스터 예상 데미지 증가", "Estimated Normal Monster Damage Gain", "一般怪物預估傷害提升"],
+      ["보스 예상 데미지 증가", "Estimated Boss Damage Gain", "首領預估傷害提升"],
+      ["현재 예산으로 선택한 대상의 예상 데미지를 높일 수 있는 강화가 없습니다.", "The current budget cannot buy an upgrade that increases estimated damage against the selected target.", "目前的預算不足以購買能提升所選目標預估傷害的強化。"],
+      ["영웅의 메아리", "Echo of Hero", "英雄的回響"],
+      ["샤프니스", "Sharpness", "銳利"],
+      ["데몬스 퓨리", "Demon’s Fury", "惡魔之怒"],
+      ["그리드", "Greed", "貪婪"],
+      ["관록", "Veteran Experience", "資歷"],
+    ];
+    for (const [ko, en, tw] of cumulativeRpTranslations) {
+      dictionaries.en[ko] = en;
+      dictionaries["zh-TW"][ko] = tw;
+    }
     Object.assign(dictionaries["en"], {
       "누적 RP 스킬 추천 - 이류월드": "Cumulative RP Skill Recommendations - Iryu World",
       "누적 RP 스킬 추천": "Cumulative RP Skill Recommendations",
@@ -4665,9 +4716,9 @@
   // RP 스킬 신규 데이터와 몬스터 데이터 번역
   Object.assign(dictionaries.en, {
     "마무리일격": "Finishing Blow",
-    "창세의 잔향": "Echo of Genesis",
+    "창세의 잔향": "Genesis Echo",
     "마무리일격 최대 30": "Finishing Blow · Max Lv. 30",
-    "창세의 잔향 최대 30": "Echo of Genesis · Max Lv. 30",
+    "창세의 잔향 최대 30": "Genesis Echo · Max Lv. 30",
     "승천3": "Ascension 3",
     "승천4": "Ascension 4",
     "빛의 주시자": "Watcher of Light",
@@ -4696,6 +4747,17 @@
     dictionaries["zh-TW"][finishingBlow] = `對 HP 低於或等於 30% 的怪物造成的最終傷害提升 ${level}%`;
     dictionaries.en[genesisEcho] = `Increases the final damage bonus gained from ascension by ${level}%.`;
     dictionaries["zh-TW"][genesisEcho] = `飛昇所獲得的最終傷害加成提高 ${level}%。`;
+  }
+
+  for (const [ko, en, tw] of [
+    ["승천 4를 달성한 상태에서 검은마법사를 처치하면 승천 5를 달성할 수 있습니다.", "After reaching Ascension 4, defeat the Black Mage to reach Ascension 5.", "達成飛昇 4 後，擊敗黑魔法師即可達成飛昇 5。"],
+    ["승천 후 쌓은 누적 RP에 따라 최종 데미지가 증가합니다. 초반에 가파르게 증가하며, 누적 RP 10자 도달 시 최대 +1000%에 도달한 뒤 유지됩니다.", "Final damage increases with RP accumulated after ascension. It rises rapidly at first and stays capped at +1,000% once you reach 10 septillion RP.", "最終傷害隨飛昇後累積的 RP 提升。初期提升較快，累積 RP 達到 10 秭時，最高提升至 +1,000%，之後維持此上限。"],
+    ["누적 RP 10자 도달 시 최대 +1000% (이후 유지)", "Capped at +1,000% once cumulative RP reaches 10 septillion.", "累積 RP 達到 10 秭時最高 +1,000%，之後維持此上限。"],
+    ["승천타", "Ascension Strike", "飛昇一擊"],
+    ["기본 공격 · 스킬 · 펫 타격이 0.1% 확률로 100배 피해", "Basic attacks, skills, and pet hits have a 0.1% chance to deal 100× damage.", "普通攻擊、技能與寵物攻擊有 0.1% 機率造成 100 倍傷害。"],
+  ]) {
+    dictionaries.en[ko] = en;
+    dictionaries["zh-TW"][ko] = tw;
   }
 
   const patterns = {};
@@ -4767,6 +4829,15 @@
     const exactKey = value.trim();
     if (Object.prototype.hasOwnProperty.call(dictionary, exactKey)) {
       return value.match(/^\s*/)[0] + dictionary[exactKey] + value.match(/\s*$/)[0];
+    }
+    const ascensionStage = exactKey.match(/^승천\s*(\d+)(?:\s+(달성 조건|스킬 효과))?$/);
+    if (ascensionStage) {
+      const [, stage, heading] = ascensionStage;
+      const name = language === "en" ? `Ascension ${stage}` : `飛昇 ${stage}`;
+      const suffix = heading === "달성 조건"
+        ? (language === "en" ? " Requirements" : " 達成條件")
+        : heading === "스킬 효과" ? (language === "en" ? " Skill Effects" : " 技能效果") : "";
+      return value.match(/^\s*/)[0] + name + suffix + value.match(/\s*$/)[0];
     }
     const budgetShortfall = exactKey.match(/^승천1까지 필요한 (.+ RP)보다 누적 RP가 (.+ RP) 부족합니다\.$/);
     if (budgetShortfall) {

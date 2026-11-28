@@ -919,6 +919,20 @@
       .rp .resonance-options p, .rp #resonance-summary { margin-top: 10px; }
       .rp #resonance-level-group { margin-top: 14px; }
       .rp #resonance-level { max-width: 100px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: inherit; }
+      .rp .damage-options { margin-top: 18px; padding: 16px; border: 1px solid var(--line); border-radius: 10px; }
+      .rp .damage-options summary { cursor: pointer; font-weight: 700; }
+      .rp .damage-groups {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+        gap: 12px;
+        margin-top: 14px;
+      }
+      .rp .damage-groups fieldset { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
+      .rp .damage-groups legend { padding: 0 6px; font-weight: 700; }
+      .rp .damage-groups .calc-fields { margin: 0; gap: 12px; }
+      .rp .damage-groups small { font-weight: 400; }
+      .rp .damage-options [hidden] { display: none; }
+      .rp #day-damage { margin-top: 8px; font-weight: 700; }
     </style>
   </head>
   <body>
@@ -1039,13 +1053,80 @@
                     계산 시작일
                     <input id="start-date" type="date" required>
                   </label>
+                  <label for="damage-goal">
+                    추천 기준
+                    <select id="damage-goal">
+                      <option value="boss">보스 데미지</option>
+                      <option value="normal">일반 몬스터 데미지</option>
+                    </select>
+                  </label>
+                  <label for="damage-characterLevel">
+                    캐릭터 레벨
+                    <input id="damage-characterLevel" type="number" min="1" max="99999" step="1" value="806" required>
+                  </label>
                 </div>
+                <details class="damage-options">
+                  <summary>데미지 계산 세부 설정</summary>
+                  <div class="damage-groups">
+                    <fieldset>
+                      <legend>크리티컬</legend>
+                      <div class="calc-fields">
+                        <label for="damage-criticalRate">크리티컬 확률 (%) · 샤프 제외
+                          <input id="damage-criticalRate" type="number" min="0" max="1000000" step="any" value="174" required>
+                        </label>
+                        <label for="damage-criticalDamage">크리티컬 데미지 증가 (%) · 샤프 제외
+                          <input id="damage-criticalDamage" type="number" min="0" max="1000000" step="any" value="626" required>
+                        </label>
+                        <label for="damage-criticalMultiplier">기타 크리티컬 배율
+                          <input id="damage-criticalMultiplier" type="number" min="1" max="1000000" step="any" value="5.71667" aria-describedby="damage-critical-multiplier-help" required>
+                        </label>
+                        <small id="damage-critical-multiplier-help" class="muted">스킬, 유물, 차원의 경계의 크리티컬 배율을 곱한 값입니다. 예시 2.00 × 2.45 × 1.167 ≈ 5.72</small>
+                      </div>
+                    </fieldset>
+                    <fieldset>
+                      <legend>슈퍼 크리티컬</legend>
+                      <div class="calc-fields">
+                        <label for="damage-superCriticalRate">슈퍼 크리티컬 확률 (%) · 샤프니스 제외
+                          <input id="damage-superCriticalRate" type="number" min="0" max="100" step="any" value="60.2" required>
+                        </label>
+                        <label for="damage-superCriticalMultiplier">슈퍼 크리티컬 기본 배율
+                          <input id="damage-superCriticalMultiplier" type="number" min="1" max="1000000" step="any" value="10" aria-describedby="damage-super-critical-help" required>
+                        </label>
+                        <small id="damage-super-critical-help" class="muted">샤프니스 적용 전 기본 배율은 10입니다.</small>
+                      </div>
+                    </fieldset>
+                    <fieldset>
+                      <legend>파이널 어택</legend>
+                      <div class="calc-fields">
+                        <label for="damage-finalAttackExtraRate">RP 스킬 외 발동 확률 (%p)
+                          <input id="damage-finalAttackExtraRate" type="number" min="0" max="100" step="any" value="5" aria-describedby="damage-final-attack-rate-help" required>
+                          <small id="damage-final-attack-rate-help" class="muted">기본값 5%p에는 10초월 효과가 들어 있습니다. 기본 파이널 어택 Lv.10이면 어드밴스드 Lv.0에서 총 15%입니다.</small>
+                        </label>
+                        <label for="damage-finalAttackMultiplier">기본 데미지 배율
+                          <input id="damage-finalAttackMultiplier" type="number" min="0" max="1000000" step="any" value="1" aria-describedby="damage-final-attack-multiplier-help" required>
+                          <small id="damage-final-attack-multiplier-help" class="muted">추가타가 원래 공격과 같은 데미지를 주는 경우 1을 입력하세요.</small>
+                        </label>
+                      </div>
+                    </fieldset>
+                    <fieldset>
+                      <legend>메소·승천</legend>
+                      <div class="calc-fields">
+                        <label for="damage-meso">보유 메소 (조)
+                          <input id="damage-meso" type="number" min="0" max="1000000000000000" step="any" value="250000" required>
+                        </label>
+                        <label for="damage-ascensionBonus" id="damage-ascension-option" hidden>승천 최종 데미지 (%)
+                          <input id="damage-ascensionBonus" type="number" min="0" max="1000000" step="any" aria-describedby="damage-ascension-help">
+                          <small id="damage-ascension-help" class="muted">승천 4는 비워 두면 RP로 추정합니다. 그보다 높은 단계는 게임에 표시된 값을 입력하세요.</small>
+                        </label>
+                      </div>
+                    </fieldset>
+                  </div>
+                </details>
                 <!-- 승천2 전용: 공명 포함 여부와 현재 레벨 -->
                 <div id="resonance-options" class="resonance-options">
                   <label class="settings" for="include-resonance"><input type="checkbox" id="include-resonance">승천의 공명을 올리시겠습니까?</label>
                   <label id="resonance-level-group" class="settings" hidden>현재 공명 레벨<input id="resonance-level" type="number" min="0" max="30" step="1" value="0"></label>
-                  <p class="muted">공명은 CSV의 실제 비용으로 일반 스킬과 함께 배분하며, 최대 30레벨까지만 올립니다.</p>
-                  <p class="muted" id="resonance-data-status" role="status"></p>
+                  <p class="muted">공명은 실제 강화 비용과 데미지 상승 효율을 기준으로 최대 30레벨까지 추천합니다.</p>
                 </div>
                 <p class="muted" id="resonance-summary" aria-live="polite"></p>
                 <section class="income-history" aria-labelledby="income-history-title">
@@ -1070,17 +1151,17 @@
                 </section>
                 <div class="row" style="margin-top:16px">
                   <div class="toolbar">
-                    <button type="button" data-period="7">
+                    <button type="button" data-period="7" disabled>
                       7일
                     </button>
-                    <button type="button" data-period="30">
+                    <button type="button" data-period="30" disabled>
                       30일
                     </button>
-                    <button type="button" data-period="90">
+                    <button type="button" data-period="90" disabled>
                       90일
                     </button>
                   </div>
-                  <button class="primary" type="submit">
+                  <button class="primary" type="submit" disabled>
                     목표 계산하기
                   </button>
                 </div>
@@ -1090,9 +1171,10 @@
                     <input type="checkbox" id="spend-all-last-day">
                     선택 기간 마지막날 남은 RP 다 사용하시겠습니까?
                   </label>
-                  <p class="muted">체크 후 목표 계산하기를 누르면 마지막 날에 추가 강화가 가능한 만큼 RP를 사용합니다. 다음 강화 비용보다 적은 잔액은 남을 수 있습니다.</p>
+                  <p class="muted">체크하면 마지막 날 남은 RP로 살 수 있는 강화 중 데미지가 오르는 항목을 효율순으로 추천합니다.</p>
                 </div>
                 <p id="draft-note" class="muted" role="status" aria-live="polite"></p>
+                <p id="skill-loading" class="muted" role="status">스킬 데이터를 불러오는 중입니다.</p>
                     <p id="calc-error" class="error" role="alert">
                 </p>
               </form>
@@ -1213,6 +1295,7 @@
                   </h2>
                   <p class="muted" id="day-meta">
                   </p>
+                  <p id="day-damage"></p>
                 </div>
                 <div class="nav">
                   <button id="prev" aria-label="이전 날짜">
@@ -1298,11 +1381,12 @@
                 계산 기준과 시작 레벨
               </summary>
               <p>
-                일반 스킬은 기존 30일 추천안의 투자 비중을 사용합니다. 공명, 마무리일격, 창세의 잔향은 시작 레벨부터 30레벨까지 필요한 CSV 비용을 투자 비중에 반영합니다. 30레벨에 도달한 스킬의 배정액은 나머지 스킬에 재배분합니다.
+                누적 RP 추천과 같은 방식으로 강화할 때마다 예상 데미지 상승률을 계산하고, RP 대비 효율이 높은 강화부터 추천합니다. 다음 강화에 필요한 RP가 부족하면 잔액을 다음 날로 넘깁니다.
               </p>
               <p>
-                일반 스킬의 강화 비용은 1.2배씩 증가하며 RP 단위로 반올림합니다. 샤프아이즈는 2레벨 단위로 계산합니다. 승천3·4는 공명 30레벨 완료 기준이며, 마무리일격과 창세의 잔향은 0레벨에서 시작합니다.
+                스킬표의 강화 비용과 승천별 최대 레벨을 사용합니다. 샤프아이즈는 2레벨 단위로 계산합니다. 승천3·4는 공명 30레벨 완료 기준이며, 마무리일격과 창세의 잔향은 0레벨에서 시작합니다.
               </p>
+              <p>관록과 몬스터 체력에 따른 효과는 추정치입니다. 쉐도우 파트너와 파이널 어택의 추가 타격은 해당 스킬이 적용되는 공격을 기준으로 계산합니다.</p>
               <p>
                 입력 금액과 예산은 정수 RP로 계산합니다. 요약 표시는 큰 단위로 줄여 보여줍니다. 하루 획득량은 변경 이력에 따라 날짜별로 적용합니다.
               </p>
@@ -1321,15 +1405,15 @@
     </div>
 
     <!-- 외부 스크립트 1: 예산 및 강화 계산 -->
-    <script src="./rp-planner-engine.js?v=20261120-ascension">
+    <script src="./rp-planner-engine.js?v=20261128-damage">
     </script>
 
     <!-- 외부 스크립트 2: 한국어 / 영어 / 대만 번체 번역 -->
-    <script src="./rp-planner-locales.js?v=20261120-daily-title">
+    <script src="./rp-planner-locales.js?v=20261128-damage">
     </script>
 
     <!-- 외부 스크립트 3: 입력, 날짜, 완료 체크 등 화면 동작 -->
-    <script src="./rp-planner-ui.js?v=20261120-ascension">
+    <script type="module" src="./rp-planner-ui.js?v=20261128-damage">
     </script>
   </body>
 </html>

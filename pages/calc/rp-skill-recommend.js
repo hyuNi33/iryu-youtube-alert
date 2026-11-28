@@ -1,124 +1,44 @@
-import { loadCSV } from "../../js/csv-loader.js";
 import { compactNumber } from "../../js/table-number.js";
+import { damageEffectText, recommend } from "./rp-skill-damage.js";
+import { ascensionStages, loadSkills, populateAscensionStages, readDamageProfile } from "./rp-skill-data.js";
 
 const engine = window.IryuRP;
-const dataPath = "../../datas";
-const plannerNames = {
-  "샤프": "샤프아이즈",
-  "메용": "메이플 용사",
-  "어드밴스드 콤보어택": "어드밴스드 콤보",
-};
-
-async function loadSkills() {
-  const [meta, effectMeta] = await Promise.all([
-    loadCSV(`${dataPath}/rpskill/meta.csv`),
-    loadCSV(`${dataPath}/rpskill-perf/meta.csv`),
-  ]);
-  const effectFiles = new Map(effectMeta.map(row => [row.name, row.file]));
-  const plan = engine.buildPlan({ initial: 0n, daily: 0n, period: 1 });
-  const references = new Map(plan.skills.map((skill, index) => [
-    skill.name, { step: skill.step, weight: plan.weights[index] },
-  ]));
-
-  return Promise.all(meta.map(async row => {
-    const name = row.skillName;
-    const effectFile = effectFiles.get(name === "환포" ? "환포증가" : name);
-    const [costRows, effectRows] = await Promise.all([
-      loadCSV(`${dataPath}/rpskill/${row.tableKey}.csv`),
-      effectFile ? loadCSV(`${dataPath}/rpskill-perf/${effectFile}`) : [],
-    ]);
-    const costs = new Map(costRows.map(record => [
-      Number(record["레벨"]), BigInt((record["누적 RP"] ?? record["누적 포인트"] ?? record["누적 비용"]).replaceAll(",", "")),
-    ]));
-    costs.set(0, 0n);
-    const effects = new Map(effectRows.map(record => [Number(record["레벨"]), record["효과"]]));
-    const start = Number(row.maxLevel11);
-    const reference = references.get(plannerNames[name] ?? name);
-    const step = reference?.step ?? 1;
-    return { row, name, start, costs, effects, step, reference };
-  }));
-}
-
-function recommend(skills, stage, budget) {
-  const targets = skills.map(skill => {
-    const { row, start, step, costs, reference } = skill;
-    const cap = Number(row[`maxLevel${stage}`]);
-    const max = cap - (cap - start) % step;
-    const baseline = costs.get(start);
-    const limit = costs.get(max) - baseline;
-    return { ...skill, max, baseline, limit, weight: reference?.weight ?? limit, level: start, spent: 0n };
-  });
-
-  // 상한까지 투자할 수 있는 스킬의 몫을 확정한 뒤 나머지 예산을 재배분한다.
-  let remaining = budget;
-  const resonance = Number(stage) >= 13
-    ? targets.find(target => target.row.tableKey === "table37")
-    : undefined;
-  if (resonance) {
-    while (resonance.level < resonance.max) {
-      const next = resonance.level + 1;
-      const cost = resonance.costs.get(next) - resonance.baseline;
-      if (cost > budget) break;
-      resonance.level = next;
-      resonance.spent = cost;
-    }
-    remaining -= resonance.spent;
-  }
-  let active = targets.filter(target => target !== resonance && target.limit > 0n);
-  while (active.length) {
-    const totalWeight = active.reduce((sum, target) => sum + target.weight, 0n);
-    const capped = active.filter(target => target.limit * totalWeight <= remaining * target.weight);
-    if (!capped.length) {
-      for (const target of active) target.quota = remaining * target.weight / totalWeight;
-      break;
-    }
-    for (const target of capped) {
-      target.quota = target.limit;
-      remaining -= target.limit;
-    }
-    active = active.filter(target => target.quota === undefined);
-  }
-
-  for (const target of targets) {
-    while (target.level + target.step <= target.max) {
-      const next = target.level + target.step;
-      const cost = target.costs.get(next) - target.baseline;
-      if (target.quota === undefined || cost > target.quota) break;
-      target.level = next;
-      target.spent = cost;
-    }
-  }
-
-  let left = budget - targets.reduce((sum, target) => sum + target.spent, 0n);
-  // 30일 계획의 마지막 날 소진 옵션과 같은 방식으로 잔액을 사용한다.
-  while (true) {
-    let best;
-    for (const target of targets) {
-      const next = target.level + target.step;
-      if (next > target.max) continue;
-      const after = target.costs.get(next) - target.baseline;
-      const extra = after - target.spent;
-      if (extra > left) continue;
-      if (!best || after * best.target.weight < best.after * target.weight) {
-        best = { target, next, after, extra };
-      }
-    }
-    if (!best) break;
-    best.target.level = best.next;
-    best.target.spent = best.after;
-    left -= best.extra;
-  }
-  return { targets, left };
-}
+const skillDisplayOrder = new Map([
+  "resonance",
+  "sharp",
+  "heroesEcho",
+  "berserk",
+  "shadowPartner",
+  "mapleWarrior",
+  "sharpness",
+  "advancedCombo",
+  "demonsFury",
+  "greed",
+  "criticalReinforce",
+  "vitalChain",
+  "advancedFinalAttack",
+  "gravitas",
+  "finishingBlow",
+  "genesisEcho",
+].map((type, index) => [type, index]));
 
 const element = id => document.getElementById(id);
 const form = element("rp-form");
 const results = element("rp-results");
 const status = element("rp-status");
 const storageKey = "iryu_rp_skill_recommend";
-const fields = ["stage", "total", "unit"];
+const fields = [
+  "stage", "total", "unit", "goal", "criticalRate", "criticalDamage", "criticalMultiplier",
+  "superCriticalRate", "superCriticalMultiplier", "meso", "characterLevel", "ascensionBonus",
+  "finalAttackExtraRate", "finalAttackMultiplier",
+];
 const format = amount => compactNumber(amount.toString()) + " RP";
 const fullRP = amount => amount.toLocaleString("ko-KR") + " RP";
+const formatGain = new Intl.NumberFormat("ko-KR", {
+  style: "percent",
+  signDisplay: "exceptZero",
+  maximumFractionDigits: 2,
+});
 
 function showRP(node, amount) {
   node.textContent = format(amount);
@@ -145,12 +65,22 @@ document.querySelectorAll(".rp-summary button[aria-controls]").forEach(button =>
 function restoreInputs() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
-    if (typeof saved?.total === "string") form.elements.total.value = saved.total;
-    if (["12", "13", "14"].includes(saved?.stage)) form.elements.stage.value = saved.stage;
-    if (["RP", "경", "해"].includes(saved?.unit)) form.elements.unit.value = saved.unit;
+    for (const name of fields) {
+      if (typeof saved?.[name] !== "string") continue;
+      const field = form.elements[name];
+      const defaultValue = field.value;
+      field.value = saved[name];
+      if (!field.validity.valid || (field.tagName === "SELECT" && !field.value)) field.value = defaultValue;
+    }
   } catch {
     // 저장소를 사용할 수 없어도 계산은 가능하다.
   }
+}
+
+function updateAscensionBonusField() {
+  const visible = Number(form.elements.stage.value) >= 14;
+  element("rp-ascension-bonus-field").hidden = !visible;
+  form.elements.ascensionBonus.disabled = !visible;
 }
 
 function saveInputs() {
@@ -162,8 +92,8 @@ function saveInputs() {
   }
 }
 
-restoreInputs();
-function handleInputChange() {
+function handleInputChange(event) {
+  if (event.target === form.elements.stage) updateAscensionBonusField();
   saveInputs();
   results.hidden = true;
   if (!form.querySelector("button").disabled) {
@@ -173,9 +103,16 @@ function handleInputChange() {
 }
 form.addEventListener("input", handleInputChange);
 form.addEventListener("change", handleInputChange);
+form.addEventListener("invalid", event => {
+  const details = event.target.closest("details");
+  if (details) details.open = true;
+}, true);
 
 async function initialize() {
   const skills = await loadSkills();
+  populateAscensionStages(form.elements.stage, ascensionStages(skills));
+  restoreInputs();
+  updateAscensionBonusField();
   const baseline = skills.reduce((sum, skill) => sum + skill.costs.get(skill.start), 0n);
   status.textContent = "";
   form.querySelector("button").disabled = false;
@@ -200,22 +137,32 @@ async function initialize() {
     }
 
     const budget = total - baseline;
-    const { targets, left } = recommend(skills, inputs.get("stage"), budget);
-    const upgrades = targets.filter(target => target.level > target.start);
+    const stage = inputs.get("stage");
+    const goal = inputs.get("goal");
+    const profile = readDamageProfile(Object.fromEntries(inputs), stage, total);
+    const { upgrades, left, normalGain, bossGain } = recommend(skills, stage, budget, profile, goal);
     showSummaryRP("rp-baseline", baseline);
     showSummaryRP("rp-budget", budget);
     showSummaryRP("rp-spent", budget - left);
     showSummaryRP("rp-left", left);
-    element("rp-rows").replaceChildren(...upgrades.map(target => {
+    element("rp-normal-gain").textContent = formatGain.format(normalGain);
+    element("rp-boss-gain").textContent = formatGain.format(bossGain);
+    element("rp-normal-result").classList.toggle("rp-summary-highlight", goal === "normal");
+    element("rp-boss-result").classList.toggle("rp-summary-highlight", goal === "boss");
+    const orderedUpgrades = [...upgrades].sort((a, b) =>
+      (skillDisplayOrder.get(a.type) ?? skillDisplayOrder.size) -
+      (skillDisplayOrder.get(b.type) ?? skillDisplayOrder.size)
+    );
+    element("rp-rows").replaceChildren(...orderedUpgrades.map(target => {
       const row = document.createElement("tr");
       for (const value of [target.name, target.start, target.level]) {
         row.insertCell().textContent = value;
       }
       showRP(row.insertCell(), target.spent);
-      row.insertCell().textContent = target.effects.get(target.level) || "효과 데이터 없음";
+      row.insertCell().textContent = damageEffectText(target, profile);
       return row;
     }));
-    status.textContent = upgrades.length ? "" : "현재 예산으로 추가 강화할 수 있는 스킬이 없습니다.";
+    status.textContent = upgrades.length ? "" : "현재 예산으로 선택한 대상의 예상 데미지를 높일 수 있는 강화가 없습니다.";
     results.hidden = false;
   });
 
